@@ -16,10 +16,11 @@ from pathlib import Path
 # setting it here at module-import time guarantees it's in place.
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-# Project root — the folder this conftest lives in. Inserting it onto sys.path
-# means `from core.color_math import ColorMath` works exactly as it does
-# inside the application itself.
-_PROJECT_ROOT = Path(__file__).resolve().parent
+# Project root — this file lives at <repo>/tests/conftest.py, so the project
+# root is two parents up (not one). The earlier bug was `.parent` instead of
+# `.parent.parent`, which resolved to <repo>/tests/ and caused all imports
+# of `from core.X import Y` to fail in pytest-collected tests.
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
 _PROJECT_ROOT_STR = str(_PROJECT_ROOT)
 
 if _PROJECT_ROOT_STR not in sys.path:
@@ -43,11 +44,11 @@ if not _SUBDIR_LAYOUT:
             sys.modules[_pkg] = _m
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────
 # Global ColorHistoryManager safety patch — same as in test_rnv_color_picker.py
 # Prevents tests from writing to the real AppData/Library/.config history file.
 # Applied at module-import time so it's in effect before any test runs.
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────
 import tempfile  # noqa: E402  (intentional: must come after sys.path mutation)
 
 _HIST_TMP = tempfile.mkdtemp()
