@@ -118,10 +118,18 @@ jobs:
         run: |
           coverage run --data-file=.coverage.unittest --source=core,utils,ui --branch -m unittest -v test_rnv_color_picker
 
-      - name: Run pytest suite (with coverage and per-test timeout)
+      - name: Run pytest suite (with coverage via pytest-cov plugin and per-test timeout)
         timeout-minutes: 8
+        env:
+          # Tell coverage where to write its data file so `coverage combine` can
+          # pick it up alongside the unittest step's output. Default would be plain
+          # `.coverage`, which works but is less explicit.
+          COVERAGE_FILE: .coverage.pytest
         run: |
-          coverage run --data-file=.coverage.pytest --source=core,utils,ui --branch -m pytest tests/ -v --timeout=60 --timeout-method=thread
+          python -m pytest tests/ -v \
+            --timeout=60 --timeout-method=thread \
+            --cov=core --cov=ui --cov=utils --cov-branch \
+            --cov-report=term
 
       - name: Combine coverage and report
         if: always()
