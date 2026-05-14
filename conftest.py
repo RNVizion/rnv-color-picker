@@ -1,29 +1,37 @@
 """
-Root-level conftest.py for RNV Color Picker.
+Root-level conftest.py for the RNV Color Picker test suite.
 
-Ensures pytest can resolve `core`, `ui`, and `utils` package imports from
-test modules under tests/. When pytest collects tests from a subdirectory,
-it doesn't automatically add the project root to sys.path — so test files
-that do `from core.color_math import ColorMath` would fail with
-ModuleNotFoundError.
+PURPOSE
+-------
+pytest collects tests from `tests/`, but when it does so it does NOT
+automatically add the project root to `sys.path`. That means a test like
 
-This conftest.py runs before any test module is imported (pytest discovers
-conftest.py files top-down, root first), so by the time the test files are
-parsed, sys.path is already correctly configured.
+    from utils.signal_manager import SignalConnectionManager
 
-This is a belt-and-suspenders fix: pytest.ini also sets `pythonpath = .`
-for the same purpose. Either mechanism alone is sufficient; having both
-guarantees correct import resolution regardless of how pytest is invoked
-or which working directory it's launched from.
+fails with `ModuleNotFoundError: No module named 'utils.signal_manager'`
+because `utils/` lives at the project root, not inside `tests/`.
+
+This file fixes that by prepending the project root (the directory this
+conftest.py lives in) to sys.path BEFORE any test module is parsed.
+
+Why a root-level conftest.py and not just `pythonpath = .` in pytest.ini?
+- pytest.ini's `pythonpath` works in most setups but silently no-ops in a
+  few edge cases (older pytest, certain CI runners, coverage subprocesses)
+- A conftest.py at the import root is the canonical, bulletproof solution
+  documented by pytest itself
+- Belt-and-suspenders: we keep BOTH so neither has to be perfect
+
+This file should NOT define fixtures, hooks, or imports that touch Qt.
+Keep it minimal and sys.path-only.
 """
 
+import os
 import sys
-from pathlib import Path
 
-# Add the project root (the directory containing this file) to sys.path
-# at the front, so `import core`, `import ui`, `import utils` resolve to
-# the local package directories.
-_PROJECT_ROOT = Path(__file__).parent.resolve()
+# Absolute path to the directory containing this conftest.py — i.e., the project root.
+_PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
-if str(_PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(_PROJECT_ROOT))
+# Prepend (not append) so our modules win over any same-named installed packages.
+# Only insert if not already present, to avoid duplicate entries on repeated invocations.
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
