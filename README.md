@@ -6,15 +6,16 @@
   <img src="resources/screenshots/hero.png" alt="RNV Color Picker — main window in Image Mode" width="850">
 </p>
 
-<p align="center">
-  <a href="https://github.com/RNVizion/rnv-color-picker/actions/workflows/tests.yml"><img alt="tests" src="https://github.com/RNVizion/rnv-color-picker/actions/workflows/tests.yml/badge.svg"></a>
-  <img alt="Python" src="https://img.shields.io/badge/python-3.13-blue.svg">
-  <img alt="PyQt6" src="https://img.shields.io/badge/PyQt6-6.10-41CD52.svg">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-1641%20passing-success.svg">
-  <img alt="Coverage" src="https://img.shields.io/badge/coverage-86%25-brightgreen.svg">
-  <img alt="License" src="https://img.shields.io/badge/license-MIT-lightgrey.svg">
-  <img alt="Platform" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg">
-</p>
+![Python](https://img.shields.io/badge/python-3.13-blue?logo=python&logoColor=white)
+![PyQt6](https://img.shields.io/badge/PyQt-6-41CD52)
+![Version](https://img.shields.io/badge/version-3.0.3-orange)
+![License](https://img.shields.io/badge/license-MIT-yellow)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
+![Tests](https://img.shields.io/badge/tests-1641%20passing-brightgreen)
+![Coverage](https://img.shields.io/badge/coverage-86%25-brightgreen)
+
+[![Tests (Linux)](https://img.shields.io/github/actions/workflow/status/RNVizion/rnv-color-picker/tests.yml?branch=main&label=Tests%20%28Linux%29&logo=linux)](https://github.com/RNVizion/rnv-color-picker/actions/workflows/tests.yml)
+[![Tests (Windows)](https://img.shields.io/github/actions/workflow/status/RNVizion/rnv-color-picker/tests.yml?branch=main&label=Tests%20%28Windows%29&logo=windows)](https://github.com/RNVizion/rnv-color-picker/actions/workflows/tests.yml)
 
 A polished PyQt6 desktop application for extracting, organizing, and exporting colors from any source — uploaded images, the screen under your cursor, or hand-picked regions. Built around a strict modular architecture (core / ui / utils), a centralized theming system with three modes, and an aggressive caching layer that keeps the UI responsive at 333 colors.
 
