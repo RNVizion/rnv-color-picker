@@ -82,8 +82,28 @@ jobs:
 
       - name: Show environment for debugging
         run: |
+          echo "=== Python version ==="
           python --version
-          pip list
+          echo ""
+          echo "=== PYTHONPATH env var (should be the workspace) ==="
+          echo "PYTHONPATH=$PYTHONPATH"
+          echo ""
+          echo "=== Current working directory ==="
+          pwd
+          echo ""
+          echo "=== Directory contents (should show core/, ui/, utils/, tests/, conftest.py, pytest.ini) ==="
+          ls -la
+          echo ""
+          echo "=== Python sys.path (project root should be near the top) ==="
+          python -c "import sys; [print(repr(p)) for p in sys.path]"
+          echo ""
+          echo "=== Try importing the packages tests need ==="
+          python -c "import core; print('core OK at', getattr(core, '__file__', None) or getattr(core, '__path__', None))" || echo "FAILED to import core"
+          python -c "import ui; print('ui OK at', getattr(ui, '__file__', None) or getattr(ui, '__path__', None))" || echo "FAILED to import ui"
+          python -c "import utils; print('utils OK at', getattr(utils, '__file__', None) or getattr(utils, '__path__', None))" || echo "FAILED to import utils"
+          echo ""
+          echo "=== pip list (key packages only) ==="
+          pip list | grep -iE "pyqt|pytest|coverage|numpy|pillow|scikit"
         shell: bash
 
       # ============================================================
