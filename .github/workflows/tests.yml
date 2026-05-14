@@ -2,28 +2,38 @@ name: tests
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   pull_request:
-    branches: [main, master]
-  workflow_dispatch:  # Allow manual runs from the Actions tab
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   test:
     name: Tests on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
 
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        python-version: ["3.13"]
+        python-version: ['3.13']
 
     env:
-      # Run Qt in offscreen mode — no real display needed on either OS.
-      # Avoids Xvfb setup on Linux and works identically on Windows runners.
+      # Force unbuffered stdout so we see test output in real time, NOT in 4KB chunks.
+      # Without this, when a test hangs the last 50 lines never reach the log.
+      PYTHONUNBUFFERED: 1
+
+      # Print a Python-level traceback on fatal signals (SIGSEGV, SIGABRT) and
+      # on timeouts via faulthandler.dump_traceback_later — invaluable for hang debugging.
+      PYTHONFAULTHANDLER: 1
+
+      # Qt needs a "display" to initialize. The offscreen platform is the standard
+      # workaround for headless CI runners — no X11/Wayland required.
       QT_QPA_PLATFORM: offscreen
-      # Suppress Qt's debug spam so logs stay readable
-      QT_LOGGING_RULES: "*.debug=false"
+
+      # Verbose Qt plugin loading — uncomment temporarily if Qt itself fails to init.
+      # QT_DEBUG_PLUGINS: 1
 
     steps:
       - name: Checkout repository
@@ -34,18 +44,15 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-          cache-dependency-path: |
-            requirements.txt
-            requirements-test.txt
 
-      - name: Install Linux Qt runtime libraries
+      # PyQt6 on Ubuntu CI needs more system libs than just libxcb-cursor0.
+      # This is the canonical list for Qt6 offscreen rendering on Ubuntu 22.04+.
+      - name: Install Linux system dependencies (Qt + xcb)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             libegl1 \
-            libgl1 \
-            libxkbcommon-x11-0 \
             libxcb-cursor0 \
             libxcb-icccm4 \
             libxcb-image0 \
@@ -57,26 +64,50 @@ jobs:
             libxcb-xfixes0 \
             libxcb-xinerama0 \
             libxcb-xkb1 \
-            libdbus-1-3 \
-            libfontconfig1
+            libxkbcommon-x11-0
 
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
 
-      - name: Run combined test suite (unittest + pytest, with coverage)
-        run: python run_tests.py
+      - name: Show environment for debugging
+        run: |
+          python --version
+          pip list
+        shell: bash
 
-      - name: Upload coverage report as artifact
+      # ============================================================
+      # Run the two suites as SEPARATE steps with per-step timeouts.
+      # When this fails, the step name will tell us which suite hung.
+      # The -v flag makes unittest print each test name as it STARTS,
+      # so the last visible test name in a hung run is the culprit.
+      # ============================================================
+
+      - name: Run unittest suite (verbose, with coverage)
+        timeout-minutes: 5
+        run: |
+          coverage run --data-file=.coverage.unittest --source=core,utils,ui --branch -m unittest -v test_rnv_color_picker
+
+      - name: Run pytest suite (with coverage and per-test timeout)
+        timeout-minutes: 8
+        run: |
+          coverage run --data-file=.coverage.pytest --source=core,utils,ui --branch -m pytest tests/ -v --timeout=60 --timeout-method=thread
+
+      - name: Combine coverage and report
+        if: always()
+        run: |
+          coverage combine
+          coverage report
+        shell: bash
+
+      - name: Upload coverage XML (for Codecov etc., optional)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.os }}
           path: |
             .coverage
-            .coverage.unittest
-            .coverage.pytest
-            coverage_report.txt
+            .coverage.*
           if-no-files-found: ignore
-          retention-days: 7
