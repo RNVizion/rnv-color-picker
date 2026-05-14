@@ -1,0 +1,20 @@
+# RNV Color Picker — development & testing dependencies
+# Install with: pip install -r requirements-test.txt
+# (this file includes everything in requirements.txt)
+
+-r requirements.txt
+
+# Test runner
+pytest==9.0.2
+
+# Qt fixtures and qtbot for real Qt threading verification
+pytest-qt==4.5.0
+
+# Coverage integration with pytest
+pytest-cov==7.1.0
+
+# Branch coverage measurement (used by run_tests.py for the unittest harness too)
+coverage>=7.0.0
+
+# Property-based testing — used for color math and color history invariants
+hypothesis==6.152.4

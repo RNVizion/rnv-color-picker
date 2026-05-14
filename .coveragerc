@@ -1,0 +1,36 @@
+# Coverage.py configuration for RNV Color Picker.
+#
+# Coverage tooling reads this file by default. It is the single source
+# of truth for coverage settings — the [tool.coverage.*] tables are
+# intentionally NOT mirrored in pyproject.toml to avoid drift.
+
+[run]
+source =
+    core
+    ui
+    utils
+branch = True
+omit =
+    */tests/*
+    */__pycache__/*
+    RNV_Color_Picker.py
+
+
+[report]
+# Lines that don't need to be reported as missing
+exclude_lines =
+    pragma: no cover
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+show_missing = True
+skip_covered = False
+precision = 0
+
+
+[html]
+directory = htmlcov
+
+
+[xml]
+output = coverage.xml
