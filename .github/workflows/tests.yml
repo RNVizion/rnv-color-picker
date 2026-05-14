@@ -28,6 +28,14 @@ jobs:
       # on timeouts via faulthandler.dump_traceback_later — invaluable for hang debugging.
       PYTHONFAULTHANDLER: 1
 
+      # Make the project root importable from anywhere. Python reads PYTHONPATH at
+      # interpreter startup and prepends it to sys.path BEFORE any user code runs —
+      # before coverage's import hooks, before pytest, before conftest.py. This is
+      # the only mechanism guaranteed to work when `coverage run -m pytest` is the
+      # invocation, because coverage's module tracer can shadow conftest.py-based
+      # sys.path modifications on some platforms.
+      PYTHONPATH: ${{ github.workspace }}
+
       # Qt needs a "display" to initialize. The offscreen platform is the standard
       # workaround for headless CI runners — no X11/Wayland required.
       QT_QPA_PLATFORM: offscreen
