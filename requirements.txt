@@ -1,0 +1,14 @@
+# RNV Color Picker — runtime dependencies
+# Python 3.13+
+
+# GUI framework — pinned because Qt rendering and signal behavior are version-sensitive
+PyQt6==6.10.2
+
+# Image processing — used for loading, resizing, and palette swatch generation
+Pillow>=10.0.0
+
+# Numerical operations — pixel array reshaping, color statistics, k-means input prep
+numpy>=1.26.0
+
+# Machine learning — KMeans clustering for dominant color extraction
+scikit-learn>=1.3.0
