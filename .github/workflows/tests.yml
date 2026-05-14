@@ -125,6 +125,7 @@ jobs:
           # pick it up alongside the unittest step's output. Default would be plain
           # `.coverage`, which works but is less explicit.
           COVERAGE_FILE: .coverage.pytest
+        shell: bash
         run: |
           python -m pytest tests/ -v \
             --timeout=60 --timeout-method=thread \
