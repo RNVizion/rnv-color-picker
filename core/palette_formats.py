@@ -159,18 +159,18 @@ class PaletteFormats:
             f.write(struct.pack('>I', len(colors)))
             
             for i, (color, weight) in enumerate(colors):
-                name = f"Color {i+1}".encode('utf-16be')
+                # ASE name strings are null-terminated UTF-16BE.
+                # The name length field counts characters INCLUDING
+                # the null terminator, and the name bytes must end with 0x0000.
+                name = f"Color {i+1}".encode('utf-16be') + b'\x00\x00'
                 name_len = len(name) // 2
                 
-                # Convert to native int for safety with numpy types
-                r, g, b = int(color[0]), int(color[1]), int(color[2])
-                
                 f.write(struct.pack('>H', 0x0001))
-                f.write(struct.pack('>I', 22 + len(name)))
+                f.write(struct.pack('>I', 20 + len(name)))
                 f.write(struct.pack('>H', name_len))
                 f.write(name)
                 f.write(b'RGB ')
-                f.write(struct.pack('>fff', r/255.0, g/255.0, b/255.0))
+                f.write(struct.pack('>fff', color[0]/255.0, color[1]/255.0, color[2]/255.0))
                 f.write(struct.pack('>H', 2))
 
     @staticmethod
@@ -197,7 +197,7 @@ class PaletteFormats:
                 
                 name = f"Color {i+1}\0"
                 name_utf16 = name.encode('utf-16be')
-                f.write(struct.pack('>H', len(name)))
+                f.write(struct.pack('>I', len(name)))
                 f.write(name_utf16)
 
     @staticmethod
@@ -575,8 +575,13 @@ class PaletteFormats:
                     
                     if color_space == 0:
                         r, g, b, _ = struct.unpack('>HHHH', f.read(8))
+                        # Use rounding (not floor) to convert 16-bit to 8-bit.
+                        # Photoshop encodes 8-bit X as approximately X*257 but slightly off
+                        # (e.g., 210 -> 0xD2D1 = 53969, not 53970). Floor division of
+                        # such values gives X-1; rounding recovers the original value.
+                        # Files written with canonical X*257 encoding round-trip identically.
                         colors.append((
-                            (r // 257, g // 257, b // 257),
+                            (round(r / 257), round(g / 257), round(b / 257)),
                             50
                         ))
                     else:
