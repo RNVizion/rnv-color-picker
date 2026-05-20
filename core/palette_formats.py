@@ -236,7 +236,9 @@ class PaletteFormats:
     @staticmethod
     def _export_gpl(path: str, colors: list[tuple[tuple[int, int, int], int]]) -> None:
         """Export GIMP Palette format."""
-        with open(path, 'w') as f:
+        # newline='\n' disables Python's text-mode CRLF translation on Windows
+        # so the file is byte-identical across platforms.
+        with open(path, 'w', newline='\n') as f:
             f.write("GIMP Palette\n")
             f.write("Name: Color Mixer Palette\n")
             f.write("Columns: 0\n")
@@ -270,12 +272,18 @@ class PaletteFormats:
         
         tree = ET.ElementTree(root)
         ET.indent(tree, space='  ')
-        tree.write(path, encoding='utf-8', xml_declaration=True)
+        # Open in binary mode and hand the file object to tree.write() so
+        # ElementTree writes raw bytes (LF). If we passed the path string,
+        # ElementTree would open in text mode and translate to CRLF on Windows.
+        with open(path, 'wb') as f:
+            tree.write(f, encoding='utf-8', xml_declaration=True)
 
     @staticmethod
     def _export_colors(path: str, colors: list[tuple[tuple[int, int, int], int]]) -> None:
         """Export .colors format."""
-        with open(path, 'w') as f:
+        # newline='\n' disables Python's text-mode CRLF translation on Windows
+        # so the file is byte-identical across platforms.
+        with open(path, 'w', newline='\n') as f:
             f.write("# Color Mixer Palette\n")
             f.write(f"# Total colors: {len(colors)}\n")
             f.write("#\n")
@@ -287,7 +295,9 @@ class PaletteFormats:
     @staticmethod
     def _export_css(path: str, colors: list[tuple[tuple[int, int, int], int]]) -> None:
         """Export CSS variables format."""
-        with open(path, 'w') as f:
+        # newline='\n' disables Python's text-mode CRLF translation on Windows
+        # so the file is byte-identical across platforms.
+        with open(path, 'w', newline='\n') as f:
             f.write("/* Color Mixer Palette - CSS Variables */\n\n")
             f.write(":root {\n")
             for i, (color, weight) in enumerate(colors):
@@ -329,7 +339,9 @@ class PaletteFormats:
                 "weight": int(weight)
             })
         
-        with open(path, 'w') as f:
+        # newline='\n' disables Python's text-mode CRLF translation on Windows
+        # so the file is byte-identical across platforms.
+        with open(path, 'w', newline='\n') as f:
             json.dump(palette_data, f, indent=2)
 
     @staticmethod
@@ -360,12 +372,18 @@ class PaletteFormats:
         
         tree = ET.ElementTree(root)
         ET.indent(tree, space='  ')
-        tree.write(path, encoding='utf-8', xml_declaration=True)
+        # Open in binary mode and hand the file object to tree.write() so
+        # ElementTree writes raw bytes (LF). If we passed the path string,
+        # ElementTree would open in text mode and translate to CRLF on Windows.
+        with open(path, 'wb') as f:
+            tree.write(f, encoding='utf-8', xml_declaration=True)
 
     @staticmethod
     def _export_hsv(path: str, colors: list[tuple[tuple[int, int, int], int]]) -> None:
         """Export HSV format."""
-        with open(path, 'w') as f:
+        # newline='\n' disables Python's text-mode CRLF translation on Windows
+        # so the file is byte-identical across platforms.
+        with open(path, 'w', newline='\n') as f:
             f.write("# HSV Color Palette\n")
             f.write("# Format: H(0-360) S(0-100) V(0-100) Weight Name\n")
             f.write("#\n")
@@ -385,7 +403,9 @@ class PaletteFormats:
         width = cols * (swatch_size + padding) + padding
         height = rows * (swatch_size + padding) + padding + 30
         
-        with open(path, 'w') as f:
+        # newline='\n' disables Python's text-mode CRLF translation on Windows
+        # so the file is byte-identical across platforms.
+        with open(path, 'w', newline='\n') as f:
             f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
             f.write(f'<svg width="{width}" height="{height}" xmlns="http://www.w3.org/2000/svg">\n')
             f.write('  <title>Color Mixer Palette</title>\n')
@@ -420,7 +440,9 @@ class PaletteFormats:
     @staticmethod
     def _export_hex(path: str, colors: list[tuple[tuple[int, int, int], int]]) -> None:
         """Export HEX text format."""
-        with open(path, 'w') as f:
+        # newline='\n' disables Python's text-mode CRLF translation on Windows
+        # so the file is byte-identical across platforms.
+        with open(path, 'w', newline='\n') as f:
             f.write("# HEX Color Palette\n")
             f.write("# Format: #RRGGBB Weight Name\n")
             f.write("#\n")
@@ -432,7 +454,9 @@ class PaletteFormats:
     @staticmethod
     def _export_hsl(path: str, colors: list[tuple[tuple[int, int, int], int]]) -> None:
         """Export HSL format."""
-        with open(path, 'w') as f:
+        # newline='\n' disables Python's text-mode CRLF translation on Windows
+        # so the file is byte-identical across platforms.
+        with open(path, 'w', newline='\n') as f:
             f.write("# HSL Color Palette\n")
             f.write("# Format: H(0-360) S(0-100) L(0-100) Weight Name\n")
             f.write("#\n")
@@ -443,7 +467,9 @@ class PaletteFormats:
     @staticmethod
     def _export_txt(path: str, colors: list[tuple[tuple[int, int, int], int]]) -> None:
         """Export plain text format."""
-        with open(path, 'w') as f:
+        # newline='\n' disables Python's text-mode CRLF translation on Windows
+        # so the file is byte-identical across platforms.
+        with open(path, 'w', newline='\n') as f:
             f.write("Color Mixer Palette\n")
             f.write("=" * 60 + "\n\n")
             for i, (color, weight) in enumerate(colors):
@@ -490,7 +516,9 @@ class PaletteFormats:
                 "weight": int(weight)
             })
         
-        with open(path, 'w') as f:
+        # newline='\n' disables Python's text-mode CRLF translation on Windows
+        # so the file is byte-identical across platforms.
+        with open(path, 'w', newline='\n') as f:
             json.dump(palette_data, f, indent=2)
 
     # =========================================================================
