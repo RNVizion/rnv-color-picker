@@ -219,6 +219,26 @@ This runs both harnesses sequentially and produces a combined coverage report.
 
 A detailed write-up of the test architecture, banked patterns, and bug-discovery history is in [TESTING.md](TESTING.md).
 
+## Engineering Notes
+
+### Cross-project bug discovery
+
+A platform-dependent palette output bug was found here via cross-project comparison while debugging snapshot test failures in [RNV Color Mixer](https://github.com/RNVizion/rnv-color-mixer). Color Mixer's snapshot suite uses byte-level file comparison, which surfaced the issue immediately: every text-format palette export written on Windows contained different bytes than the same export written on Linux/macOS, because Python's default text-mode `open()` substitutes `\r\n` for `\n` on Windows only.
+
+Color Picker has **no snapshot test suite**, so the same bug existed here undetected. Palette files generated on Windows would round-trip fine in any text editor and parse identically when re-imported, but their byte content differed from non-Windows output — meaning palette files shared between platforms produced inconsistent results when consumed by tools that rely on exact byte matching (signed manifests, version-controlled palettes, content hashes, snapshot tests in downstream projects).
+
+The fix was applied to all text-format export methods in three patterns:
+
+- **Simple text writes** — added `newline='\n'` to `open(...)` calls so Python skips the Windows-only CRLF substitution
+- **JSON writes** — same fix applied to the methods that emit JSON-encoded palettes
+- **ElementTree XML and CLR exports** — switched to binary mode with explicit file objects so the writer controls line endings directly
+
+A second bug surfaced during the audit: the ASE (Adobe Swatch Exchange) export signature didn't accept the `metadata` parameter that the `export_palette` dispatcher passes to every format method. Calling the ASE exporter would raise `TypeError` immediately. Fix: added the parameter to match the dispatcher contract.
+
+The methodology — using one project's stronger test infrastructure to surface latent bugs in *sibling* projects that share design patterns — is now a documented part of how the RNVizion suite stays consistent. When a bug is found in one project, the fix isn't just ported; the entire family is audited for the same shape of error.
+
+For the full audit history including affected methods and verification approach, see [CHANGELOG.md](CHANGELOG.md).
+
 ## Architecture Highlights
 
 **Centralized config (`utils/config.py`)** — every color in the app comes from one file. Theme dicts (`DARK_THEME_COLORS`, `LIGHT_THEME_COLORS`, `IMAGE_MODE_COLORS`) are referenced by key throughout the codebase; brand colors (`BRAND_GOLD`, `BRAND_GOLD_DARK`) are typed as `Final[str]`. Any hardcoded color elsewhere is a bug.
