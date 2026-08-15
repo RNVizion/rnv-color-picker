@@ -100,16 +100,16 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
     
     # ── Base surfaces ──
     'window_bg':          '#000000',
-    'panel_bg':           '#1A1A1A',
-    'card_bg':            '#2A2A2A',
-    'bg_secondary':       '#2A2A2A',   # alias for card_bg
-    'input_bg':           '#1A1A1A',
-    'hover_bg':           '#3A3A3A',
+    'panel_bg':           '#1a1a1a',
+    'card_bg':            '#2a2a2a',
+    'bg_secondary':       '#2a2a2a',   # alias for card_bg
+    'input_bg':           '#1a1a1a',
+    'hover_bg':           '#3a3a3a',
     'pressed_bg':         '#333333',
     'selected_bg':        BRAND_GOLD,
     
     # ── Text ──
-    'text_primary':       '#E0E0E0',
+    'text_primary':       '#e0e0e0',
     'text_secondary':     '#888888',
     'text_muted':         '#888888',
     'text_disabled':      '#555555',
@@ -124,9 +124,9 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
     'input_border':       '#333333',
     
     # ── Dialog buttons (gold accent system) ──
-    'button_bg':          '#2A2A2A',
-    'button_text':        '#E0E0E0',
-    'button_hover_bg':    '#3A3A3A',
+    'button_bg':          '#2a2a2a',
+    'button_text':        '#e0e0e0',
+    'button_hover_bg':    '#3a3a3a',
     'button_hover_text':  BRAND_GOLD,
     'button_hover_border': BRAND_GOLD,
     'button_pressed_bg':  BRAND_GOLD,
@@ -134,24 +134,24 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
     'button_border':      '#333333',
     
     # ── Main window buttons (inverse system: dark hover, darker gray pressed, no gold) ──
-    'main_btn_bg':          '#1A1A1A',
-    'main_btn_text':        '#E0E0E0',
+    'main_btn_bg':          '#1a1a1a',
+    'main_btn_text':        '#e0e0e0',
     'main_btn_border':      '#333333',
     'main_btn_hover_bg':    '#333333',
-    'main_btn_hover_text':  '#E0E0E0',
+    'main_btn_hover_text':  '#e0e0e0',
     'main_btn_pressed_bg':  '#444444',
     'main_btn_pressed_text': '#000000',
     
     # ── Checkbox ──
-    'checkbox_bg':            '#1A1A1A',
+    'checkbox_bg':            '#1a1a1a',
     'checkbox_border':        '#555555',
     'checkbox_checked_bg':    BRAND_GOLD,
     'checkbox_checked_border': BRAND_GOLD,
     'checkbox_hover_border':  BRAND_GOLD,
     
     # ── Tabs ──
-    'tab_bg':             '#2A2A2A',
-    'tab_selected_bg':    '#1A1A1A',
+    'tab_bg':             '#2a2a2a',
+    'tab_selected_bg':    '#1a1a1a',
     'tab_hover_bg':       '#333333',
     'tab_border':         '#333333',
     'tab_indicator':      BRAND_GOLD,
@@ -166,22 +166,22 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
     
     # ── List / Table ──
     'list_bg':            '#252525',
-    'list_alt_bg':        '#1A1A1A',
+    'list_alt_bg':        '#1a1a1a',
     'list_selected_bg':   BRAND_GOLD,
     'list_selected_text': '#000000',
-    'list_hover_bg':      '#3A3A3A',
+    'list_hover_bg':      '#3a3a3a',
     'list_hover_text':    BRAND_GOLD,
-    'list_header_bg':     '#2A2A2A',
+    'list_header_bg':     '#2a2a2a',
     'list_grid':          '#333333',
     
     # ── Dialog / status ──
-    'dialog_bg':          '#1A1A1A',
+    'dialog_bg':          '#1a1a1a',
     'dialog_border':      '#333333',
     
     # ── Tooltip ──
-    'tooltip_bg':         '#2A2A2A',
+    'tooltip_bg':         '#2a2a2a',
     'tooltip_border':     BRAND_GOLD,
-    'tooltip_text':       '#E0E0E0',
+    'tooltip_text':       '#e0e0e0',
     
     # ── Semantic status ──
     'success':            '#28a745',
@@ -190,12 +190,12 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
     'info':               BRAND_GOLD,
     
     # ── Picker-specific (unique to this app) ──
-    'image_viewer_bg':       '#0A0A0A',
+    'image_viewer_bg':       '#0a0a0a',
     'scroll_area_bg':        '#000000',
-    'zoom_label_bg':         '#1A1A1A',
+    'zoom_label_bg':         '#1a1a1a',
     'zoom_label_border':     '#333333',
     'swatch_border_width':   2,
-    'swatch_border_color':   '#E0E0E0',
+    'swatch_border_color':   '#e0e0e0',
     'output_text_color':     BRAND_GOLD,
     'text_accent_secondary': BRAND_GOLD,
     
@@ -213,87 +213,87 @@ LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
     'name': 'Light',
     
     # ── Base surfaces ──
-    'window_bg':          '#F5F5F5',
-    'panel_bg':           '#F5F5F5',
-    'card_bg':            '#FFFFFF',
-    'bg_secondary':       '#FFFFFF',
-    'input_bg':           '#FFFFFF',
-    'hover_bg':           '#EEEEEE',
-    'pressed_bg':         '#E0E0E0',
+    'window_bg':          '#f5f5f5',
+    'panel_bg':           '#f5f5f5',
+    'card_bg':            '#ffffff',
+    'bg_secondary':       '#ffffff',
+    'input_bg':           '#ffffff',
+    'hover_bg':           '#eeeeee',
+    'pressed_bg':         '#e0e0e0',
     'selected_bg':        BRAND_GOLD_DARK,
     
     # ── Text ──
     'text_primary':       '#000000',
     'text_secondary':     '#666666',
     'text_muted':         '#666666',
-    'text_disabled':      '#AAAAAA',
+    'text_disabled':      '#aaaaaa',
     'text_accent':        BRAND_GOLD_DARK,
-    'text_on_accent':     '#FFFFFF',
+    'text_on_accent':     '#ffffff',
     
     # ── Borders ──
-    'border_default':     '#CCCCCC',
+    'border_default':     '#cccccc',
     'border_focus':       BRAND_GOLD_DARK,
-    'border_hover':       '#AAAAAA',
+    'border_hover':       '#aaaaaa',
     'border_accent':      BRAND_GOLD_DARK,
-    'input_border':       '#CCCCCC',
+    'input_border':       '#cccccc',
     
     # ── Dialog buttons (gold accent system) ──
-    'button_bg':          '#FFFFFF',
+    'button_bg':          '#ffffff',
     'button_text':        '#000000',
-    'button_hover_bg':    '#EEEEEE',
+    'button_hover_bg':    '#eeeeee',
     'button_hover_text':  BRAND_GOLD_DARK,
     'button_hover_border': BRAND_GOLD_DARK,
     'button_pressed_bg':  BRAND_GOLD_DARK,
-    'button_pressed_text': '#FFFFFF',
-    'button_border':      '#CCCCCC',
+    'button_pressed_text': '#ffffff',
+    'button_border':      '#cccccc',
     
     # ── Main window buttons (inverse system: dark hover, darker gray pressed, no gold) ──
-    'main_btn_bg':          '#FFFFFF',
+    'main_btn_bg':          '#ffffff',
     'main_btn_text':        '#000000',
-    'main_btn_border':      '#CCCCCC',
+    'main_btn_border':      '#cccccc',
     'main_btn_hover_bg':    '#333333',
     'main_btn_hover_text':  '#000000',
     'main_btn_pressed_bg':  '#444444',
-    'main_btn_pressed_text': '#FFFFFF',
+    'main_btn_pressed_text': '#ffffff',
     
     # ── Checkbox ──
-    'checkbox_bg':            '#FFFFFF',
-    'checkbox_border':        '#AAAAAA',
+    'checkbox_bg':            '#ffffff',
+    'checkbox_border':        '#aaaaaa',
     'checkbox_checked_bg':    BRAND_GOLD_DARK,
     'checkbox_checked_border': BRAND_GOLD_DARK,
     'checkbox_hover_border':  BRAND_GOLD_DARK,
     
     # ── Tabs ──
-    'tab_bg':             '#E0E0E0',
-    'tab_selected_bg':    '#FFFFFF',
-    'tab_hover_bg':       '#D0D0D0',
-    'tab_border':         '#CCCCCC',
+    'tab_bg':             '#e0e0e0',
+    'tab_selected_bg':    '#ffffff',
+    'tab_hover_bg':       '#d0d0d0',
+    'tab_border':         '#cccccc',
     'tab_indicator':      BRAND_GOLD_DARK,
     'tab_selected_text':  BRAND_GOLD_DARK,
     'tab_hover_text':     BRAND_GOLD_DARK,
     
     # ── Scrollbars ──
-    'scrollbar_bg':            '#E0E0E0',
-    'scrollbar_handle':        '#AAAAAA',
+    'scrollbar_bg':            '#e0e0e0',
+    'scrollbar_handle':        '#aaaaaa',
     'scrollbar_handle_hover':  '#888888',
-    'scrollbar_border':        '#CCCCCC',
+    'scrollbar_border':        '#cccccc',
     
     # ── List / Table ──
-    'list_bg':            '#FFFFFF',
-    'list_alt_bg':        '#F8F8F8',
+    'list_bg':            '#ffffff',
+    'list_alt_bg':        '#f8f8f8',
     'list_selected_bg':   BRAND_GOLD_DARK,
-    'list_selected_text': '#FFFFFF',
-    'list_hover_bg':      '#EEEEEE',
+    'list_selected_text': '#ffffff',
+    'list_hover_bg':      '#eeeeee',
     'list_hover_text':    BRAND_GOLD_DARK,
-    'list_header_bg':     '#F0F0F0',
-    'list_grid':          '#DDDDDD',
+    'list_header_bg':     '#f0f0f0',
+    'list_grid':          '#dddddd',
     
     # ── Dialog / status ──
-    'dialog_bg':          '#F5F5F5',
-    'dialog_border':      '#CCCCCC',
+    'dialog_bg':          '#f5f5f5',
+    'dialog_border':      '#cccccc',
     
     # ── Tooltip ──
-    'tooltip_bg':         '#FFFFFF',
+    'tooltip_bg':         '#ffffff',
     'tooltip_border':     BRAND_GOLD_DARK,
     'tooltip_text':       '#000000',
     
@@ -304,9 +304,9 @@ LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
     'info':               BRAND_GOLD_DARK,
     
     # ── Picker-specific ──
-    'image_viewer_bg':       '#E8E8E8',
-    'scroll_area_bg':        '#FFFFFF',
-    'zoom_label_bg':         '#FFFFFF',
+    'image_viewer_bg':       '#e8e8e8',
+    'scroll_area_bg':        '#ffffff',
+    'zoom_label_bg':         '#ffffff',
     'zoom_label_border':     '#000000',
     'swatch_border_width':   2,
     'swatch_border_color':   '#000000',
@@ -354,20 +354,20 @@ IMAGE_MODE_COLORS: Final[dict[str, str | int]] = {
 # contrast against. They must stay black and white regardless of the active
 # theme or the demo loses its meaning.
 CONTRAST_DEMO_BLACK_BG: Final[str] = "#000000"
-CONTRAST_DEMO_WHITE_BG: Final[str] = "#FFFFFF"
+CONTRAST_DEMO_WHITE_BG: Final[str] = "#ffffff"
 CONTRAST_DEMO_BLACK_FG: Final[str] = "#000000"
-CONTRAST_DEMO_WHITE_FG: Final[str] = "#FFFFFF"
+CONTRAST_DEMO_WHITE_FG: Final[str] = "#ffffff"
 
 CONTRAST_ON_LIGHT: Final[str] = "#000000"
 """Black text for use on light/bright backgrounds (e.g. color swatches)"""
 
-CONTRAST_ON_DARK: Final[str] = "#FFFFFF"
+CONTRAST_ON_DARK: Final[str] = "#ffffff"
 """White text for use on dark/dim backgrounds (e.g. color swatches)"""
 
 SWATCH_BORDER_ON_LIGHT: Final[str] = "#333"
 """Dark border for color swatches on light-colored surfaces"""
 
-SWATCH_BORDER_ON_DARK: Final[str] = "#CCC"
+SWATCH_BORDER_ON_DARK: Final[str] = "#ccc"
 """Light border for color swatches on dark-colored surfaces"""
 
 # ── Swatch preview border ──
@@ -381,15 +381,15 @@ PREVIEW_BORDER_THIN: Final[str] = "#444"
 # High-visibility terminal green on semi-transparent black. Used by the
 # floating debug dimension label during development. Must be readable on
 # any window contents regardless of theme.
-DEBUG_TEXT: Final[str] = "#00FF00"
+DEBUG_TEXT: Final[str] = "#00ff00"
 DEBUG_BG: Final[str] = "rgba(0, 0, 0, 200)"
 
 # ── Status / feedback colors (universal semantic meaning) ──
 STATUS_SUCCESS_BG: Final[str] = "#4caf50"
-STATUS_SUCCESS_FG: Final[str] = "#FFFFFF"
+STATUS_SUCCESS_FG: Final[str] = "#ffffff"
 STATUS_ERROR_BG:   Final[str] = "#f44336"
-STATUS_ERROR_FG:   Final[str] = "#FFFFFF"
-STATUS_ACTIVE_COLOR: Final[str] = "#4CAF50"
+STATUS_ERROR_FG:   Final[str] = "#ffffff"
+STATUS_ACTIVE_COLOR: Final[str] = "#4caf50"
 
 
 # ── Semi-transparent black overlays (fixed visual effects) ──
@@ -411,7 +411,7 @@ OVERLAY_BLACK_HEAVY:  Final[tuple[int, int, int, int]] = (0, 0, 0, 180)
 # Fixed paper-white background and ink-black stroke for the SVG export
 # format. Theme-independent because exported SVGs need to look the same
 # regardless of which theme was active at export time.
-SVG_EXPORT_BG:     Final[str] = "#FFFFFF"
+SVG_EXPORT_BG:     Final[str] = "#ffffff"
 """Background fill for SVG palette export (paper white)."""
 
 SVG_EXPORT_STROKE: Final[str] = "#000000"
