@@ -31,6 +31,9 @@ yellow + blue → green-ish in artist's RYB wheel, Kubelka-Munk darkening).
 
 import math
 
+import ast
+import pathlib
+
 import pytest
 from hypothesis import given, strategies as st, settings, HealthCheck
 
@@ -42,6 +45,32 @@ from core.color_math import ColorMath
 # ---------------------------------------------------------------------------
 
 # A single RGB channel value
+def _int_rejects(s: str) -> bool:
+    """True when int(s) raises -- exactly what the code under test relies on.
+
+    Asking int() directly is the point. The predicate this replaced,
+    ``not s.lstrip("-").isdigit()``, was an approximation of "int() cannot
+    parse this", and it was wrong in both directions:
+
+        int() strips surrounding whitespace     '0 ', ' 5', '1\xa0'
+        int() accepts a leading sign            '+5'
+        int() honours PEP 515 underscores       '5_0'
+        isdigit() accepts superscripts          '\xb2', which int() rejects
+
+    The first four were handed to tests asserting rejection, so the suite
+    failed whenever hypothesis happened to generate one -- intermittently,
+    because it explores a different input space each run. The last cost
+    real coverage: genuine garbage excluded from the strategy.
+
+    A predicate defined in terms of the operation cannot drift from it.
+    """
+    try:
+        int(s)
+    except (TypeError, ValueError):
+        return True
+    return False
+
+
 channel = st.integers(min_value=0, max_value=255)
 # A full RGB triple
 rgb = st.tuples(channel, channel, channel)
@@ -235,9 +264,7 @@ class TestSafeRgb:
         st.lists(st.integers()),
         # Text that genuinely can't be int()-parsed. A bare numeric string
         # like "0" or "-5" is *valid* int input — exclude those.
-        st.text(min_size=1, max_size=5).filter(
-            lambda s: not s.lstrip("-").isdigit()
-        ),
+        st.text(min_size=1, max_size=5).filter(_int_rejects),
     ))
     def test_garbage_returns_default(self, garbage):
         # Any non-numeric arg should hit the except → default
@@ -265,9 +292,7 @@ class TestIsValidRgb:
     @given(garbage=st.one_of(
         st.none(),
         # Same filter as TestSafeRgb: exclude numeric-looking strings
-        st.text(min_size=1, max_size=5).filter(
-            lambda s: not s.lstrip("-").isdigit()
-        ),
+        st.text(min_size=1, max_size=5).filter(_int_rejects),
     ))
     def test_returns_false_for_non_numeric(self, garbage):
         # Any non-numeric arg trips int(_) → False via except
@@ -555,3 +580,61 @@ class TestGenerateColorPalette:
         # Source default in the signature is count=5
         result = ColorMath.generate_color_palette((128, 128, 128))
         assert len(result) == 5
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# THE CONTRACT THE OLD FILTER GOT WRONG
+# ═══════════════════════════════════════════════════════════════════════════
+
+#: Strings int() accepts and str.isdigit() does not. Under the previous
+#: filter every one of these was reachable as "garbage" and fed to a test
+#: asserting rejection.
+INT_PARSEABLE_BUT_NOT_ISDIGIT = ["0 ", " 5", "+5", "5_0", "1\xa0"]
+
+
+@pytest.mark.parametrize("text", INT_PARSEABLE_BUT_NOT_ISDIGIT)
+def test_int_parseable_strings_are_accepted(text):
+    """These are valid input, not garbage, and the app is right to take them.
+
+    is_valid_rgb coerces with int() inside a try/except -- that is its
+    documented behaviour, and rnv-color-mixer and
+    rnv-color-palette-manager share the implementation. Pinning it here
+    means a future 'tidy-up' of the filter has to argue with a test rather
+    than quietly reintroduce the bug.
+    """
+    assert ColorMath.is_valid_rgb(text, 0, 0) is True
+    assert ColorMath.safe_rgb(text, 128, 128) == (int(text), 128, 128)
+
+
+def test_isdigit_is_not_used_to_decide_what_int_can_parse():
+    """A source guard, because the old predicate looked entirely reasonable.
+
+    It read as 'not a digit string', which is close enough to 'int() can't
+    parse it' to survive review, and the two differ on whitespace, signs,
+    underscores and Unicode digit forms.
+    """
+    source = pathlib.Path(__file__).read_text(encoding="utf-8")
+    lines = source.splitlines()
+    offenders = [
+        f"  line {node.lineno}: {lines[node.lineno - 1].strip()[:70]}"
+        for node in ast.walk(ast.parse(source))
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "isdigit"
+    ]
+    assert not offenders, (
+        "isdigit() is back in this file. It is not a test for what int() "
+        "accepts:\n" + "\n".join(offenders))
+
+
+def test_the_garbage_strategy_still_produces_garbage():
+    """Guard the filter. A predicate that rejected everything would leave
+    the strategy empty and every garbage test would pass vacuously."""
+    rejected = [s for s in ["abc", "", "5.", "_5", "\xb2", "??"]
+                if _int_rejects(s)]
+    assert len(rejected) >= 5, (
+        f"_int_rejects only classified {len(rejected)} of 6 known-unparseable "
+        f"strings as garbage")
+    assert not _int_rejects("0 "), (
+        "_int_rejects calls '0 ' garbage, but int('0 ') == 0 -- the "
+        "predicate has drifted from the operation again")
