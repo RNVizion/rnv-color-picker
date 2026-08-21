@@ -24,7 +24,7 @@ from utils.session_manager import get_session_manager
 from utils.error_handler import ErrorHandler
 from utils.signal_manager import SignalConnectionManager
 from utils.config import (
-    BRAND_GOLD, BRAND_GOLD_DARK,
+    BRAND_GOLD, BRAND_DARK_GOLD, BRAND_DARK_GOLD_DEEP,
     PREVIEW_BORDER_THIN,
     CONTRAST_DEMO_BLACK_BG, CONTRAST_DEMO_WHITE_BG,
     CONTRAST_DEMO_BLACK_FG, CONTRAST_DEMO_WHITE_FG,
@@ -452,7 +452,7 @@ class SettingsPanel(QDialog):
         layout.addWidget(self._create_section_divider())
         
         auto_header = QLabel("Auto-Save Options")
-        auto_header.setStyleSheet(StylesheetCache.get_subheader_stylesheet(self._get_accent()))
+        auto_header.setStyleSheet(StylesheetCache.get_subheader_stylesheet(self._get_accent_text()))
         layout.addWidget(auto_header)
         
         self.session_autosave_check = QCheckBox("Auto-save session on exit")
@@ -710,7 +710,8 @@ class SettingsPanel(QDialog):
         # Check if ColorHarmony is available
         if not ColorHarmony:
             no_module = QLabel("Color Harmony module not available.\nPlace color_harmony.py in core/ folder.")
-            no_module.setStyleSheet(StylesheetCache.get_error_stylesheet())
+            no_module.setStyleSheet(StylesheetCache.get_error_stylesheet(
+                self._get_theme()['status_error_text']))
             no_module.setAlignment(Qt.AlignmentFlag.AlignCenter)
             layout.addWidget(no_module)
             layout.addStretch()
@@ -1000,7 +1001,8 @@ class SettingsPanel(QDialog):
         # Check if ColorAccessibility is available
         if not ColorAccessibility:
             no_module = QLabel("Accessibility module not available.\nPlace accessibility.py in core/ folder.")
-            no_module.setStyleSheet(StylesheetCache.get_error_stylesheet())
+            no_module.setStyleSheet(StylesheetCache.get_error_stylesheet(
+                self._get_theme()['status_error_text']))
             no_module.setAlignment(Qt.AlignmentFlag.AlignCenter)
             layout.addWidget(no_module)
             layout.addStretch()
@@ -1547,7 +1549,7 @@ class SettingsPanel(QDialog):
         for section_name, section_shortcuts in shortcuts:
             # Section header
             section_header = QLabel(section_name)
-            section_header.setStyleSheet(f"font-weight: bold; color: {self._get_accent()}; padding-top: 8px;")
+            section_header.setStyleSheet(f"font-weight: bold; color: {self._get_accent_text()}; padding-top: 8px;")
             shortcuts_layout.addWidget(section_header)
             
             # Shortcuts in section
@@ -1561,7 +1563,7 @@ class SettingsPanel(QDialog):
         
         # Tip
         tip = QLabel("Tip: Use keyboard shortcuts for fastest workflow!")
-        tip.setStyleSheet(f"color: {self._get_accent()}; font-style: italic; padding-top: 10px;")
+        tip.setStyleSheet(f"color: {self._get_accent_text()}; font-style: italic; padding-top: 10px;")
         tip.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(tip)
         
@@ -1760,8 +1762,22 @@ class SettingsPanel(QDialog):
         """Return the correct brand gold for the current theme."""
         if self.parent_app and hasattr(self.parent_app, 'theme_manager'):
             is_dark = self.parent_app.theme_manager.current_theme in ('dark', 'image')
-            return BRAND_GOLD if is_dark else BRAND_GOLD_DARK
+            return BRAND_GOLD if is_dark else BRAND_DARK_GOLD
         return BRAND_GOLD  # Default to dark gold
+
+    def _get_accent_text(self) -> str:
+        """Return the brand gold to use for gold TEXT in the current theme.
+
+        Separate from _get_accent because the two cannot share a value. On
+        a light ground BRAND_DARK_GOLD clears 4.5:1 as text only against
+        pure white, so text takes the deep derivative; fills keep the
+        accent, which the deep value cannot replace because black on it is
+        3.7806.
+        """
+        if self.parent_app and hasattr(self.parent_app, 'theme_manager'):
+            is_dark = self.parent_app.theme_manager.current_theme in ('dark', 'image')
+            return BRAND_GOLD if is_dark else BRAND_DARK_GOLD_DEEP
+        return BRAND_GOLD
 
     def _get_theme(self) -> dict:
         """Return the current theme color dict for theme-aware styling."""
@@ -1773,7 +1789,7 @@ class SettingsPanel(QDialog):
     def _create_section_header(self, text: str) -> QLabel:
         """Create a section header label."""
         header = QLabel(text)
-        accent = self._get_accent()
+        accent = self._get_accent_text()
         header.setStyleSheet(f"""
             font-weight: bold;
             font-size: 13px;

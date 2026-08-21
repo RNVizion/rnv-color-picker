@@ -18,9 +18,9 @@ from PyQt6.QtWidgets import QApplication
 
 from utils.logger import Logger
 from utils.config import (
-    BRAND_GOLD, BRAND_GOLD_DARK,
+    BRAND_GOLD, BRAND_DARK_GOLD,
     BRAND_GOLD_HOVER, BRAND_GOLD_PRESSED,
-    BRAND_GOLD_DARK_HOVER, BRAND_GOLD_DARK_PRESSED,
+    BRAND_DARK_GOLD_HOVER, BRAND_DARK_GOLD_PRESSED,
     SWATCH_BORDER_ON_LIGHT,
     CONTRAST_ON_LIGHT, CONTRAST_ON_DARK,
     STATUS_ERROR_BG,
@@ -496,10 +496,10 @@ class StylesheetCache:
                 hover   = BRAND_GOLD_HOVER
                 pressed = BRAND_GOLD_PRESSED
             else:
-                bg      = BRAND_GOLD_DARK
+                bg      = BRAND_DARK_GOLD
                 fg      = CONTRAST_ON_DARK    # white text on dark gold
-                hover   = BRAND_GOLD_DARK_HOVER
-                pressed = BRAND_GOLD_DARK_PRESSED
+                hover   = BRAND_DARK_GOLD_HOVER
+                pressed = BRAND_DARK_GOLD_PRESSED
             cls._cache[key] = f"""
                 QPushButton {{
                     background-color: {bg};
@@ -634,12 +634,17 @@ class StylesheetCache:
         return cls._cache[key]
     
     @classmethod
-    def get_error_stylesheet(cls) -> str:
-        """Get cached error message stylesheet."""
-        key = ('static', 'error')
+    def get_error_stylesheet(cls, color: str = STATUS_ERROR_BG) -> str:
+        """Get cached error message stylesheet.
+
+        Takes the colour rather than baking one in: this label
+        renders on the light panel (#f5f5f5) and the dark panel
+        (#1a1a1a), and no single red clears both.
+        """
+        key = ('static', 'error', color)
         
         if key not in cls._cache:
-            cls._cache[key] = f"color: {STATUS_ERROR_BG}; padding: 20px;"
+            cls._cache[key] = f"color: {color}; padding: 20px;"
         
         return cls._cache[key]
     

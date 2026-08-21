@@ -253,8 +253,8 @@ class TestSettingsPanelFoundation:
         assert panel._get_accent() == config.BRAND_GOLD
 
     def test_get_accent_light_theme_uses_brand_gold_dark(self, panel_light):
-        # Light theme uses the muted BRAND_GOLD_DARK
-        assert panel_light._get_accent() == config.BRAND_GOLD_DARK
+        # Light theme uses the muted BRAND_DARK_GOLD
+        assert panel_light._get_accent() == config.BRAND_DARK_GOLD
 
     def test_get_theme_returns_dict(self, panel):
         theme = panel._get_theme()

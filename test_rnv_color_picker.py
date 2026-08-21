@@ -1321,9 +1321,9 @@ class TestConfig(unittest.TestCase):
 
     # ── Brand colors ──
     def test_brand_gold(self):       self.assertEqual(config.BRAND_GOLD, "#d2bc93")
-    def test_brand_gold_dark(self):  self.assertEqual(config.BRAND_GOLD_DARK, "#b19145")
+    def test_brand_gold_dark(self):  self.assertEqual(config.BRAND_DARK_GOLD, "#8c7337")
     def test_brand_gold_rgb(self):   self.assertEqual(config.BRAND_GOLD_RGB, (210,188,147))
-    def test_brand_gold_dark_rgb(self): self.assertEqual(config.BRAND_GOLD_DARK_RGB, (177,145,69))
+    def test_brand_gold_dark_rgb(self): self.assertEqual(config.BRAND_DARK_GOLD_RGB, (140,115,55))
 
     # ── Theme dicts present ──
     def test_dark_theme_exists(self):  self.assertIsInstance(config.DARK_THEME_COLORS, dict)
@@ -1340,7 +1340,7 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(config.DARK_THEME_COLORS["tooltip_border"], config.BRAND_GOLD)
 
     def test_theme_brand_gold_light(self):
-        self.assertEqual(config.LIGHT_THEME_COLORS["text_accent"], config.BRAND_GOLD_DARK)
+        self.assertEqual(config.LIGHT_THEME_COLORS["text_accent"], config.BRAND_DARK_GOLD_DEEP)
 
     # ── Required keys present in all 3 themes ──
     def test_all_themes_have_required_keys(self):
@@ -1819,7 +1819,7 @@ class TestEdgeCases(unittest.TestCase):
         # but well above the conversational-readability floor. Just check it's
         # in a reasonable contrast range.
         ratio = ColorAccessibility.calculate_contrast_ratio(
-            config.BRAND_GOLD_DARK_RGB, (255,255,255))
+            config.BRAND_DARK_GOLD_RGB, (255,255,255))
         self.assertGreater(ratio, 2.5)
         self.assertLess(ratio, 5.0)
 

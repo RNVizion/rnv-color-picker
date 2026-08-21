@@ -215,13 +215,13 @@ class TestLogoFallbacks:
 # ─────────────────────────────────────────────────────────────────────────────
 
 class TestGetAccent:
-    """`_get_accent` returns BRAND_GOLD for dark/image themes, BRAND_GOLD_DARK
+    """`_get_accent` returns BRAND_GOLD for dark/image themes, BRAND_DARK_GOLD
     for light, and BRAND_GOLD as a default fallback when no parent is set or
     accessing theme_manager raises."""
 
     def test_dark_theme_returns_brand_gold(self, dialog):
         # Default fixture is 'dark'
-        assert dialog._get_accent() == config.BRAND_GOLD
+        assert dialog._get_accent_text() == config.BRAND_GOLD
 
     def test_light_theme_returns_brand_gold_dark(self, qtbot, monkeypatch):
         real_parent = _make_mock_parent("light", with_window_icon=False)
@@ -229,7 +229,7 @@ class TestGetAccent:
         dlg = AboutDialog(parent=real_parent)
         dlg._test_real_parent = real_parent
         qtbot.addWidget(dlg)
-        assert dlg._get_accent() == config.BRAND_GOLD_DARK
+        assert dlg._get_accent_text() == config.BRAND_DARK_GOLD_DEEP
 
     def test_image_theme_returns_brand_gold(self, qtbot, monkeypatch):
         real_parent = _make_mock_parent("image", with_window_icon=False)
@@ -238,13 +238,13 @@ class TestGetAccent:
         dlg._test_real_parent = real_parent
         qtbot.addWidget(dlg)
         # 'image' theme is treated like 'dark' for accent purposes
-        assert dlg._get_accent() == config.BRAND_GOLD
+        assert dlg._get_accent_text() == config.BRAND_GOLD
 
     def test_no_parent_defaults_to_brand_gold(self, qtbot, monkeypatch):
         monkeypatch.setattr(os.path, "exists", lambda p: False)
         dlg = AboutDialog(parent=None)
         qtbot.addWidget(dlg)
-        assert dlg._get_accent() == config.BRAND_GOLD
+        assert dlg._get_accent_text() == config.BRAND_GOLD
 
     def test_theme_manager_exception_falls_back_to_brand_gold(self, qtbot, monkeypatch):
         # If accessing theme_manager raises, the try/except catches it and
@@ -262,7 +262,7 @@ class TestGetAccent:
         dlg = AboutDialog(parent=real_parent)
         dlg._test_real_parent = real_parent
         qtbot.addWidget(dlg)
-        assert dlg._get_accent() == config.BRAND_GOLD
+        assert dlg._get_accent_text() == config.BRAND_GOLD
 
 
 class TestGetTheme:

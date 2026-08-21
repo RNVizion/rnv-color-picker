@@ -241,7 +241,7 @@ For the full audit history including affected methods and verification approach,
 
 ## Architecture Highlights
 
-**Centralized config (`utils/config.py`)** — every color in the app comes from one file. Theme dicts (`DARK_THEME_COLORS`, `LIGHT_THEME_COLORS`, `IMAGE_MODE_COLORS`) are referenced by key throughout the codebase; brand colors (`BRAND_GOLD`, `BRAND_GOLD_DARK`) are typed as `Final[str]`. Any hardcoded color elsewhere is a bug.
+**Centralized config (`utils/config.py`)** — every color in the app comes from one file. Theme dicts (`DARK_THEME_COLORS`, `LIGHT_THEME_COLORS`, `IMAGE_MODE_COLORS`) are referenced by key throughout the codebase; brand colors (`BRAND_GOLD`, `BRAND_DARK_GOLD`) are typed as `Final[str]`. Any hardcoded color elsewhere is a bug.
 
 **Signal lifecycle management (`utils/signal_manager.py`)** — every Qt signal connection is registered with a `SignalConnectionManager`, tagged with a `track_as` label, and disconnected on widget close. Eliminates the leak-then-crash class of PyQt bugs.
 

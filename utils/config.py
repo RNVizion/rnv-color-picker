@@ -4,7 +4,7 @@ Application configuration and theme management for RNV Color Picker.
 This module is the SINGLE SOURCE OF TRUTH for all colors in the application.
 
 Structure:
-- Brand colors (BRAND_GOLD, BRAND_GOLD_DARK) — referenced everywhere, never duplicated
+- Brand colors (BRAND_GOLD, BRAND_DARK_GOLD) — referenced everywhere, never duplicated
 - Theme color dicts (DARK_THEME_COLORS, LIGHT_THEME_COLORS, IMAGE_MODE_COLORS)
 - Standalone constants (CONTRAST_ON_LIGHT, PREVIEW_BORDER, DEBUG_TEXT, etc.)
 - get_theme_colors() entry function
@@ -66,29 +66,119 @@ ICONS_DIR = os.path.join(RESOURCES_DIR, "icons")
 # BRAND COLORS
 # ============================================================================
 
+# Registered values are mirrored from RNVizion/rnv-brand (engine/brand.py).
+# Everything else is COMPUTED from them, never written down, so a derivative
+# cannot drift away from the colour it was derived from.
+#
+# This file previously held six hand-written variants. One of them, the light
+# hover #c4a458, was a tint of a value that had since been retired -- orphaned,
+# with nothing to flag it. That is the failure derivation prevents.
+
+
+def _to_rgb(hex_color: str) -> tuple[int, int, int]:
+    """Split a six-digit hex colour into an (r, g, b) tuple."""
+    h = hex_color.lstrip('#')
+    if len(h) != 6:
+        raise ValueError(f"expected a six-digit hex colour, got {hex_color!r}")
+    return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+
+
+def lighten(hex_color: str, step: int) -> str:
+    """Shift every channel by the same number of 8-bit steps.
+
+    A uniform per-channel shift holds hue exactly, which is what keeps a
+    derived gold recognisably the same gold. It is also the method the light
+    palettes already used before the alignment. Negative darkens.
+    """
+    return '#' + ''.join(
+        f'{max(0, min(255, c + step)):02x}' for c in _to_rgb(hex_color)
+    )
+
+
 BRAND_GOLD: Final[str] = "#d2bc93"
-"""Primary brand gold - use for hover states, highlights, tooltips, accents in Dark/Image mode"""
+"""Primary brand gold -- dark-mode accents, highlights, tooltips.
 
-BRAND_GOLD_DARK: Final[str] = "#b19145"
-"""Darker brand gold - use for borders, pressed states, and contrast in Light mode"""
+Registered brand value. Unchanged by the alignment.
+"""
 
-BRAND_GOLD_RGB: Final[tuple[int, int, int]] = (210, 188, 147)
-"""Brand gold as RGB tuple"""
+BRAND_DARK_GOLD: Final[str] = "#8c7337"
+"""Brand dark gold -- light-mode FILLS, borders and pressed states.
 
-BRAND_GOLD_DARK_RGB: Final[tuple[int, int, int]] = (177, 145, 69)
-"""Dark brand gold as RGB tuple"""
+Registered brand value. It replaced the app-local #b19145, which did one
+job of six: as text on white it measured 2.9976 against a 4.5 floor, and
+as a border 2.9976 against 3.0 -- short by 0.0024, which is why a contrast
+tool displaying "3.00" never surfaced it.
 
-BRAND_GOLD_HOVER: Final[str] = "#dcc9a3"
-"""Lighter gold tint for hover on gold-filled elements (dark theme)"""
+Carries white text at 4.5429 and black at 4.6226. Black stays the ruled
+pairing and the better number.
+"""
 
-BRAND_GOLD_PRESSED: Final[str] = "#b7a480"
-"""Slightly darker gold for pressed state (dark theme)"""
+BRAND_DARK_GOLD_DEEP: Final[str] = lighten(BRAND_DARK_GOLD, -14)  # -> #7e6529
+"""Derived. The one light-mode derivative, serving two roles.
 
-BRAND_GOLD_DARK_HOVER: Final[str] = "#c4a458"
-"""Lighter tint of dark gold for hover (light theme)"""
+BRAND_DARK_GOLD clears 4.5:1 as TEXT against pure white and nothing else
+(#f5f5f5 4.1670, #eeeeee 3.9156). And a hover background carrying white
+text needs a gold dark enough for white. Both roles want the same thing,
+so they share one value rather than each getting its own.
 
-BRAND_GOLD_DARK_PRESSED: Final[str] = "#8a7236"
-"""Darker tint of dark gold for pressed state (light theme)"""
+    white on it ............ 5.5547
+    as text on #f5f5f5 ..... 5.0949
+    as text on #eeeeee ..... 4.7875
+    as text on #e8e8e8 ..... 4.5334   <- binding
+
+-14 is the smallest uniform step that clears all four; -13 gives 4.4675
+on #e8e8e8 and fails. Hue is unchanged.
+
+NEVER use as a fill under black text -- black on it is 3.7806. Below
+#e8e8e8 gold does not carry text at all; that is a ruling, not a gap.
+"""
+
+BRAND_DARK_GOLD_HOVER: Final[str] = BRAND_DARK_GOLD_DEEP
+"""Light-mode hover. Hover moves AWAY from its ground.
+
+A dark ground takes a lighter hover; a light ground takes a deeper one.
+The retired #c4a458 went lighter on a light ground -- toward it -- which
+is why white measured 2.3868 on it. Stated as "a lighter tint for hover
+feedback", the old rule was wrong half the time.
+"""
+
+BRAND_DARK_GOLD_PRESSED: Final[str] = BRAND_DARK_GOLD
+"""Light-mode pressed. It IS the accent.
+
+Two reasons, and either alone would be enough. The brand runs two golds
+per mode and light spends its second on BRAND_DARK_GOLD_DEEP. And
+darkening past BRAND_DARK_GOLD drops black-on-gold under the floor, which
+would force white text and break the register's text-on-gold rule.
+"""
+
+BRAND_GOLD_HOVER: Final[str] = lighten(BRAND_GOLD, 13)      # -> #dfc9a0
+"""Dark-mode hover. Derived, replacing the hand-written #dcc9a3.
+
+The old hand-written value's deltas were +10/+13/+16 -- non-uniform, so it had
+drifted off BRAND_GOLD's hue. A uniform step snaps it back.
+"""
+
+BRAND_GOLD_PRESSED: Final[str] = BRAND_GOLD
+"""Dark-mode pressed. It IS the accent, mirroring light mode exactly.
+
+The brand runs TWO golds per mode -- the registered one and one derived
+from it -- and no more. Dark spends its second on hover, so pressed
+returns to the accent rather than claiming a third.
+
+The interaction still reads: rest sits at the accent, hover lifts away
+from the dark ground, pressed drops back to rest. That is the same shape
+light uses, where hover deepens away from the light ground and pressed
+returns. The hand-written #b7a480 it replaces was a third gold serving
+one key.
+"""
+
+BRAND_GOLD_RGB: Final[tuple[int, int, int]] = _to_rgb(BRAND_GOLD)
+"""Derived. A hardcoded tuple is invisible to every hex-based search, so
+it survives sweeps that catch every other reference to the colour."""
+
+BRAND_DARK_GOLD_RGB: Final[tuple[int, int, int]] = _to_rgb(BRAND_DARK_GOLD)
+"""Derived, same reason. This one held (177, 145, 69) -- the retired gold,
+in the one form no sweep would have found."""
 
 
 # ============================================================================
@@ -96,6 +186,10 @@ BRAND_GOLD_DARK_PRESSED: Final[str] = "#8a7236"
 # ============================================================================
 
 DARK_THEME_COLORS: Final[dict[str, str | int]] = {
+    # Error message text. Theme-aware because no single red clears both
+    # grounds: the register's #e56b77 is a dark-theme value and measures
+    # 2.8745 on the light panel.
+    'status_error_text': '#e56b77',
     'name': 'Dark',
     
     # ── Base surfaces ──
@@ -210,6 +304,10 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
 # ============================================================================
 
 LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
+    # Error message text. Theme-aware because no single red clears both
+    # grounds: the register's #e56b77 is a dark-theme value and measures
+    # 2.8745 on the light panel.
+    'status_error_text': '#dc3545',
     'name': 'Light',
     
     # ── Base surfaces ──
@@ -220,30 +318,30 @@ LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
     'input_bg':           '#ffffff',
     'hover_bg':           '#eeeeee',
     'pressed_bg':         '#e0e0e0',
-    'selected_bg':        BRAND_GOLD_DARK,
+    'selected_bg':        BRAND_DARK_GOLD,
     
     # ── Text ──
     'text_primary':       '#000000',
     'text_secondary':     '#666666',
     'text_muted':         '#666666',
     'text_disabled':      '#aaaaaa',
-    'text_accent':        BRAND_GOLD_DARK,
+    'text_accent':        BRAND_DARK_GOLD_DEEP,
     'text_on_accent':     '#ffffff',
     
     # ── Borders ──
     'border_default':     '#cccccc',
-    'border_focus':       BRAND_GOLD_DARK,
+    'border_focus':       BRAND_DARK_GOLD,
     'border_hover':       '#aaaaaa',
-    'border_accent':      BRAND_GOLD_DARK,
+    'border_accent':      BRAND_DARK_GOLD,
     'input_border':       '#cccccc',
     
     # ── Dialog buttons (gold accent system) ──
     'button_bg':          '#ffffff',
     'button_text':        '#000000',
     'button_hover_bg':    '#eeeeee',
-    'button_hover_text':  BRAND_GOLD_DARK,
-    'button_hover_border': BRAND_GOLD_DARK,
-    'button_pressed_bg':  BRAND_GOLD_DARK,
+    'button_hover_text':  BRAND_DARK_GOLD_DEEP,
+    'button_hover_border': BRAND_DARK_GOLD,
+    'button_pressed_bg':  BRAND_DARK_GOLD,
     'button_pressed_text': '#ffffff',
     'button_border':      '#cccccc',
     
@@ -259,18 +357,18 @@ LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
     # ── Checkbox ──
     'checkbox_bg':            '#ffffff',
     'checkbox_border':        '#aaaaaa',
-    'checkbox_checked_bg':    BRAND_GOLD_DARK,
-    'checkbox_checked_border': BRAND_GOLD_DARK,
-    'checkbox_hover_border':  BRAND_GOLD_DARK,
+    'checkbox_checked_bg':    BRAND_DARK_GOLD,
+    'checkbox_checked_border': BRAND_DARK_GOLD,
+    'checkbox_hover_border':  BRAND_DARK_GOLD,
     
     # ── Tabs ──
     'tab_bg':             '#e0e0e0',
     'tab_selected_bg':    '#ffffff',
-    'tab_hover_bg':       '#d0d0d0',
+    'tab_hover_bg':       '#eeeeee',
     'tab_border':         '#cccccc',
-    'tab_indicator':      BRAND_GOLD_DARK,
-    'tab_selected_text':  BRAND_GOLD_DARK,
-    'tab_hover_text':     BRAND_GOLD_DARK,
+    'tab_indicator':      BRAND_DARK_GOLD,
+    'tab_selected_text':  BRAND_DARK_GOLD_DEEP,
+    'tab_hover_text':     BRAND_DARK_GOLD_DEEP,
     
     # ── Scrollbars ──
     'scrollbar_bg':            '#e0e0e0',
@@ -281,10 +379,10 @@ LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
     # ── List / Table ──
     'list_bg':            '#ffffff',
     'list_alt_bg':        '#f8f8f8',
-    'list_selected_bg':   BRAND_GOLD_DARK,
+    'list_selected_bg':   BRAND_DARK_GOLD,
     'list_selected_text': '#ffffff',
     'list_hover_bg':      '#eeeeee',
-    'list_hover_text':    BRAND_GOLD_DARK,
+    'list_hover_text':    BRAND_DARK_GOLD_DEEP,
     'list_header_bg':     '#f0f0f0',
     'list_grid':          '#dddddd',
     
@@ -294,14 +392,14 @@ LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
     
     # ── Tooltip ──
     'tooltip_bg':         '#ffffff',
-    'tooltip_border':     BRAND_GOLD_DARK,
+    'tooltip_border':     BRAND_DARK_GOLD,
     'tooltip_text':       '#000000',
     
     # ── Semantic status ──
     'success':            '#28a745',
     'warning':            '#ffc107',
     'error':              '#dc3545',
-    'info':               BRAND_GOLD_DARK,
+    'info':               BRAND_DARK_GOLD,
     
     # ── Picker-specific ──
     'image_viewer_bg':       '#e8e8e8',
@@ -310,12 +408,12 @@ LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
     'zoom_label_border':     '#000000',
     'swatch_border_width':   2,
     'swatch_border_color':   '#000000',
-    'output_text_color':     BRAND_GOLD_DARK,
-    'text_accent_secondary': BRAND_GOLD_DARK,
+    'output_text_color':     BRAND_DARK_GOLD,
+    'text_accent_secondary': BRAND_DARK_GOLD,
     
     # ── Gold accent hover/pressed tints (no better semantic name exists) ──
-    'accent_hover':       BRAND_GOLD_DARK_HOVER,
-    'accent_pressed':     BRAND_GOLD_DARK_PRESSED,
+    'accent_hover':       BRAND_DARK_GOLD_HOVER,
+    'accent_pressed':     BRAND_DARK_GOLD_PRESSED,
 }
 
 
@@ -326,6 +424,10 @@ LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
 # Image mode shares dark palette for most keys, with a few picker-specific
 # overrides for the transparent overlay look.
 IMAGE_MODE_COLORS: Final[dict[str, str | int]] = {
+    # Error message text. Theme-aware because no single red clears both
+    # grounds: the register's #e56b77 is a dark-theme value and measures
+    # 2.8745 on the light panel.
+    'status_error_text': '#e56b77',
     **DARK_THEME_COLORS,
     'name': 'Image',
     # ── Picker-specific overrides for image mode ──
@@ -385,11 +487,11 @@ DEBUG_TEXT: Final[str] = "#00ff00"
 DEBUG_BG: Final[str] = "rgba(0, 0, 0, 200)"
 
 # ── Status / feedback colors (universal semantic meaning) ──
-STATUS_SUCCESS_BG: Final[str] = "#4caf50"
-STATUS_SUCCESS_FG: Final[str] = "#ffffff"
-STATUS_ERROR_BG:   Final[str] = "#f44336"
-STATUS_ERROR_FG:   Final[str] = "#ffffff"
-STATUS_ACTIVE_COLOR: Final[str] = "#4caf50"
+STATUS_SUCCESS_BG: Final[str] = "#28a745"
+STATUS_SUCCESS_FG: Final[str] = "#000000"
+STATUS_ERROR_BG:   Final[str] = "#dc3545"
+STATUS_ERROR_FG:   Final[str] = "#000000"
+STATUS_ACTIVE_COLOR: Final[str] = "#28a745"
 
 
 # ── Semi-transparent black overlays (fixed visual effects) ──
@@ -677,13 +779,13 @@ ThemeManager.SCROLLBAR_IMAGE = """
 __all__: list[str] = [
     # Brand colors
     'BRAND_GOLD',
-    'BRAND_GOLD_DARK',
+    'BRAND_DARK_GOLD',
     'BRAND_GOLD_RGB',
-    'BRAND_GOLD_DARK_RGB',
+    'BRAND_DARK_GOLD_RGB',
     'BRAND_GOLD_HOVER',
     'BRAND_GOLD_PRESSED',
-    'BRAND_GOLD_DARK_HOVER',
-    'BRAND_GOLD_DARK_PRESSED',
+    'BRAND_DARK_GOLD_HOVER',
+    'BRAND_DARK_GOLD_PRESSED',
     # Theme dicts + entry function
     'DARK_THEME_COLORS',
     'LIGHT_THEME_COLORS',

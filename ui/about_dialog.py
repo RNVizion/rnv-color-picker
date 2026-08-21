@@ -17,7 +17,7 @@ import os
 
 from utils.logger import Logger
 from utils.cache import QColorCache, StylesheetCache
-from utils.config import APP_NAME, APP_VERSION, APP_TAGLINE, BRAND_GOLD, BRAND_GOLD_DARK
+from utils.config import APP_NAME, APP_VERSION, APP_TAGLINE, BRAND_GOLD, BRAND_DARK_GOLD, BRAND_DARK_GOLD_DEEP
 
 logger = Logger("AboutDialog")
 CACHE_AVAILABLE = True
@@ -104,7 +104,7 @@ class AboutDialog(QDialog):
             logo_label.setStyleSheet(f"""
                 font-size: 32px;
                 font-weight: bold;
-                color: {self._get_accent()};
+                color: {self._get_accent_text()};
                 background: transparent;
                 padding: 5px 15px;
             """)
@@ -125,7 +125,7 @@ class AboutDialog(QDialog):
         title_layout.addWidget(self.name_label)
         
         self.version_label = QLabel(f"Version {APP_VERSION}")
-        self.version_label.setStyleSheet(f"font-size: 11px; color: {self._get_accent()}; background: transparent;")
+        self.version_label.setStyleSheet(f"font-size: 11px; color: {self._get_accent_text()}; background: transparent;")
         title_layout.addWidget(self.version_label)
         
         self.tagline_label = QLabel(APP_TAGLINE)
@@ -199,7 +199,7 @@ class AboutDialog(QDialog):
         
         # App description header
         desc_header = QLabel("Professional Color Extraction Application")
-        desc_header.setStyleSheet(f"font-weight: bold; font-size: 13px; color: {self._get_accent()};")
+        desc_header.setStyleSheet(f"font-weight: bold; font-size: 13px; color: {self._get_accent_text()};")
         layout.addWidget(desc_header)
         
         # Description text
@@ -289,7 +289,7 @@ class AboutDialog(QDialog):
         
         # Header
         header = QLabel("Feature Overview")
-        header.setStyleSheet(f"font-weight: bold; font-size: 13px; color: {self._get_accent()};")
+        header.setStyleSheet(f"font-weight: bold; font-size: 13px; color: {self._get_accent_text()};")
         layout.addWidget(header)
         
         # Scroll area
@@ -337,7 +337,7 @@ class AboutDialog(QDialog):
         for category, features in feature_categories:
             # Category header
             cat_label = QLabel(f"# {category}")
-            cat_label.setStyleSheet(f"font-weight: bold; font-size: 12px; color: {self._get_accent()}; padding-top: 5px;")
+            cat_label.setStyleSheet(f"font-weight: bold; font-size: 12px; color: {self._get_accent_text()}; padding-top: 5px;")
             features_layout.addWidget(cat_label)
             
             # Features in category
@@ -362,7 +362,7 @@ class AboutDialog(QDialog):
         
         # Header
         header = QLabel("Keyboard Shortcuts")
-        header.setStyleSheet(f"font-weight: bold; font-size: 13px; color: {self._get_accent()};")
+        header.setStyleSheet(f"font-weight: bold; font-size: 13px; color: {self._get_accent_text()};")
         layout.addWidget(header)
         
         # Scroll area
@@ -412,7 +412,7 @@ class AboutDialog(QDialog):
         for category, shortcuts in shortcut_categories:
             # Category header
             cat_label = QLabel(category)
-            cat_label.setStyleSheet(f"font-weight: bold; font-size: 11px; color: {self._get_accent()}; padding-top: 8px;")
+            cat_label.setStyleSheet(f"font-weight: bold; font-size: 11px; color: {self._get_accent_text()}; padding-top: 8px;")
             shortcuts_layout.addWidget(cat_label)
             
             # Shortcuts grid
@@ -450,7 +450,7 @@ class AboutDialog(QDialog):
         
         # Header
         header = QLabel("Credits & Acknowledgments")
-        header.setStyleSheet(f"font-weight: bold; font-size: 13px; color: {self._get_accent()};")
+        header.setStyleSheet(f"font-weight: bold; font-size: 13px; color: {self._get_accent_text()};")
         layout.addWidget(header)
         
         # Scroll area
@@ -549,7 +549,7 @@ class AboutDialog(QDialog):
         )
         footer.setAlignment(Qt.AlignmentFlag.AlignCenter)
         footer.setStyleSheet(
-            f"font-size: 11px; color: {self._get_accent()}; padding-top: 15px;"
+            f"font-size: 11px; color: {self._get_accent_text()}; padding-top: 15px;"
         )
         credits_layout.addWidget(footer)
         
@@ -567,15 +567,27 @@ class AboutDialog(QDialog):
         line.setStyleSheet(f"color: {divider_color};")
         return line
     
-    def _get_accent(self) -> str:
-        """Return the correct brand gold for the current theme."""
+    def _get_accent_text(self) -> str:
+        """Return the brand gold for gold TEXT in the current theme.
+
+        Every one of this dialog's nine accent uses is a `color:` --
+        there is no fill among them -- so on a light ground this
+        returns the deep derivative. BRAND_DARK_GOLD clears 4.5:1 as
+        text against pure white and nothing else, and this dialog
+        paints on #f5f5f5, where it measures 4.1670.
+
+        Named for what it returns. The old name said 'accent', which
+        is how the same helper ended up serving text and fills in the
+        settings panel without anyone noticing they need different
+        values.
+        """
         try:
             if self.parent() and hasattr(self.parent(), 'theme_manager'):
                 is_dark = self.parent().theme_manager.current_theme in ('dark', 'image')
-                return BRAND_GOLD if is_dark else BRAND_GOLD_DARK
+                return BRAND_GOLD if is_dark else BRAND_DARK_GOLD_DEEP
         except Exception:
             pass
-        return BRAND_GOLD  # Default to dark gold
+        return BRAND_GOLD
 
     def _get_theme(self) -> dict:
         """Return the current theme color dict for theme-aware styling."""
