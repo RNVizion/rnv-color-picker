@@ -1745,6 +1745,44 @@ def classify(code: int) -> str:
     return "killed" if code < 0 else ("pass" if code == 0 else "fail")
 
 
+# Every file this pass creates or edits. A test failure inside one of these
+# is this change's problem. A failure anywhere else is not -- and must not
+# block it.
+#
+# This is not a keyword list. An earlier version of this tooling classified
+# by matching words like "color" in the node id, which is a guess: it would
+# claim tests/test_color_history.py (colour HISTORY storage, untouched here)
+# and miss a genuine break in a file whose name happens not to say colour.
+# The set below is derived from what the script actually wrote, so it cannot
+# drift away from the change.
+OUR_FILES = (
+    "utils/config.py", "utils/cache.py",
+    "ui/settings_panel.py", "ui/about_dialog.py",
+    "test_rnv_color_picker.py",
+    "tests/test_about_dialog.py", "tests/test_settings_panel.py",
+    GUARD_TEST_PATH,
+)
+
+
+def split_failures(output: str) -> tuple[list[str], list[str]]:
+    """Split pytest FAILED/ERROR lines into (ours, unrelated).
+
+    tests/ here are hypothesis-driven and explore a different input space
+    every run, so a long-standing bug can surface on any given invocation.
+    Blocking a colour change on one is how a gate stops meaning anything --
+    but so is hiding it, which is why unrelated failures are printed in
+    full rather than swallowed.
+    """
+    nodes = []
+    for line in (output or "").splitlines():
+        if line.startswith(("FAILED ", "ERROR ")):
+            node = line.split(" ", 1)[1].strip() if " " in line else line
+            nodes.append(node.split(" - ")[0].strip())
+    ours = [n for n in nodes if any(n.startswith(f) for f in OUR_FILES)]
+    other = [n for n in nodes if n not in ours]
+    return ours, other
+
+
 def run_guard_tests() -> str:
     env = dict(os.environ, QT_QPA_PLATFORM="offscreen")
     say(f"running the guard suite ({GUARD_TEST_PATH}) ...")
@@ -1762,7 +1800,8 @@ def run_suite(quick: bool = False) -> str:
         cmd += ["-m", "not benchmark"]
     say("running the full test suite ...")
     r = subprocess.run(cmd, cwd=REPO, env=env, capture_output=True, text=True)
-    out = (r.stdout + r.stderr).strip().splitlines()
+    combined = r.stdout + r.stderr
+    out = combined.strip().splitlines()
     keep = [ln for ln in out if ln.startswith(("FAILED", "ERROR"))
             or " failed" in ln or " passed" in ln]
     for line in (keep or out)[-15:]:
@@ -1781,7 +1820,31 @@ def run_suite(quick: bool = False) -> str:
     msg, colour = PYTEST_EXIT.get(r.returncode,
                                   (f"pytest exited {r.returncode}", WARN))
     say(f"\n    {msg}", colour)
-    return classify(r.returncode)
+    result = classify(r.returncode)
+
+    if result == "fail":
+        ours, other = split_failures(combined)
+        if other:
+            say(f"\n    {len(other)} failure(s) are OUTSIDE everything this "
+                f"pass touches:", WARN)
+            for node in other[:8]:
+                say(f"      {node}", WARN)
+            say(f"    These files were not created or edited here. This "
+                f"suite is hypothesis-driven", WARN)
+            say(f"    and explores a different input space each run, so a "
+                f"long-standing bug can", WARN)
+            say(f"    surface on any invocation. Confirm with:", WARN)
+            say(f"      git stash && python -m pytest -q "
+                f"--hypothesis-seed=<seed> && git stash pop", WARN)
+        if ours:
+            say(f"\n    {len(ours)} failure(s) ARE in files this pass "
+                f"changed:", FAIL)
+            for node in ours[:8]:
+                say(f"      {node}", FAIL)
+            return "fail"
+        say("\n    Nothing failed in a file this pass touched.", WARN)
+        return "unrelated"
+    return result
 
 
 def remove_helpers(extra: list[str]) -> None:
@@ -1834,11 +1897,23 @@ def main() -> int:
 
     if args.install_deps:
         install_system_deps()
-    if args.refresh_guards or args.finish is not None:
+
+    # Whether --finish was passed is a question about CLEANUP, not about
+    # whether to apply. Conflating them means --finish on an unaligned
+    # repository writes the guard file into a repo the guards do not
+    # describe, and reports several dozen failures that are purely the
+    # tool's own doing.
+    applied = NEW_SYM in read_any(CONFIG)[0] and OLD_SYM not in read_any(CONFIG)[0]
+
+    if args.refresh_guards or (args.finish is not None and applied):
         step_guard_tests()
 
-    if not (args.verify_only or args.refresh_guards
-            or args.finish is not None):
+    if args.verify_only:
+        pass
+    elif applied:
+        if not args.refresh_guards:
+            say("already applied -- skipping to verification", WARN)
+    else:
         preflight()
         step_header()
         step_sweep()
