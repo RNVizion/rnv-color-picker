@@ -1,8 +1,8 @@
 # RNV Color Picker — development & testing dependencies
-# Install with: pip install -r requirements-test.txt
+# Install with: pip install -r tests/requirements-dev.txt
 # (this file includes everything in requirements.txt)
 
--r requirements.txt
+-r ../requirements.txt
 
 # Test runner
 pytest==9.0.2

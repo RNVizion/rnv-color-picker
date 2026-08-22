@@ -60,7 +60,7 @@ dependencies = [
 
 
 [project.optional-dependencies]
-# Test and development dependencies — kept in sync with requirements-test.txt
+# Test and development dependencies — kept in sync with tests/requirements-dev.txt
 dev = [
     "pytest==9.0.2",
     "pytest-qt==4.5.0",

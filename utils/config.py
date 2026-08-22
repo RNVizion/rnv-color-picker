@@ -182,13 +182,48 @@ in the one form no sweep would have found."""
 
 
 # ============================================================================
+# STATUS RED
+# ============================================================================
+#
+# The same shape as the gold: one registered value, one derivative, and the
+# derivative is COMPUTED so it cannot drift from its base.
+#
+# No red carries text at 4.5:1 on a real light panel. #dc3545 clears only on
+# pure white, at 4.5275, and the Material red this family retired fails even
+# there at 3.6824 -- its value is deliberately not written here, because
+# test_one_status_family_only forbids it appearing in this file at all.
+# So light spends a derivative on TEXT for exactly the reason the gold does:
+# the fill and text jobs occupy non-overlapping luminance bands.
+
+STATUS_ERROR: Final[str] = "#dc3545"
+"""Registered. Fills, borders, and the ground that black is drawn on.
+
+Black on it reads 4.6383, which passes and is not affected by the text
+derivative below."""
+
+STATUS_ERROR_LIGHT: Final[str] = lighten(STATUS_ERROR, -20)   # -> #c82131
+"""Derived. Error TEXT on a light panel.
+
+5.1811 on #f5f5f5, 4.8685 on #eeeeee, 4.6100 on #e8e8e8 -- the same coverage
+boundary BRAND_DARK_GOLD_DEEP publishes. Below #e8e8e8 the red does not carry
+text, which is a ruling rather than a gap.
+
+Uniform per-channel holds hue at 354.25 degrees, identical to the base. The
+hand-written reds in this family drift: #e56b77 is (+9, +54, +50) off the
+base and #ff6b6b is (+35, +54, +38).
+
+Dark keeps #e56b77 by decision, not oversight -- it reads 5.5537 on #1a1a1a
+and was never short."""
+
+
+# ============================================================================
 # DARK THEME COLORS
 # ============================================================================
 
 DARK_THEME_COLORS: Final[dict[str, str | int]] = {
     # Error message text. Theme-aware because no single red clears both
-    # grounds: the register's #e56b77 is a dark-theme value and measures
-    # 2.8745 on the light panel.
+    # grounds. Dark keeps #e56b77 (5.5537 on #1a1a1a); light uses the derived
+    # STATUS_ERROR_LIGHT. See the STATUS RED block above.
     'status_error_text': '#e56b77',
     'name': 'Dark',
     
@@ -304,10 +339,10 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
 # ============================================================================
 
 LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
-    # Error message text. Theme-aware because no single red clears both
-    # grounds: the register's #e56b77 is a dark-theme value and measures
-    # 2.8745 on the light panel.
-    'status_error_text': '#dc3545',
+    # Error message text. STATUS_ERROR_LIGHT, derived from the registered
+    # red so it cannot drift from it. 5.1811 on this panel's #f5f5f5, where
+    # the undarkened #dc3545 read 4.1528 and was carried as an exemption.
+    'status_error_text': STATUS_ERROR_LIGHT,
     'name': 'Light',
     
     # ── Base surfaces ──
@@ -424,11 +459,10 @@ LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
 # Image mode shares dark palette for most keys, with a few picker-specific
 # overrides for the transparent overlay look.
 IMAGE_MODE_COLORS: Final[dict[str, str | int]] = {
-    # Error message text. Theme-aware because no single red clears both
-    # grounds: the register's #e56b77 is a dark-theme value and measures
-    # 2.8745 on the light panel.
-    'status_error_text': '#e56b77',
     **DARK_THEME_COLORS,
+    # Error message text. Image mode inherits dark's value; the entry sits
+    # AFTER the splat because a key listed before it is silently discarded.
+    'status_error_text': '#e56b77',
     'name': 'Image',
     # ── Picker-specific overrides for image mode ──
     'window_bg':          '#ED000000',
@@ -489,7 +523,7 @@ DEBUG_BG: Final[str] = "rgba(0, 0, 0, 200)"
 # ── Status / feedback colors (universal semantic meaning) ──
 STATUS_SUCCESS_BG: Final[str] = "#28a745"
 STATUS_SUCCESS_FG: Final[str] = "#000000"
-STATUS_ERROR_BG:   Final[str] = "#dc3545"
+STATUS_ERROR_BG:   Final[str] = STATUS_ERROR
 STATUS_ERROR_FG:   Final[str] = "#000000"
 STATUS_ACTIVE_COLOR: Final[str] = "#28a745"
 
@@ -806,6 +840,8 @@ __all__: list[str] = [
     'DEBUG_BG',
     'STATUS_SUCCESS_BG',
     'STATUS_SUCCESS_FG',
+    'STATUS_ERROR',
+    'STATUS_ERROR_LIGHT',
     'STATUS_ERROR_BG',
     'STATUS_ERROR_FG',
     'STATUS_ACTIVE_COLOR',

@@ -610,8 +610,16 @@ def test_retired_values_are_gone() -> None:
 # the panel it sits on. The stylesheet walker only records a pair when both
 # halves appear in one rule, so this pairing is invisible to it and has to
 # be asserted by hand.
-
-LIGHT_ERROR_SHORTFALL = 4.1528   # measured, #dc3545 on #f5f5f5
+#
+# It used to be asserted as an EXEMPTION: light error text measured 4.1528 on
+# #f5f5f5, short of the floor, and the test held that number and failed if it
+# ever cleared -- with a message telling whoever cleared it to delete the test
+# rather than leave a standing note about a problem that no longer exists.
+#
+# That has now happened. STATUS_ERROR_LIGHT = lighten(STATUS_ERROR, -20)
+# reads 5.1811 on #f5f5f5, so the exemption is gone and this is an ordinary
+# floor assertion. Doing as the old test instructed is the point: an exemption
+# that outlives its problem is a licence waiting for a future defect.
 
 
 def test_dark_error_text_clears_its_panel() -> None:
@@ -619,24 +627,38 @@ def test_dark_error_text_clears_its_panel() -> None:
     assert contrast_ratio(d["status_error_text"], d["panel_bg"]) >= TEXT_FLOOR
 
 
-def test_light_error_text_is_the_ruled_value_and_no_worse() -> None:
-    """The register rules #dc3545 for light mode and explicitly declines to
-    derive a darker variant. Its #e56b77 error-text is a dark-theme value
-    and measures 2.8745 here -- worse than what we have.
-
-    So this pairing is short at 4.1528, against 3.3777 for the retired
-    Material red. The test holds the improvement and fails if it regresses.
-    """
+def test_light_error_text_clears_its_panel() -> None:
+    """No exemption. The light error red is derived to clear the floor."""
     light = C.LIGHT_THEME_COLORS
     ratio = contrast_ratio(light["status_error_text"], light["panel_bg"])
-    assert ratio >= LIGHT_ERROR_SHORTFALL - 0.0001, (
-        f"light error text regressed to {ratio:.4f}, below the "
-        f"{LIGHT_ERROR_SHORTFALL} this pass established")
-    assert ratio < TEXT_FLOOR, (
-        f"light error text now measures {ratio:.4f} and CLEARS the floor. "
-        f"Brand Infrastructure has presumably ruled a light-mode error "
-        f"text -- delete this test and its exemption rather than leaving a "
-        f"standing note about a problem that no longer exists.")
+    assert ratio >= TEXT_FLOOR, (
+        f"light error text measures {ratio:.4f}, below the {TEXT_FLOOR} floor")
+
+
+def test_light_error_text_is_derived_not_written() -> None:
+    """A written-down derivative orphans the moment its base moves. This one
+    is computed, so it cannot drift from STATUS_ERROR."""
+    assert C.LIGHT_THEME_COLORS["status_error_text"] == C.STATUS_ERROR_LIGHT
+    assert C.STATUS_ERROR_LIGHT == C.lighten(C.STATUS_ERROR, -20)
+    assert C.STATUS_ERROR_LIGHT != C.STATUS_ERROR, (
+        "the light error red must be a DERIVATIVE, not the base value")
+
+
+def test_light_error_text_carries_down_to_the_published_boundary() -> None:
+    """The gold publishes #e8e8e8 as the ground below which it stops carrying
+    text. The error red is derived to the same boundary, so the two rules do
+    not have to be remembered separately."""
+    for ground in ("#ffffff", "#f5f5f5", "#eeeeee", "#e8e8e8"):
+        ratio = contrast_ratio(C.STATUS_ERROR_LIGHT, ground)
+        assert ratio >= TEXT_FLOOR, \
+            f"{C.STATUS_ERROR_LIGHT} on {ground} = {ratio:.4f}"
+
+
+def test_the_error_fill_still_pairs_with_black() -> None:
+    """STATUS_ERROR_BG/_FG is a FILL, not text, and was never short. Asserted
+    so this pass cannot quietly move it while fixing the text beside it."""
+    assert contrast_ratio(C.STATUS_ERROR_FG, C.STATUS_ERROR_BG) >= TEXT_FLOOR
+    assert C.STATUS_ERROR_BG == C.STATUS_ERROR
 
 
 # ══════════════════════════════════════════════════════════════════════════
