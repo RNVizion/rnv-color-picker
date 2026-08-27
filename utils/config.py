@@ -239,6 +239,9 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
     
     # ── Text ──
     'text_primary':       '#e0e0e0',
+    # NOT CONSUMED. Nothing reads this key -- 'text_muted' below carries the
+    # same value and does the job in six places. Kept, and kept correct, so
+    # wiring it up is a one-line change rather than a colour decision.
     'text_secondary':     '#888888',
     'text_muted':         '#888888',
     'text_disabled':      '#555555',
@@ -357,6 +360,7 @@ LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
     
     # ── Text ──
     'text_primary':       '#000000',
+    # NOT CONSUMED -- see the note in the dark palette.
     'text_secondary':     '#666666',
     'text_muted':         '#666666',
     'text_disabled':      '#aaaaaa',
