@@ -293,13 +293,13 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
     'name': 'Dark',
     
     # ── Base surfaces ──
-    'window_bg':          '#000000',
-    'panel_bg':           '#1a1a1a',
-    'card_bg':            '#2a2a2a',
-    'bg_secondary':       '#2a2a2a',   # alias for card_bg
-    'input_bg':           '#1a1a1a',
+    'window_bg':          TRUE_BLACK,
+    'panel_bg':           BRAND_BLACK,
+    'card_bg':            APP_CARD,
+    'bg_secondary':       APP_CARD,   # alias for card_bg
+    'input_bg':           BRAND_BLACK,
     'hover_bg':           '#3a3a3a',
-    'pressed_bg':         '#333333',
+    'pressed_bg':         APP_BORDER,
     'selected_bg':        BRAND_GOLD,
     
     # ── Text ──
@@ -311,46 +311,46 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
     'text_muted':         '#888888',
     'text_disabled':      '#555555',
     'text_accent':        BRAND_GOLD,
-    'text_on_accent':     '#000000',
+    'text_on_accent':     TRUE_BLACK,
     
     # ── Borders ──
-    'border_default':     '#333333',
+    'border_default':     APP_BORDER,
     'border_focus':       BRAND_GOLD,
     'border_hover':       '#444444',
     'border_accent':      BRAND_GOLD,
-    'input_border':       '#333333',
+    'input_border':       APP_BORDER,
     
     # ── Dialog buttons (gold accent system) ──
-    'button_bg':          '#2a2a2a',
+    'button_bg':          APP_CARD,
     'button_text':        APP_TEXT,
     'button_hover_bg':    '#3a3a3a',
     'button_hover_text':  BRAND_GOLD,
     'button_hover_border': BRAND_GOLD,
     'button_pressed_bg':  BRAND_GOLD,
-    'button_pressed_text': '#000000',
-    'button_border':      '#333333',
+    'button_pressed_text': TRUE_BLACK,
+    'button_border':      APP_BORDER,
     
     # ── Main window buttons (inverse system: dark hover, darker gray pressed, no gold) ──
-    'main_btn_bg':          '#1a1a1a',
+    'main_btn_bg':          BRAND_BLACK,
     'main_btn_text':        APP_TEXT,
-    'main_btn_border':      '#333333',
-    'main_btn_hover_bg':    '#333333',
+    'main_btn_border':      APP_BORDER,
+    'main_btn_hover_bg':    APP_BORDER,
     'main_btn_hover_text':  APP_TEXT,
     'main_btn_pressed_bg':  '#444444',
-    'main_btn_pressed_text': '#000000',
+    'main_btn_pressed_text': TRUE_BLACK,
     
     # ── Checkbox ──
-    'checkbox_bg':            '#1a1a1a',
+    'checkbox_bg':            BRAND_BLACK,
     'checkbox_border':        '#555555',
     'checkbox_checked_bg':    BRAND_GOLD,
     'checkbox_checked_border': BRAND_GOLD,
     'checkbox_hover_border':  BRAND_GOLD,
     
     # ── Tabs ──
-    'tab_bg':             '#2a2a2a',
-    'tab_selected_bg':    '#1a1a1a',
-    'tab_hover_bg':       '#333333',
-    'tab_border':         '#333333',
+    'tab_bg':             APP_CARD,
+    'tab_selected_bg':    BRAND_BLACK,
+    'tab_hover_bg':       APP_BORDER,
+    'tab_border':         APP_BORDER,
     'tab_indicator':      BRAND_GOLD,
     'tab_selected_text':  BRAND_GOLD,
     'tab_hover_text':     BRAND_GOLD,
@@ -359,24 +359,24 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
     'scrollbar_bg':            '#252525',
     'scrollbar_handle':        '#444444',
     'scrollbar_handle_hover':  '#666666',
-    'scrollbar_border':        '#333333',
+    'scrollbar_border':        APP_BORDER,
     
     # ── List / Table ──
     'list_bg':            '#252525',
-    'list_alt_bg':        '#1a1a1a',
+    'list_alt_bg':        BRAND_BLACK,
     'list_selected_bg':   BRAND_GOLD,
-    'list_selected_text': '#000000',
+    'list_selected_text': TRUE_BLACK,
     'list_hover_bg':      '#3a3a3a',
     'list_hover_text':    BRAND_GOLD,
-    'list_header_bg':     '#2a2a2a',
-    'list_grid':          '#333333',
+    'list_header_bg':     APP_CARD,
+    'list_grid':          APP_BORDER,
     
     # ── Dialog / status ──
-    'dialog_bg':          '#1a1a1a',
-    'dialog_border':      '#333333',
+    'dialog_bg':          BRAND_BLACK,
+    'dialog_border':      APP_BORDER,
     
     # ── Tooltip ──
-    'tooltip_bg':         '#2a2a2a',
+    'tooltip_bg':         APP_CARD,
     'tooltip_border':     BRAND_GOLD,
     'tooltip_text':       APP_TEXT,
     
@@ -388,9 +388,9 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
     
     # ── Picker-specific (unique to this app) ──
     'image_viewer_bg':       '#0a0a0a',
-    'scroll_area_bg':        '#000000',
-    'zoom_label_bg':         '#1a1a1a',
-    'zoom_label_border':     '#333333',
+    'scroll_area_bg':        TRUE_BLACK,
+    'zoom_label_bg':         BRAND_BLACK,
+    'zoom_label_border':     APP_BORDER,
     'swatch_border_width':   2,
     'swatch_border_color':   APP_TEXT,
     'output_text_color':     BRAND_GOLD,
