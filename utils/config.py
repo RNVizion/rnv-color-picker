@@ -234,6 +234,93 @@ plate #444444, the darkest ground it is ever drawn on.
 APP_TEXT_DIM: Final[str] = "#aaaaaa"
 """engine/brand.py APP["text-dim"]. grey(10)."""
 
+APP_CANVAS: Final[str] = "#0a0a0a"
+"""engine/brand.py APP["canvas"]. The n=-1 rung of the dark surface ladder.
+
+REGISTERED 2026-08-29 in rnv-brand rev 22, app-owned here until then.
+
+    BRAND_BLACK + n * 0x10,  n in -1..+2
+    #0a0a0a canvas   #1a1a1a panel   #2a2a2a card   #3a3a3a panel-hover
+
+NOT WEB_BLACK. The web ground is #0a0a0f -- same lightness, blue channel
+lifted. App neutrals are pure grey, R = G = B, without exception, and the web
+carries a tint the apps do not. The two are one byte apart on purpose, and that
+byte is why invert(#0a0a0a) = #f5f5f5 once looked like a light-ground rule and
+was not: the register's canvas inverts to #f5f5f0.
+"""
+
+APP_PANEL_HOVER: Final[str] = "#3a3a3a"
+"""engine/brand.py APP["panel-hover"]. The n=+2 rung, and the dark interaction
+plate.
+
+REGISTERED 2026-08-29, app-owned here until then. The register had called the
+ladder "two-thirds specified" because APP_BORDER #333333 is not #3a3a3a and so
+looked like a missing rung. It is not a rung at all: #333333 is grey(3) on the
+INK grid, which governs inks and EDGES, and a border is an edge. The ladder was
+complete when the question was first asked.
+"""
+
+APP_HOVER_LIGHT: Final[str] = "#eeeeee"
+"""engine/brand.py APP["hover-light"]. grey(14). The light interaction plate.
+
+REGISTERED 2026-08-29 as #e8e8e8 and MOVED to #eeeeee on 2026-08-30 in rev 23,
+before any app had been wired to it. Nothing here changes value -- the four
+entries below already held #eeeeee.
+
+#e8e8e8 is the ground BRAND_DARK_GOLD_DEEP is calibrated against, and rev 24
+registered it under its own name for exactly that reason. Putting the hover
+plate on it would have pinned every hover in the app to the one value the gold
+cannot afford to lose, clearing the 4.5 floor by 0.0334. A boundary is not a
+plate. This value is a grid step inside it and gold reads 4.7875 on it.
+"""
+
+IMAGE_CANVAS_LIGHT: Final[str] = "#e8e8e8"
+"""APP-OWNED. The image viewer's ground in light mode.
+
+A COINCIDENCE, NOT A MIRROR, and the distinction is the whole reason this
+constant exists rather than the literal that was here before. rnv-brand rev 24
+registered #e8e8e8 as GOLD_TEXT_GROUND_FLOOR -- the darkest light ground on
+which the gold family carries text, and the value BRAND_DARK_GOLD_DEEP is
+derived against.
+
+This is not that role. It is the empty canvas behind a loaded image in
+RNV_Color_Picker.py: a QGraphicsView background brush with the user's own
+image drawn on it. No gold, no error red, no text of any kind is ever drawn on
+it. It shares a hex with the floor and shares nothing else.
+
+SO IT MUST NOT FOLLOW. If the register ever moves GOLD_TEXT_GROUND_FLOOR, this
+value stays where it is, and tests/test_ladder_and_plate.py asserts the
+coincidence in both directions so that neither the sharing nor the separation
+can rot silently.
+"""
+
+IMAGE_OVERLAY_ALPHA: Final[str] = "ED"
+"""The alpha byte image mode composites its chrome at -- 0xED, about 93%.
+
+WHY THE OVERLAYS BELOW ARE WRITTEN OUT RATHER THAN COMPOSED. Qt wants the
+eight-digit #AARRGGBB form, and building it from the six-digit constant would
+make the palette entries resolve to an expression rather than a value, which
+this app's own before/after comparison cannot check. The relationship is
+enforced by tests/test_ladder_and_plate.py instead: it asserts that each
+overlay's last six digits ARE the register value it claims, and that its alpha
+byte is this one. If the register moves a base, those tests fail and these move
+with it.
+
+THEY WERE INVISIBLE BEFORE. The 2026-08-29 wiring pass claimed no registered
+value was left spelled as a literal in a dark palette. That was true of
+six-digit spellings only: its sweep compared whole strings, so #ED000000 never
+matched #000000 and four of these sat in IMAGE_MODE_COLORS while the test
+reported clean. The sweep now normalises both lengths.
+"""
+
+APP_WINDOW_OVERLAY: Final[str] = "#ED000000"
+"""TRUE_BLACK, and APP["window"], at IMAGE_OVERLAY_ALPHA."""
+
+APP_CANVAS_OVERLAY: Final[str] = "#ED0A0A0A"
+"""APP_CANVAS, and APP["canvas"], at IMAGE_OVERLAY_ALPHA."""
+
+APP_PANEL_OVERLAY: Final[str] = "#ED1A1A1A"
+"""BRAND_BLACK, and APP["panel"], at IMAGE_OVERLAY_ALPHA."""
 APP_PROVENANCE: Final[dict[str, str]] = {
     "TRUE_BLACK": "register",
     "WHITE": "register",
@@ -242,6 +329,13 @@ APP_PROVENANCE: Final[dict[str, str]] = {
     "APP_BORDER": "register",
     "APP_TEXT": "register",
     "APP_TEXT_DIM": "register",
+    "APP_CANVAS": "register",
+    "APP_PANEL_HOVER": "register",
+    "APP_HOVER_LIGHT": "register",
+    "APP_WINDOW_OVERLAY": "register-overlay",
+    "APP_CANVAS_OVERLAY": "register-overlay",
+    "APP_PANEL_OVERLAY": "register-overlay",
+    "IMAGE_CANVAS_LIGHT": "app-canvas",
 }
 """Declarative, and read by tests/test_app_mirror.py. A classification that
 lives only in a test drifts from the thing it classifies."""
@@ -298,7 +392,7 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
     'card_bg':            APP_CARD,
     'bg_secondary':       APP_CARD,   # alias for card_bg
     'input_bg':           BRAND_BLACK,
-    'hover_bg':           '#3a3a3a',
+    'hover_bg':           APP_PANEL_HOVER,
     'pressed_bg':         APP_BORDER,
     'selected_bg':        BRAND_GOLD,
     
@@ -323,7 +417,7 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
     # ── Dialog buttons (gold accent system) ──
     'button_bg':          APP_CARD,
     'button_text':        APP_TEXT,
-    'button_hover_bg':    '#3a3a3a',
+    'button_hover_bg':    APP_PANEL_HOVER,
     'button_hover_text':  BRAND_GOLD,
     'button_hover_border': BRAND_GOLD,
     'button_pressed_bg':  BRAND_GOLD,
@@ -366,7 +460,7 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
     'list_alt_bg':        BRAND_BLACK,
     'list_selected_bg':   BRAND_GOLD,
     'list_selected_text': TRUE_BLACK,
-    'list_hover_bg':      '#3a3a3a',
+    'list_hover_bg':      APP_PANEL_HOVER,
     'list_hover_text':    BRAND_GOLD,
     'list_header_bg':     APP_CARD,
     'list_grid':          APP_BORDER,
@@ -387,7 +481,7 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
     'info':               BRAND_GOLD,
     
     # ── Picker-specific (unique to this app) ──
-    'image_viewer_bg':       '#0a0a0a',
+    'image_viewer_bg':       APP_CANVAS,
     'scroll_area_bg':        TRUE_BLACK,
     'zoom_label_bg':         BRAND_BLACK,
     'zoom_label_border':     APP_BORDER,
@@ -419,7 +513,7 @@ LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
     'card_bg':            '#ffffff',
     'bg_secondary':       '#ffffff',
     'input_bg':           '#ffffff',
-    'hover_bg':           '#eeeeee',
+    'hover_bg':           APP_HOVER_LIGHT,
     'pressed_bg':         '#e0e0e0',
     'selected_bg':        BRAND_DARK_GOLD,
     
@@ -442,7 +536,7 @@ LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
     # ── Dialog buttons (gold accent system) ──
     'button_bg':          '#ffffff',
     'button_text':        '#000000',
-    'button_hover_bg':    '#eeeeee',
+    'button_hover_bg':    APP_HOVER_LIGHT,
     'button_hover_text':  BRAND_DARK_GOLD_DEEP,
     'button_hover_border': BRAND_DARK_GOLD,
     'button_pressed_bg':  BRAND_DARK_GOLD,
@@ -468,7 +562,7 @@ LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
     # ── Tabs ──
     'tab_bg':             '#e0e0e0',
     'tab_selected_bg':    '#ffffff',
-    'tab_hover_bg':       '#eeeeee',
+    'tab_hover_bg':       APP_HOVER_LIGHT,
     'tab_border':         '#cccccc',
     'tab_indicator':      BRAND_DARK_GOLD,
     'tab_selected_text':  BRAND_DARK_GOLD_DEEP,
@@ -485,7 +579,7 @@ LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
     'list_alt_bg':        '#f8f8f8',
     'list_selected_bg':   BRAND_DARK_GOLD,
     'list_selected_text': '#ffffff',
-    'list_hover_bg':      '#eeeeee',
+    'list_hover_bg':      APP_HOVER_LIGHT,
     'list_hover_text':    BRAND_DARK_GOLD_DEEP,
     'list_header_bg':     '#f0f0f0',
     'list_grid':          '#dddddd',
@@ -506,7 +600,7 @@ LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
     'info':               BRAND_DARK_GOLD,
     
     # ── Picker-specific ──
-    'image_viewer_bg':       '#e8e8e8',
+    'image_viewer_bg':       IMAGE_CANVAS_LIGHT,
     'scroll_area_bg':        '#ffffff',
     'zoom_label_bg':         '#ffffff',
     'zoom_label_border':     '#000000',
@@ -534,10 +628,10 @@ IMAGE_MODE_COLORS: Final[dict[str, str | int]] = {
     'status_error_text': '#e56b77',
     'name': 'Image',
     # ── Picker-specific overrides for image mode ──
-    'window_bg':          '#ED000000',
-    'image_viewer_bg':    '#ED0A0A0A',
-    'scroll_area_bg':     '#ED000000',
-    'zoom_label_bg':      '#ED1A1A1A',
+    'window_bg':          APP_WINDOW_OVERLAY,
+    'image_viewer_bg':    APP_CANVAS_OVERLAY,
+    'scroll_area_bg':     APP_WINDOW_OVERLAY,
+    'zoom_label_bg':      APP_PANEL_OVERLAY,
     'checkbox_bg':        'rgba(0, 0, 0, 100)',
     # ── Scrollbar overrides — translucent grays (no brand gold) ──
     'scrollbar_bg':            'rgba(51, 51, 51, 100)',

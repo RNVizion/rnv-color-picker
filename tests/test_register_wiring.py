@@ -38,7 +38,9 @@ SRC = ROOT / 'utils/config.py'
 
 #: The register, as this app mirrors it. Value-keyed, because the substitution
 #: was value-keyed: any dark entry holding one of these must now name it.
-REGISTERED = {'TRUE_BLACK': '#000000', 'BRAND_BLACK': '#1a1a1a', 'APP_CARD': '#2a2a2a', 'APP_BORDER': '#333333'}
+REGISTERED = {'TRUE_BLACK': '#000000', 'BRAND_BLACK': '#1a1a1a', 'APP_CARD': '#2a2a2a', 'APP_BORDER': '#333333',
+              'APP_CANVAS': '#0a0a0a', 'APP_PANEL_HOVER': '#3a3a3a',
+              'APP_HOVER_LIGHT': '#eeeeee'}
 
 DARK_DICTS = ('DARK_THEME_COLORS', 'IMAGE_MODE_COLORS')
 LIGHT_DICTS = ('LIGHT_THEME_COLORS',)
@@ -95,10 +97,20 @@ def test_no_registered_value_is_spelled_as_a_literal_in_dark():
             if not isinstance(key, ast.Constant):
                 continue
             if isinstance(value, ast.Constant) and isinstance(value.value, str):
-                if value.value.lower() in by_value:
+                # Qt spells a translucent colour #AARRGGBB. This sweep compared
+                # whole strings, so an eight-digit spelling of a registered
+                # value never matched a six-digit register entry --
+                # IMAGE_MODE_COLORS kept four of them (#ED000000 twice,
+                # #ED0A0A0A, #ED1A1A1A) while this test reported clean and the
+                # pass it guards claimed completeness. Both lengths normalise
+                # to the RGB half now.
+                spelled = value.value.lower()
+                rgb = '#' + spelled[3:] if len(spelled) == 9 else spelled
+                if rgb in by_value:
                     literals.append(
                         f'{dict_name}[{key.value!r}] = {value.value} '
-                        f'(should read {by_value[value.value.lower()]})')
+                        f'(should read {by_value[rgb]}'
+                        f'{" as an overlay" if rgb != spelled else ""})')
     assert not literals, (
         'registered values still written as literals in the dark palettes:\n  '
         + '\n  '.join(literals))
@@ -134,17 +146,44 @@ def test_the_dark_palettes_actually_use_some_of_them():
 
 # --------------------------------------------------------------- what did NOT
 
-def test_the_light_palettes_were_left_alone():
-    """This pass is the DARK half, on the register's stated order. The light
-    ladder is unruled -- nine surfaces inside three grid steps, and which of
-    them are real distinctions is a judgement the register has not made. If a
-    later pass wires light, this test is the thing that has to be deleted on
-    purpose."""
+#: The light half is ruled one value at a time. This is the allowlist, and it
+#: is what a later pass has to extend ON PURPOSE.
+LIGHT_RULED = ('APP_HOVER_LIGHT',)
+
+
+def test_the_light_palettes_reference_only_what_the_register_has_ruled():
+    """This began life as "the light palettes were left alone", which was true
+    while the light half was entirely unruled. rnv-brand rev 23 ruled one value
+    of it -- APP["hover-light"] -- so the test becomes an allowlist rather than
+    a prohibition. The light LADDER is still unruled: nine surfaces inside three
+    grid steps, and which of them are real distinctions is a judgement the
+    register has not made.
+
+    THE EARLIER FORM COULD NOT HAVE CAUGHT THIS PASS. It flagged names found in
+    REGISTERED, and REGISTERED was a four-value snapshot that did not contain
+    the value being wired -- so light could have been wired underneath it and it
+    would have reported clean. REGISTERED is widened in the same commit."""
     named = []
     for dict_name, node in _dicts(LIGHT_DICTS).items():
         for key, value in zip(node.keys, node.values):
-            if isinstance(value, ast.Name) and value.id in REGISTERED:
+            if (isinstance(value, ast.Name) and value.id in REGISTERED
+                    and value.id not in LIGHT_RULED):
                 named.append(f'{dict_name}[{key.value!r}] -> {value.id}')
     assert not named, (
-        'the light palettes now reference the register:\n  ' + '\n  '.join(named)
-        + '\n\nThat is the light half, and it is not ruled yet.')
+        'the light palettes reference register values that are not ruled '
+        'yet:\n  ' + '\n  '.join(named)
+        + '\n\nAdd the name to LIGHT_RULED in the same commit that wires it, '
+          'or do not wire it.')
+
+
+def test_the_ruled_light_value_is_actually_wired():
+    """The allowlist permits; this requires. An allowlist entry nothing uses is
+    a licence with no subject -- the same shape as a dead exemption."""
+    used = set()
+    for node in _dicts(LIGHT_DICTS).values():
+        for value in node.values:
+            if isinstance(value, ast.Name) and value.id in LIGHT_RULED:
+                used.add(value.id)
+    assert used == set(LIGHT_RULED), (
+        f'LIGHT_RULED lists {sorted(LIGHT_RULED)} but the light palettes use '
+        f'{sorted(used)}')
