@@ -2,58 +2,48 @@
 """
 RNV-BUTTON-NAMING-TOOL-DO-NOT-SWEEP
 
-Rename the eight dialog button keys from button_* to dialog_btn_*.
+Replace tests/test_button_key_names.py. One test in it was wrong.
 
-    python up.py             # apply, then verify
-    python up.py --check     # rehearse every edit in memory, write nothing
+    python up.py             # replace the guard, then verify
+    python up.py --check     # rehearse, write nothing
     python up.py --verify    # run the suites only, change nothing
     python up.py --finish    # delete this file
 
-NOT ONE PIXEL MOVES. This is a rename and nothing else.
+THE RENAME IS FINE. THE GUARD WAS NOT.
 
-This application already ships two button schemes and keeps them properly
-apart: main_btn_* is the black-and-white main window with its inverting
-transition, and button_* is the gold scheme its dialogs use. The values are
-right. The name is not.
+test_the_marker_exemption_covers_only_the_two_tools counted the files carrying
+a DO-NOT-SWEEP marker and allowed two: the guard itself, and the delivery
+script. A working tree holding a second copy of that script -- an old up.py
+kept around, a renamed spare, the file saved twice -- puts a third marked file
+in the repository and the count fails. Nothing about the application is wrong
+when that happens, and a guard that fails on the state of somebody's checkout
+is failing on the wrong thing. It did exactly that in rnv-text-transformer.
 
-`button_*` means the GOLD DIALOG scheme here and in rnv-icon-builder, and the
-BLACK-AND-WHITE MAIN scheme in rnv-color-palette-manager, rnv-color-mixer and
-rnv-text-transformer. One name, two schemes, decided by which repository you
-happen to have open -- and a name that cannot be carried into a new project is
-not a standard. After this pass the name says where the button lives:
+WHAT IT SHOULD HAVE ASSERTED
 
-    main_btn_*     the main window at launch
-    dialog_btn_*   anything that opens later
+Not how many files are exempt, but WHICH. The sweep skips marked files so a
+guard that lists the old names in order to forbid them does not report itself.
+The risk that creates is an application file gaining a marker and going quiet.
+So the test now checks that every marked file other than the guard is a
+delivery script, identified by the tool marker in its own header. Any number
+of those may be lying in the tree; none of them is application source.
 
-WHAT MOVES
+Verified in both directions before shipping: with three tool copies present it
+passes, and with a marker planted in an application file it still fails.
 
-Sixty-five quoted occurrences in eleven files: both palettes in utils/config.py,
-the four dialog modules that read them, and five test modules. main_btn_* is
-not touched.
+This is the ninth use-versus-mention failure this programme has recorded, and
+the first where the fix was to stop counting and start naming.
 
-DOCUMENTATION IS NOT TOUCHED, ON PURPOSE
+WHAT THIS SCRIPT DOES
 
-The docs pass runs once, after alignment settles, so it is written against the
-finished state rather than chased through it. The guard sweeps code and
-snapshots, not prose, for the same reason.
-
-WHAT THE GUARD ASSERTS
-
-tests/test_button_key_names.py fails if an old name comes back, if either
-palette loses a new one, if any of the sixteen dialog values moved, if the
-main family moved, or if the two families ever converge on one scheme -- two
-families holding the same scheme is one family with extra steps.
-
-It reads the palettes by importing them rather than by parsing them. Light's
-dialog_btn_hover_text is BRAND_DARK_GOLD_DEEP, derived through lighten()
-rather than written as a literal, and a static resolver returns None for it,
-then compares None with None and passes. That failure mode has appeared twice
-in this programme already.
+Rewrites tests/test_button_key_names.py and nothing else. It refuses to run
+unless the rename already landed, so it cannot be mistaken for the pass itself.
+If your guard is currently passing, this still replaces it -- the old test
+passes by luck of what is in your working tree, not by being right.
 """
 from __future__ import annotations
 
 import argparse
-import ast
 import os
 import re
 import subprocess
@@ -62,11 +52,23 @@ import tempfile
 from pathlib import Path
 
 REPO = "rnv-color-picker"
-DESCRIPTION = "rename the dialog button keys to dialog_btn_*"
-SENTINEL_FILE = "utils/config.py"
-SENTINEL = "'dialog_btn_bg'"
+DESCRIPTION = "replace the button-naming guard's exemption test"
 GUARD = "tests/test_button_key_names.py"
+SENTINEL_FILE = GUARD
+SENTINEL = "test_no_application_file_is_exempt_from_the_sweep"
 SHADOWS = {"colors.py", "config.py", "conftest.py", "run_tests.py"}
+
+PALETTE = "utils/config.py"
+PROOF = "'dialog_btn_bg'"
+
+MISSING_HELP = """\
+tests/test_button_key_names.py is not here, so the button key rename has not
+run in this checkout yet.
+
+This script only replaces that guard. Run the rename script first -- the one
+whose header begins "Rename the eight dialog button keys from button_* to dialog_btn_*" -- and then run this one. There is no filename
+to look for: every script arrives as an attachment and is saved as up.py.
+"""
 
 SUITES = [
     ('pytest tests/',
@@ -75,124 +77,47 @@ SUITES = [
      [sys.executable, "-m", "unittest", "test_rnv_color_picker"]),
 ]
 
-OLD_KEYS = ("button_bg", "button_text", "button_hover_bg", "button_hover_text",
-            "button_hover_border", "button_pressed_bg", "button_pressed_text",
-            "button_border")
-RENAME = {k: "dialog_btn_" + k[len("button_"):] for k in OLD_KEYS}
-
-#: path -> how many QUOTED occurrences that file holds. Written down so the
-#: script refuses to run against a tree that has moved under it.
-QUOTED = {
-    "utils/config.py": 16,
-    "utils/dialog_helper.py": 21,
-    "ui/about_dialog.py": 10,
-    "ui/settings_panel.py": 9,
-    "ui/progress_dialog.py": 3,
-    "test_rnv_color_picker.py": 1,
-    "tests/test_app_mirror.py": 1,
-    "tests/test_brand_contrast.py": 2,
-    "tests/test_ladder_and_plate.py": 2,
-}
-
-_QUOTED_RE = re.compile(r"(['\"])(" + "|".join(sorted(RENAME, key=len, reverse=True))
-                        + r")\1")
-
-
-def _rename_quoted(text: str) -> tuple[str, int]:
-    hits = 0
-
-    def swap(m: re.Match) -> str:
-        nonlocal hits
-        hits += 1
-        return f"{m.group(1)}{RENAME[m.group(2)]}{m.group(1)}"
-
-    return _QUOTED_RE.sub(swap, text), hits
-
-
-def _palette_values(source: str) -> list[dict[str, str]]:
-    """{key: the value EXPRESSION as written} for every palette dict.
-
-    Deliberately not resolved to a colour. This runs before the files are
-    written, so it cannot import anything, and half these values are names or
-    derived calls that a static resolver turns into None. Comparing the
-    expression text answers the only question --  did anything but the key
-    change? -- without pretending to know what the expression evaluates to.
-    """
-    # This repository's sources carry UTF-8 BOMs. Tree.read decodes as plain
-    # utf-8 so the round-trip preserves them byte for byte, which means the
-    # marker arrives here as a character and ast.parse refuses it.
-    out = []
-    for node in ast.walk(ast.parse(source.lstrip("\ufeff"))):
-        if not isinstance(node, ast.Dict):
-            continue
-        pairs = {k.value: ast.unparse(v) for k, v in zip(node.keys, node.values)
-                 if isinstance(k, ast.Constant) and isinstance(k.value, str)}
-        if any(name in pairs for name in list(RENAME) + list(RENAME.values())):
-            out.append(pairs)
-    return out
+#: The tests the shipped guard already carries. This pass replaces ONE of them;
+#: a replacement that quietly dropped the others would be a regression wearing
+#: the shape of a fix.
+KEEP = (
+    'test_no_old_button_key_name_survives',
+    'test_both_palettes_carry_the_new_dialog_names',
+    'test_the_rename_moved_no_dialog_value',
+    'test_the_main_family_is_untouched',
+    'test_the_two_schemes_are_still_different',
+    'test_the_main_window_still_reads_the_main_family',
+    'test_the_dialogs_read_the_dialog_family',
+)
 
 
 def edits(tree) -> None:
-    total = 0
-    for rel, expected in QUOTED.items():
-        new, hits = _rename_quoted(tree.read(rel))
-        if hits != expected:
-            raise SystemExit(f"{rel}: expected {expected} quoted key(s), found "
-                             f"{hits}. The file moved; re-derive this edit "
-                             f"before trusting the script.")
-        tree.write(rel, new)
-        total += hits
-    print(f"  renamed {total} quoted keys in {len(QUOTED)} files")
+    if PROOF not in tree.read(PALETTE):
+        raise SystemExit(
+            f"{PALETTE} does not carry {PROOF}, so the rename has not "
+            f"landed. This script replaces the guard only; run the rename "
+            f"first.")
+    if "test_the_marker_exemption_covers_only_the_two_tools" not in tree.read(GUARD):
+        raise SystemExit(
+            "the guard in this checkout is not the one this script fixes -- it "
+            "does not contain test_the_marker_exemption_covers_only_the_two_"
+            "tools. Nothing was written.")
+    print("  rename confirmed present; replacing the guard")
 
 
 def checks(tree) -> None:
-    for rel in QUOTED:
-        text = tree.read(rel)
-        for old in RENAME:
-            if re.search(r"(['\"])" + old + r"\1", text):
-                raise SystemExit(f"{rel}: {old!r} survived the rename")
-
-    original = (Path.cwd() / SENTINEL_FILE).read_text(encoding="utf-8")
-    edited = tree.read(SENTINEL_FILE)
-
-    if edited.count("\n") != original.count("\n"):
+    new = tree.read(GUARD)
+    if "test_the_marker_exemption_covers_only_the_two_tools" in new:
+        raise SystemExit("the old exemption test survived the replacement")
+    if SENTINEL not in new:
+        raise SystemExit("the replacement guard is missing its new test")
+    missing = [name for name in KEEP if name not in new]
+    if missing:
         raise SystemExit(
-            f"utils/config.py changed shape: {original.count(chr(10))} lines "
-            f"before, {edited.count(chr(10))} after. A substitution adds and "
-            f"removes nothing.")
-
-    before, after = _palette_values(original), _palette_values(edited)
-    if not before or len(before) != len(after):
-        raise SystemExit(f"expected the same number of palettes before and "
-                         f"after; found {len(before)} and {len(after)}")
-
-    for old_palette, new_palette in zip(before, after):
-        for old_name, new_name in RENAME.items():
-            if old_name not in old_palette:
-                continue
-            if new_name not in new_palette:
-                raise SystemExit(f"{new_name} missing after the rename")
-            if old_palette[old_name] != new_palette[new_name]:
-                raise SystemExit(
-                    f"{old_name} -> {new_name} changed its value expression:\n"
-                    f"  before {old_palette[old_name]}\n"
-                    f"  after  {new_palette[new_name]}\n"
-                    f"A rename that changes a value is not a rename.")
-        # and nothing ELSE in the palette moved either
-        untouched_before = {k: v for k, v in old_palette.items()
-                            if k not in RENAME}
-        untouched_after = {k: v for k, v in new_palette.items()
-                           if k not in RENAME.values()}
-        if untouched_before != untouched_after:
-            differing = {k for k in set(untouched_before) | set(untouched_after)
-                         if untouched_before.get(k) != untouched_after.get(k)}
-            raise SystemExit(f"keys outside the rename changed: {sorted(differing)}")
-
-    main_family = sum(1 for p in after for k in p if k.startswith("main_btn_"))
-    if main_family == 0:
-        raise SystemExit("the main button family vanished from utils/config.py")
-    print(f"  guards: no old name survives, every value expression identical, "
-          f"{main_family} main_btn_* entries untouched")
+            f"these tests are gone from the replacement: {missing}. This "
+            f"pass replaces one test and keeps the rest.")
+    print(f"  guards: the {len(KEEP)} passing tests are still there, the "
+          f"failing one is replaced")
 
 
 GUARD_SOURCE = r'''"""The button keys say where the button lives.
@@ -294,17 +219,39 @@ def test_no_old_button_key_name_survives():
         + "\n  ".join(offenders))
 
 
-def test_the_marker_exemption_covers_only_the_two_tools():
-    """An exemption that grows silently is how a guard stops guarding."""
-    marked = []
+TOOL_MARKER = "RNV-BUTTON-NAMING-TOOL-DO-NOT-SWEEP"
+
+
+def test_no_application_file_is_exempt_from_the_sweep():
+    """The exemption is by marker, and the marker is how a file could hide.
+
+    An earlier version of this counted marked files and allowed two. That
+    failed in a working tree holding a second copy of the delivery script --
+    a guard failing on the state of somebody's checkout rather than on a
+    defect in the application, which is the wrong thing to fail on.
+
+    What actually matters is that no APPLICATION file is exempt. This guard
+    may carry a marker; it lists the old names in order to forbid them.
+    Everything else must be a delivery script, identified by the tool marker
+    in its own header -- those arrive under whatever name they are saved as,
+    there can be several of them lying around, and none is application source.
+    """
+    here = Path(__file__).resolve()
+    strays = []
     for path in sorted(ROOT.rglob("*.py")):
         if any(part in SKIP for part in path.parts):
             continue
         text = path.read_text(encoding="utf-8-sig", errors="replace")
-        if any(marker in text for marker in MARKERS):
-            marked.append(path.relative_to(ROOT))
-    assert len(marked) <= 2, f"unexpected marked file(s): {marked}"
-    assert Path(__file__).relative_to(ROOT) in marked
+        if not any(marker in text for marker in MARKERS):
+            continue
+        if path.resolve() == here or TOOL_MARKER in text:
+            continue
+        strays.append(str(path.relative_to(ROOT)))
+    assert not strays, (
+        "these files are skipped by the name sweep but are not a delivery "
+        f"script: {strays}")
+    assert MARKERS[0] in here.read_text(encoding="utf-8-sig"), (
+        "this guard lost its own marker and is now sweeping itself")
 
 
 def test_both_palettes_carry_the_new_dialog_names():
