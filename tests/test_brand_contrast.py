@@ -497,7 +497,7 @@ def test_text_gold_clears_every_light_surface() -> None:
 
 
 @pytest.mark.parametrize("key", [
-    "text_accent", "button_hover_text", "list_hover_text",
+    "text_accent", "dialog_btn_hover_text", "list_hover_text",
     "tab_hover_text", "tab_selected_text",
 ])
 def test_gold_text_keys_use_the_text_gold(key: str) -> None:
@@ -505,7 +505,7 @@ def test_gold_text_keys_use_the_text_gold(key: str) -> None:
 
 
 @pytest.mark.parametrize("key", [
-    "selected_bg", "button_pressed_bg", "checkbox_checked_bg",
+    "selected_bg", "dialog_btn_pressed_bg", "checkbox_checked_bg",
     "list_selected_bg",
 ])
 def test_gold_fill_keys_use_the_fill_gold(key: str) -> None:

@@ -62,11 +62,11 @@ OVERLAYS = {
 
 #: palette dict name -> the keys in it that must now name a constant.
 WIRED = {
-    'DARK_THEME_COLORS': ('hover_bg', 'button_hover_bg', 'list_hover_bg',
+    'DARK_THEME_COLORS': ('hover_bg', 'dialog_btn_hover_bg', 'list_hover_bg',
                           'image_viewer_bg'),
     'IMAGE_MODE_COLORS': ('window_bg', 'scroll_area_bg', 'image_viewer_bg',
                           'zoom_label_bg'),
-    'LIGHT_THEME_COLORS': ('hover_bg', 'button_hover_bg', 'tab_hover_bg',
+    'LIGHT_THEME_COLORS': ('hover_bg', 'dialog_btn_hover_bg', 'tab_hover_bg',
                            'list_hover_bg', 'image_viewer_bg'),
 }
 

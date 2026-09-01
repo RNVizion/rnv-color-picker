@@ -1345,7 +1345,7 @@ class TestConfig(unittest.TestCase):
     # ── Required keys present in all 3 themes ──
     def test_all_themes_have_required_keys(self):
         required = ["window_bg","panel_bg","card_bg","text_primary","text_secondary",
-                    "border_default","button_bg","tooltip_border","scrollbar_bg",
+                    "border_default","dialog_btn_bg","tooltip_border","scrollbar_bg",
                     "scrollbar_handle","scrollbar_handle_hover"]
         for name, theme in [("DARK", config.DARK_THEME_COLORS),
                             ("LIGHT", config.LIGHT_THEME_COLORS),

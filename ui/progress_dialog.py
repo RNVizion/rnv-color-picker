@@ -74,11 +74,11 @@ def _build_progress_stylesheet(theme: dict) -> str:
     }}
     QPushButton:hover {{
         background-color: {theme['hover_bg']};
-        border: 2px solid {theme['button_hover_border']};
+        border: 2px solid {theme['dialog_btn_hover_border']};
     }}
     QPushButton:pressed {{
-        background-color: {theme['button_pressed_bg']};
-        color: {theme['button_pressed_text']};
+        background-color: {theme['dialog_btn_pressed_bg']};
+        color: {theme['dialog_btn_pressed_text']};
     }}
     QPushButton:disabled {{
         background-color: {theme['card_bg']};

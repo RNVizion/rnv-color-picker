@@ -81,25 +81,25 @@ def _build_dialog_stylesheet(theme: dict) -> str:
     QInputDialog QLineEdit,
     QInputDialog QSpinBox,
     QInputDialog QDoubleSpinBox {{
-        background-color: {theme['button_bg']};
+        background-color: {theme['dialog_btn_bg']};
         color: {theme['text_primary']};
         border: 1px solid {theme['border_hover']};
         border-radius: 3px;
         padding: 4px 6px;
         min-height: 20px;
-        selection-background-color: {theme['button_hover_bg']};
-        selection-color: {theme['button_hover_text']};
+        selection-background-color: {theme['dialog_btn_hover_bg']};
+        selection-color: {theme['dialog_btn_hover_text']};
     }}
     QInputDialog QLineEdit:focus,
     QInputDialog QSpinBox:focus,
     QInputDialog QDoubleSpinBox:focus {{
-        border: 1px solid {theme['button_hover_border']};
+        border: 1px solid {theme['dialog_btn_hover_border']};
     }}
     QInputDialog QSpinBox::up-button,
     QInputDialog QDoubleSpinBox::up-button,
     QInputDialog QSpinBox::down-button,
     QInputDialog QDoubleSpinBox::down-button {{
-        background-color: {theme['button_bg']};
+        background-color: {theme['dialog_btn_bg']};
         border: 1px solid {theme['border_hover']};
         width: 16px;
     }}
@@ -107,20 +107,20 @@ def _build_dialog_stylesheet(theme: dict) -> str:
     QInputDialog QDoubleSpinBox::up-button:hover,
     QInputDialog QSpinBox::down-button:hover,
     QInputDialog QDoubleSpinBox::down-button:hover {{
-        background-color: {theme['button_hover_bg']};
-        border: 1px solid {theme['button_hover_border']};
+        background-color: {theme['dialog_btn_hover_bg']};
+        border: 1px solid {theme['dialog_btn_hover_border']};
     }}
     QInputDialog QSpinBox::up-button:pressed,
     QInputDialog QDoubleSpinBox::up-button:pressed,
     QInputDialog QSpinBox::down-button:pressed,
     QInputDialog QDoubleSpinBox::down-button:pressed {{
-        background-color: {theme['button_pressed_bg']};
+        background-color: {theme['dialog_btn_pressed_bg']};
     }}
     
     /* ---------- Buttons (shared across QMessageBox + QInputDialog) ---------- */
     QMessageBox QPushButton, QInputDialog QPushButton {{
-        background-color: {theme['button_bg']};
-        color: {theme['button_text']};
+        background-color: {theme['dialog_btn_bg']};
+        color: {theme['dialog_btn_text']};
         border: 2px solid {theme['border_hover']};
         padding: 6px 16px;
         border-radius: 4px;
@@ -128,14 +128,14 @@ def _build_dialog_stylesheet(theme: dict) -> str:
         font-weight: bold;
     }}
     QMessageBox QPushButton:hover, QInputDialog QPushButton:hover {{
-        background-color: {theme['button_hover_bg']};
-        border: 2px solid {theme['button_hover_border']};
-        color: {theme['button_hover_text']};
+        background-color: {theme['dialog_btn_hover_bg']};
+        border: 2px solid {theme['dialog_btn_hover_border']};
+        color: {theme['dialog_btn_hover_text']};
     }}
     QMessageBox QPushButton:pressed, QInputDialog QPushButton:pressed {{
-        background-color: {theme['button_pressed_bg']};
-        border: 2px solid {theme['button_pressed_bg']};
-        color: {theme['button_pressed_text']};
+        background-color: {theme['dialog_btn_pressed_bg']};
+        border: 2px solid {theme['dialog_btn_pressed_bg']};
+        color: {theme['dialog_btn_pressed_text']};
     }}
     QMessageBox QPushButton:default, QInputDialog QPushButton:default {{
         background-color: {theme['pressed_bg']};
@@ -144,13 +144,13 @@ def _build_dialog_stylesheet(theme: dict) -> str:
     }}
     QMessageBox QPushButton:default:hover, QInputDialog QPushButton:default:hover {{
         background-color: {theme['hover_bg']};
-        border: 2px solid {theme['button_hover_border']};
-        color: {theme['button_hover_text']};
+        border: 2px solid {theme['dialog_btn_hover_border']};
+        color: {theme['dialog_btn_hover_text']};
     }}
     QMessageBox QPushButton:default:pressed, QInputDialog QPushButton:default:pressed {{
-        background-color: {theme['button_pressed_bg']};
-        border: 2px solid {theme['button_pressed_bg']};
-        color: {theme['button_pressed_text']};
+        background-color: {theme['dialog_btn_pressed_bg']};
+        border: 2px solid {theme['dialog_btn_pressed_bg']};
+        color: {theme['dialog_btn_pressed_text']};
     }}
     """
 

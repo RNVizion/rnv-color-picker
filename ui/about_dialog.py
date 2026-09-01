@@ -162,27 +162,27 @@ class AboutDialog(QDialog):
         _theme = self._get_theme()
         close_btn.setStyleSheet(f"""
             QPushButton {{
-                background-color: {_theme['button_bg']};
-                color: {_theme['button_text']};
-                border: 1px solid {_theme['button_border']};
+                background-color: {_theme['dialog_btn_bg']};
+                color: {_theme['dialog_btn_text']};
+                border: 1px solid {_theme['dialog_btn_border']};
                 padding: 8px 25px;
                 border-radius: 4px;
                 font-weight: bold;
             }}
             QPushButton:hover {{
-                background-color: {_theme['button_hover_bg']};
-                color: {_theme['button_hover_text']};
-                border: 1px solid {_theme['button_hover_border']};
+                background-color: {_theme['dialog_btn_hover_bg']};
+                color: {_theme['dialog_btn_hover_text']};
+                border: 1px solid {_theme['dialog_btn_hover_border']};
             }}
             QPushButton:pressed {{
-                background-color: {_theme['button_pressed_bg']};
-                color: {_theme['button_pressed_text']};
-                border: 1px solid {_theme['button_pressed_bg']};
+                background-color: {_theme['dialog_btn_pressed_bg']};
+                color: {_theme['dialog_btn_pressed_text']};
+                border: 1px solid {_theme['dialog_btn_pressed_bg']};
             }}
             QPushButton:disabled {{
                 background-color: {_theme['pressed_bg']};
                 color: {_theme['text_disabled']};
-                border: 1px solid {_theme['button_border']};
+                border: 1px solid {_theme['dialog_btn_border']};
             }}
         """)
         btn_layout.addWidget(close_btn)

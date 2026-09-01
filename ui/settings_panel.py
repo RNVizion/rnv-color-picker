@@ -2079,21 +2079,21 @@ class SettingsPanel(QDialog):
                 color: {theme['text_primary']};
             }}
             QPushButton {{
-                background-color: {theme['button_bg']};
-                color: {theme['button_text']};
-                border: 1px solid {theme['button_border']};
+                background-color: {theme['dialog_btn_bg']};
+                color: {theme['dialog_btn_text']};
+                border: 1px solid {theme['dialog_btn_border']};
                 padding: 6px 12px;
                 border-radius: 4px;
             }}
             QPushButton:hover {{
-                background-color: {theme['button_hover_bg']};
-                color: {theme['button_hover_text']};
-                border: 1px solid {theme['button_hover_border']};
+                background-color: {theme['dialog_btn_hover_bg']};
+                color: {theme['dialog_btn_hover_text']};
+                border: 1px solid {theme['dialog_btn_hover_border']};
             }}
             QPushButton:pressed {{
-                background-color: {theme['button_pressed_bg']};
-                color: {theme['button_pressed_text']};
-                border: 1px solid {theme['button_pressed_bg']};
+                background-color: {theme['dialog_btn_pressed_bg']};
+                color: {theme['dialog_btn_pressed_text']};
+                border: 1px solid {theme['dialog_btn_pressed_bg']};
             }}
             QPushButton:disabled {{
                 background-color: {theme['pressed_bg']};

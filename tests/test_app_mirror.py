@@ -58,7 +58,7 @@ PINNED = {
 #: Dark-mode ink and edge. These carry APP_TEXT and must reference it by name.
 #: swatch_border_color is an EDGE rather than an ink -- the grid governs both,
 #: which is why it moves with the text instead of being left behind.
-INK_KEYS = ('text_primary', 'button_text', 'main_btn_text',
+INK_KEYS = ('text_primary', 'dialog_btn_text', 'main_btn_text',
             'main_btn_hover_text', 'tooltip_text', 'swatch_border_color')
 
 #: The other half of #e0e0e0's old double life: a LIGHT surface, which the
