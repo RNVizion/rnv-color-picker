@@ -1,63 +1,54 @@
 #!/usr/bin/env python3
 """
-RNV-GOLD-ALIGNMENT-TOOL-DO-NOT-SWEEP
+RNV-BUTTON-NAMING-TOOL-DO-NOT-SWEEP
 
-Adopt the dark ladder ends and the light plate in rnv-color-picker, and wire
-the four translucent register values the last pass could not see.
+Rename the eight dialog button keys from button_* to dialog_btn_*.
 
     python up.py             # apply, then verify
     python up.py --check     # rehearse every edit in memory, write nothing
     python up.py --verify    # run the suites only, change nothing
     python up.py --finish    # delete this file
 
-WHAT MOVES: NOTHING. Not one rendered pixel.
+NOT ONE PIXEL MOVES. This is a rename and nothing else.
 
-Thirteen entries change how they are SPELLED. Every value stays what it was.
+This application already ships two button schemes and keeps them properly
+apart: main_btn_* is the black-and-white main window with its inverting
+transition, and button_* is the gold scheme its dialogs use. The values are
+right. The name is not.
 
-    dark   hover_bg, button_hover_bg, list_hover_bg       -> APP_PANEL_HOVER
-    dark   image_viewer_bg                                -> APP_CANVAS
-    image  window_bg, scroll_area_bg                      -> APP_WINDOW_OVERLAY
-    image  image_viewer_bg                                -> APP_CANVAS_OVERLAY
-    image  zoom_label_bg                                  -> APP_PANEL_OVERLAY
-    light  hover_bg, button_hover_bg, tab_hover_bg,
-           list_hover_bg                                  -> APP_HOVER_LIGHT
-    light  image_viewer_bg                                -> IMAGE_CANVAS_LIGHT
+`button_*` means the GOLD DIALOG scheme here and in rnv-icon-builder, and the
+BLACK-AND-WHITE MAIN scheme in rnv-color-palette-manager, rnv-color-mixer and
+rnv-text-transformer. One name, two schemes, decided by which repository you
+happen to have open -- and a name that cannot be carried into a new project is
+not a standard. After this pass the name says where the button lives:
 
-checks() proves it rather than asserting it: it resolves every entry of every
-palette from the ORIGINAL file and the EDITED one and refuses to write unless
-all three palettes are equal entry for entry.
+    main_btn_*     the main window at launch
+    dialog_btn_*   anything that opens later
 
-A DEFECT IN THE LAST PASS, FIXED HERE
+WHAT MOVES
 
-The 2026-08-29 wiring pass claimed no registered value was left spelled as a
-literal in a dark palette. It was true of six-digit spellings only. Qt writes a
-translucent colour as #AARRGGBB, and the guard compared whole strings, so
-#ED000000 never matched #000000. Four registered values sat in
-IMAGE_MODE_COLORS -- which is a DARK dict here -- and the test reported clean.
+Sixty-five quoted occurrences in eleven files: both palettes in utils/config.py,
+the four dialog modules that read them, and five test modules. main_btn_* is
+not touched.
 
-That is the same shape as the three failures already recorded in this
-programme: a check whose reach was narrower than the change's extent, passing
-because it covered what it could rather than what mattered. The sweep in
-tests/test_register_wiring.py now normalises both lengths, and the four values
-become named overlay constants whose relationship to their bases is asserted.
+DOCUMENTATION IS NOT TOUCHED, ON PURPOSE
 
-A COINCIDENCE, NAMED
+The docs pass runs once, after alignment settles, so it is written against the
+finished state rather than chased through it. The guard sweeps code and
+snapshots, not prose, for the same reason.
 
-Light image_viewer_bg is #e8e8e8, which rnv-brand rev 24 registered as
-GOLD_TEXT_GROUND_FLOOR. It is NOT that role. It is the empty canvas behind a
-loaded image -- a QGraphicsView background brush with the user's own picture on
-it, and nothing gold, red, or textual is ever drawn on it. It shares a hex with
-the floor and shares nothing else, so it is named IMAGE_CANVAS_LIGHT, declared
-app-owned, and recorded as a coincidence asserted in both directions: one that
-stops coinciding fails, and so does one that turns out to be mirrored.
+WHAT THE GUARD ASSERTS
 
-THIS PASS WIRES A LIGHT VALUE, WHICH THE LAST ONE PROMISED NOT TO
+tests/test_button_key_names.py fails if an old name comes back, if either
+palette loses a new one, if any of the sixteen dialog values moved, if the
+main family moved, or if the two families ever converge on one scheme -- two
+families holding the same scheme is one family with extra steps.
 
-tests/test_register_wiring.py carries test_the_light_palettes_were_left_alone,
-written so widening scope into light would have to be deliberate. This is that
-deliberate act, and the test is rewritten here in the open. It would not have
-fired on its own: it flagged names in its REGISTERED map, and that map never
-contained APP_HOVER_LIGHT.
+It reads the palettes by importing them rather than by parsing them. Light's
+dialog_btn_hover_text is BRAND_DARK_GOLD_DEEP, derived through lighten()
+rather than written as a literal, and a static resolver returns None for it,
+then compares None with None and passes. That failure mode has appeared twice
+in this programme already.
 """
 from __future__ import annotations
 
@@ -71,217 +62,308 @@ import tempfile
 from pathlib import Path
 
 REPO = "rnv-color-picker"
-DESCRIPTION = "adopt the ladder ends, the light plate, and the overlays"
+DESCRIPTION = "rename the dialog button keys to dialog_btn_*"
 SENTINEL_FILE = "utils/config.py"
-SENTINEL = "APP_HOVER_LIGHT,"
-MIRROR = "tests/test_app_mirror.py"
-WIRING = "tests/test_register_wiring.py"
-GUARD = "tests/test_ladder_and_plate.py"
+SENTINEL = "'dialog_btn_bg'"
+GUARD = "tests/test_button_key_names.py"
 SHADOWS = {"colors.py", "config.py", "conftest.py", "run_tests.py"}
 
 SUITES = [
-    ('pytest tests/ (about 1 minute)',
+    ('pytest tests/',
      [sys.executable, "-m", "pytest", "tests/", "-q", "-p", "no:cacheprovider"]),
     ('unittest suite',
      [sys.executable, "-m", "unittest", "test_rnv_color_picker"]),
 ]
 
-#: palette -> {value: constant}. An ALLOWLIST, not a sweep: a value-keyed
-#: substitution with no allowlist can install a name whose meaning is wrong for
-#: the palette it lands in, which has happened once in this programme.
-SUBSTITUTE = {
-    "DARK_THEME_COLORS": {"#3a3a3a": "APP_PANEL_HOVER",
-                          "#0a0a0a": "APP_CANVAS"},
-    "IMAGE_MODE_COLORS": {"#ed000000": "APP_WINDOW_OVERLAY",
-                          "#ed0a0a0a": "APP_CANVAS_OVERLAY",
-                          "#ed1a1a1a": "APP_PANEL_OVERLAY"},
-    "LIGHT_THEME_COLORS": {"#eeeeee": "APP_HOVER_LIGHT",
-                           "#e8e8e8": "IMAGE_CANVAS_LIGHT"},
-}
-EXPECTED_SUBS = 13
+OLD_KEYS = ("button_bg", "button_text", "button_hover_bg", "button_hover_text",
+            "button_hover_border", "button_pressed_bg", "button_pressed_text",
+            "button_border")
+RENAME = {k: "dialog_btn_" + k[len("button_"):] for k in OLD_KEYS}
 
-ALL_DICTS = ("DARK_THEME_COLORS", "LIGHT_THEME_COLORS", "IMAGE_MODE_COLORS")
-
-CONSTANTS = '\nAPP_CANVAS: Final[str] = "#0a0a0a"\n"""engine/brand.py APP["canvas"]. The n=-1 rung of the dark surface ladder.\n\nREGISTERED 2026-08-29 in rnv-brand rev 22, app-owned here until then.\n\n    BRAND_BLACK + n * 0x10,  n in -1..+2\n    #0a0a0a canvas   #1a1a1a panel   #2a2a2a card   #3a3a3a panel-hover\n\nNOT WEB_BLACK. The web ground is #0a0a0f -- same lightness, blue channel\nlifted. App neutrals are pure grey, R = G = B, without exception, and the web\ncarries a tint the apps do not. The two are one byte apart on purpose, and that\nbyte is why invert(#0a0a0a) = #f5f5f5 once looked like a light-ground rule and\nwas not: the register\'s canvas inverts to #f5f5f0.\n"""\n\nAPP_PANEL_HOVER: Final[str] = "#3a3a3a"\n"""engine/brand.py APP["panel-hover"]. The n=+2 rung, and the dark interaction\nplate.\n\nREGISTERED 2026-08-29, app-owned here until then. The register had called the\nladder "two-thirds specified" because APP_BORDER #333333 is not #3a3a3a and so\nlooked like a missing rung. It is not a rung at all: #333333 is grey(3) on the\nINK grid, which governs inks and EDGES, and a border is an edge. The ladder was\ncomplete when the question was first asked.\n"""\n\nAPP_HOVER_LIGHT: Final[str] = "#eeeeee"\n"""engine/brand.py APP["hover-light"]. grey(14). The light interaction plate.\n\nREGISTERED 2026-08-29 as #e8e8e8 and MOVED to #eeeeee on 2026-08-30 in rev 23,\nbefore any app had been wired to it. Nothing here changes value -- the four\nentries below already held #eeeeee.\n\n#e8e8e8 is the ground BRAND_DARK_GOLD_DEEP is calibrated against, and rev 24\nregistered it under its own name for exactly that reason. Putting the hover\nplate on it would have pinned every hover in the app to the one value the gold\ncannot afford to lose, clearing the 4.5 floor by 0.0334. A boundary is not a\nplate. This value is a grid step inside it and gold reads 4.7875 on it.\n"""\n\nIMAGE_CANVAS_LIGHT: Final[str] = "#e8e8e8"\n"""APP-OWNED. The image viewer\'s ground in light mode.\n\nA COINCIDENCE, NOT A MIRROR, and the distinction is the whole reason this\nconstant exists rather than the literal that was here before. rnv-brand rev 24\nregistered #e8e8e8 as GOLD_TEXT_GROUND_FLOOR -- the darkest light ground on\nwhich the gold family carries text, and the value BRAND_DARK_GOLD_DEEP is\nderived against.\n\nThis is not that role. It is the empty canvas behind a loaded image in\nRNV_Color_Picker.py: a QGraphicsView background brush with the user\'s own\nimage drawn on it. No gold, no error red, no text of any kind is ever drawn on\nit. It shares a hex with the floor and shares nothing else.\n\nSO IT MUST NOT FOLLOW. If the register ever moves GOLD_TEXT_GROUND_FLOOR, this\nvalue stays where it is, and tests/test_ladder_and_plate.py asserts the\ncoincidence in both directions so that neither the sharing nor the separation\ncan rot silently.\n"""\n\nIMAGE_OVERLAY_ALPHA: Final[str] = "ED"\n"""The alpha byte image mode composites its chrome at -- 0xED, about 93%.\n\nWHY THE OVERLAYS BELOW ARE WRITTEN OUT RATHER THAN COMPOSED. Qt wants the\neight-digit #AARRGGBB form, and building it from the six-digit constant would\nmake the palette entries resolve to an expression rather than a value, which\nthis app\'s own before/after comparison cannot check. The relationship is\nenforced by tests/test_ladder_and_plate.py instead: it asserts that each\noverlay\'s last six digits ARE the register value it claims, and that its alpha\nbyte is this one. If the register moves a base, those tests fail and these move\nwith it.\n\nTHEY WERE INVISIBLE BEFORE. The 2026-08-29 wiring pass claimed no registered\nvalue was left spelled as a literal in a dark palette. That was true of\nsix-digit spellings only: its sweep compared whole strings, so #ED000000 never\nmatched #000000 and four of these sat in IMAGE_MODE_COLORS while the test\nreported clean. The sweep now normalises both lengths.\n"""\n\nAPP_WINDOW_OVERLAY: Final[str] = "#ED000000"\n"""TRUE_BLACK, and APP["window"], at IMAGE_OVERLAY_ALPHA."""\n\nAPP_CANVAS_OVERLAY: Final[str] = "#ED0A0A0A"\n"""APP_CANVAS, and APP["canvas"], at IMAGE_OVERLAY_ALPHA."""\n\nAPP_PANEL_OVERLAY: Final[str] = "#ED1A1A1A"\n"""BRAND_BLACK, and APP["panel"], at IMAGE_OVERLAY_ALPHA."""\n'
-PROVENANCE = '    "APP_CANVAS": "register",\n    "APP_PANEL_HOVER": "register",\n    "APP_HOVER_LIGHT": "register",\n    "APP_WINDOW_OVERLAY": "register-overlay",\n    "APP_CANVAS_OVERLAY": "register-overlay",\n    "APP_PANEL_OVERLAY": "register-overlay",\n    "IMAGE_CANVAS_LIGHT": "app-canvas",\n'
-PINNED = "    'APP_CANVAS': '#0a0a0a',\n    'APP_PANEL_HOVER': '#3a3a3a',\n    'APP_HOVER_LIGHT': '#eeeeee',\n"
-OLD_LIGHT_TEST = 'def test_the_light_palettes_were_left_alone():\n    """This pass is the DARK half, on the register\'s stated order. The light\n    ladder is unruled -- nine surfaces inside three grid steps, and which of\n    them are real distinctions is a judgement the register has not made. If a\n    later pass wires light, this test is the thing that has to be deleted on\n    purpose."""\n    named = []\n    for dict_name, node in _dicts(LIGHT_DICTS).items():\n        for key, value in zip(node.keys, node.values):\n            if isinstance(value, ast.Name) and value.id in REGISTERED:\n                named.append(f\'{dict_name}[{key.value!r}] -> {value.id}\')\n    assert not named, (\n        \'the light palettes now reference the register:\\n  \' + \'\\n  \'.join(named)\n        + \'\\n\\nThat is the light half, and it is not ruled yet.\')'
-NEW_LIGHT_TEST = '#: The light half is ruled one value at a time. This is the allowlist, and it\n#: is what a later pass has to extend ON PURPOSE.\nLIGHT_RULED = (\'APP_HOVER_LIGHT\',)\n\n\ndef test_the_light_palettes_reference_only_what_the_register_has_ruled():\n    """This began life as "the light palettes were left alone", which was true\n    while the light half was entirely unruled. rnv-brand rev 23 ruled one value\n    of it -- APP["hover-light"] -- so the test becomes an allowlist rather than\n    a prohibition. The light LADDER is still unruled: nine surfaces inside three\n    grid steps, and which of them are real distinctions is a judgement the\n    register has not made.\n\n    THE EARLIER FORM COULD NOT HAVE CAUGHT THIS PASS. It flagged names found in\n    REGISTERED, and REGISTERED was a four-value snapshot that did not contain\n    the value being wired -- so light could have been wired underneath it and it\n    would have reported clean. REGISTERED is widened in the same commit."""\n    named = []\n    for dict_name, node in _dicts(LIGHT_DICTS).items():\n        for key, value in zip(node.keys, node.values):\n            if (isinstance(value, ast.Name) and value.id in REGISTERED\n                    and value.id not in LIGHT_RULED):\n                named.append(f\'{dict_name}[{key.value!r}] -> {value.id}\')\n    assert not named, (\n        \'the light palettes reference register values that are not ruled \'\n        \'yet:\\n  \' + \'\\n  \'.join(named)\n        + \'\\n\\nAdd the name to LIGHT_RULED in the same commit that wires it, \'\n          \'or do not wire it.\')\n\n\ndef test_the_ruled_light_value_is_actually_wired():\n    """The allowlist permits; this requires. An allowlist entry nothing uses is\n    a licence with no subject -- the same shape as a dead exemption."""\n    used = set()\n    for node in _dicts(LIGHT_DICTS).values():\n        for value in node.values:\n            if isinstance(value, ast.Name) and value.id in LIGHT_RULED:\n                used.add(value.id)\n    assert used == set(LIGHT_RULED), (\n        f\'LIGHT_RULED lists {sorted(LIGHT_RULED)} but the light palettes use \'\n        f\'{sorted(used)}\')'
-OLD_SWEEP = "            if isinstance(value, ast.Constant) and isinstance(value.value, str):\n                if value.value.lower() in by_value:\n                    literals.append(\n                        f'{dict_name}[{key.value!r}] = {value.value} '\n                        f'(should read {by_value[value.value.lower()]})')"
-NEW_SWEEP = '            if isinstance(value, ast.Constant) and isinstance(value.value, str):\n                # Qt spells a translucent colour #AARRGGBB. This sweep compared\n                # whole strings, so an eight-digit spelling of a registered\n                # value never matched a six-digit register entry --\n                # IMAGE_MODE_COLORS kept four of them (#ED000000 twice,\n                # #ED0A0A0A, #ED1A1A1A) while this test reported clean and the\n                # pass it guards claimed completeness. Both lengths normalise\n                # to the RGB half now.\n                spelled = value.value.lower()\n                rgb = \'#\' + spelled[3:] if len(spelled) == 9 else spelled\n                if rgb in by_value:\n                    literals.append(\n                        f\'{dict_name}[{key.value!r}] = {value.value} \'\n                        f\'(should read {by_value[rgb]}\'\n                        f\'{" as an overlay" if rgb != spelled else ""})\')'
-OLD_REG = "REGISTERED = {'TRUE_BLACK': '#000000', 'BRAND_BLACK': '#1a1a1a', 'APP_CARD': '#2a2a2a', 'APP_BORDER': '#333333'}"
-NEW_REG = "REGISTERED = {'TRUE_BLACK': '#000000', 'BRAND_BLACK': '#1a1a1a', 'APP_CARD': '#2a2a2a', 'APP_BORDER': '#333333',\n              'APP_CANVAS': '#0a0a0a', 'APP_PANEL_HOVER': '#3a3a3a',\n              'APP_HOVER_LIGHT': '#eeeeee'}"
-
-#: Every line this pass adds, counted from the text that adds it. A
-#: substitution that eats or adds a line ending leaves every value identical
-#: and every test green while the file is quietly reflowed; only shape sees it.
-#: CONSTANTS supplies its own leading newline and the anchor it replaces gave
-#: one up, hence the -1.
-EXPECTED_ADDED = {
-    SENTINEL_FILE: CONSTANTS.count("\n") - 1 + PROVENANCE.count("\n"),
-    MIRROR: PINNED.count("\n"),
-    WIRING: (NEW_LIGHT_TEST.count("\n") - OLD_LIGHT_TEST.count("\n")
-             + NEW_SWEEP.count("\n") - OLD_SWEEP.count("\n")
-             + NEW_REG.count("\n") - OLD_REG.count("\n")),
+#: path -> how many QUOTED occurrences that file holds. Written down so the
+#: script refuses to run against a tree that has moved under it.
+QUOTED = {
+    "utils/config.py": 16,
+    "utils/dialog_helper.py": 21,
+    "ui/about_dialog.py": 10,
+    "ui/settings_panel.py": 9,
+    "ui/progress_dialog.py": 3,
+    "test_rnv_color_picker.py": 1,
+    "tests/test_app_mirror.py": 1,
+    "tests/test_brand_contrast.py": 2,
+    "tests/test_ladder_and_plate.py": 2,
 }
 
+_QUOTED_RE = re.compile(r"(['\"])(" + "|".join(sorted(RENAME, key=len, reverse=True))
+                        + r")\1")
 
-def _resolve(source: str) -> dict:
-    """Every palette, resolved to plain values, whether an entry is written as
-    a literal or a name. This is what makes "nothing moved" checkable."""
-    # Five files here begin with a UTF-8 BOM and Tree.read decodes as plain
-    # utf-8, so it arrives as a leading U+FEFF that ast.parse refuses. Stripped
-    # here rather than in the reader, because the BOM must survive into the
-    # file that is written back.
-    tree = ast.parse(source.lstrip("\ufeff"))
-    consts = {}
-    for node in tree.body:
-        if isinstance(node, (ast.Assign, ast.AnnAssign)):
-            target = node.targets[0] if isinstance(node, ast.Assign) else node.target
-            if isinstance(target, ast.Name) and isinstance(node.value, ast.Constant):
-                consts[target.id] = node.value.value
-    out = {}
-    for node in ast.walk(tree):
-        if isinstance(node, (ast.Assign, ast.AnnAssign)):
-            target = node.targets[0] if isinstance(node, ast.Assign) else node.target
-            name = getattr(target, "id", None)
-            if name in ALL_DICTS and isinstance(node.value, ast.Dict):
-                palette = {}
-                for key, value in zip(node.value.keys, node.value.values):
-                    if not isinstance(key, ast.Constant):
-                        continue
-                    if isinstance(value, ast.Constant):
-                        palette[key.value] = value.value
-                    elif isinstance(value, ast.Name):
-                        palette[key.value] = consts.get(value.id, f"<{value.id}>")
-                    else:
-                        palette[key.value] = ast.unparse(value)
-                out[name] = palette
+
+def _rename_quoted(text: str) -> tuple[str, int]:
+    hits = 0
+
+    def swap(m: re.Match) -> str:
+        nonlocal hits
+        hits += 1
+        return f"{m.group(1)}{RENAME[m.group(2)]}{m.group(1)}"
+
+    return _QUOTED_RE.sub(swap, text), hits
+
+
+def _palette_values(source: str) -> list[dict[str, str]]:
+    """{key: the value EXPRESSION as written} for every palette dict.
+
+    Deliberately not resolved to a colour. This runs before the files are
+    written, so it cannot import anything, and half these values are names or
+    derived calls that a static resolver turns into None. Comparing the
+    expression text answers the only question --  did anything but the key
+    change? -- without pretending to know what the expression evaluates to.
+    """
+    # This repository's sources carry UTF-8 BOMs. Tree.read decodes as plain
+    # utf-8 so the round-trip preserves them byte for byte, which means the
+    # marker arrives here as a character and ast.parse refuses it.
+    out = []
+    for node in ast.walk(ast.parse(source.lstrip("\ufeff"))):
+        if not isinstance(node, ast.Dict):
+            continue
+        pairs = {k.value: ast.unparse(v) for k, v in zip(node.keys, node.values)
+                 if isinstance(k, ast.Constant) and isinstance(k.value, str)}
+        if any(name in pairs for name in list(RENAME) + list(RENAME.values())):
+            out.append(pairs)
     return out
 
 
-def _bounds(lines):
-    """The palettes carry identically-spelled key lines, so a plain string
-    replace cannot tell dark from light. Every edit is scoped to its own."""
-    starts = {}
-    pattern = re.compile(r"^(" + "|".join(ALL_DICTS) + r")\s*[:=]")
-    for i, line in enumerate(lines):
-        m = pattern.match(line)
-        if m:
-            starts[m.group(1)] = i
-    if len(starts) != len(ALL_DICTS):
-        raise SystemExit(f"expected {len(ALL_DICTS)} palettes, found {sorted(starts)}")
-    order = sorted(starts.items(), key=lambda kv: kv[1])
-    return {n: (st, order[i + 1][1] if i + 1 < len(order) else len(lines))
-            for i, (n, st) in enumerate(order)}
-
-
 def edits(tree) -> None:
-    tree.sub(SENTINEL_FILE,
-             '\nAPP_PROVENANCE: Final[dict[str, str]] = {',
-             CONSTANTS + 'APP_PROVENANCE: Final[dict[str, str]] = {')
-    tree.sub(SENTINEL_FILE, '    "APP_TEXT_DIM": "register",\n',
-             '    "APP_TEXT_DIM": "register",\n' + PROVENANCE)
-
-    source = tree.read(SENTINEL_FILE)
-    lines = source.splitlines(keepends=True)
-    bounds = _bounds(lines)
-    swapped = 0
-    for dict_name, table in SUBSTITUTE.items():
-        start, end = bounds[dict_name]
-        for i in range(start, end):
-            line = lines[i]
-            # Match the line WITHOUT its ending and put the ending back
-            # verbatim. Python's `$` also matches just before a trailing
-            # newline, so a pattern ending in `(,.*)$` silently drops it -- and
-            # the result is still valid Python, so every test passes while the
-            # palette is reflowed onto one line.
-            body = line.rstrip("\r\n")
-            ending = line[len(body):]
-            # Six OR eight digits. The eight-digit form is the one the last
-            # pass could not see.
-            m = re.match(r"^(\s*'[a-z_0-9]+':\s*)'(#[0-9a-fA-F]{6}|"
-                         r"#[0-9a-fA-F]{8})'(,.*)$", body)
-            if not m:
-                continue
-            const = table.get(m.group(2).lower())
-            if const:
-                lines[i] = f"{m.group(1)}{const}{m.group(3)}{ending}"
-                swapped += 1
-    if swapped != EXPECTED_SUBS:
-        raise SystemExit(f"expected {EXPECTED_SUBS} substitutions, made "
-                         f"{swapped}. The palettes have already been wired, or "
-                         f"their shape changed -- re-derive this script.")
-    tree.write(SENTINEL_FILE, "".join(lines))
-    print(f"  substituted {swapped} literals for their names")
-
-    tree.sub(MIRROR, "    'APP_TEXT_DIM': '#aaaaaa',\n",
-             "    'APP_TEXT_DIM': '#aaaaaa',\n" + PINNED)
-
-    tree.sub(WIRING, OLD_REG, NEW_REG)
-    tree.sub(WIRING, OLD_SWEEP, NEW_SWEEP)
-    tree.sub(WIRING, OLD_LIGHT_TEST, NEW_LIGHT_TEST)
+    total = 0
+    for rel, expected in QUOTED.items():
+        new, hits = _rename_quoted(tree.read(rel))
+        if hits != expected:
+            raise SystemExit(f"{rel}: expected {expected} quoted key(s), found "
+                             f"{hits}. The file moved; re-derive this edit "
+                             f"before trusting the script.")
+        tree.write(rel, new)
+        total += hits
+    print(f"  renamed {total} quoted keys in {len(QUOTED)} files")
 
 
 def checks(tree) -> None:
-    for rel, added in EXPECTED_ADDED.items():
-        before = (Path.cwd() / rel).read_text(encoding="utf-8-sig")
-        after = tree.read(rel)
-        delta = after.count("\n") - before.count("\n")
-        if delta != added:
-            raise SystemExit(
-                f"{rel} changed shape by {delta} lines; this pass adds exactly "
-                f"{added}. A substitution that eats or adds a line ending "
-                f"leaves every value identical and every test green.")
+    for rel in QUOTED:
+        text = tree.read(rel)
+        for old in RENAME:
+            if re.search(r"(['\"])" + old + r"\1", text):
+                raise SystemExit(f"{rel}: {old!r} survived the rename")
 
-    original = (Path.cwd() / SENTINEL_FILE).read_text(encoding="utf-8-sig")
+    original = (Path.cwd() / SENTINEL_FILE).read_text(encoding="utf-8")
     edited = tree.read(SENTINEL_FILE)
 
-    before, after = _resolve(original), _resolve(edited)
-    if set(before) != set(after):
-        raise SystemExit(f"a palette appeared or vanished: {set(before) ^ set(after)}")
-    moved = []
-    for name in before:
-        for key in set(before[name]) | set(after[name]):
-            was, now = before[name].get(key), after[name].get(key)
-            if was != now:
-                moved.append(f"{name}[{key!r}]: {was} -> {now}")
-    if moved:
-        raise SystemExit("THIS PASS MUST NOT MOVE A VALUE, and it moved these:\n  "
-                         + "\n  ".join(moved))
+    if edited.count("\n") != original.count("\n"):
+        raise SystemExit(
+            f"utils/config.py changed shape: {original.count(chr(10))} lines "
+            f"before, {edited.count(chr(10))} after. A substitution adds and "
+            f"removes nothing.")
 
-    # Completeness, at BOTH spellings. The six-digit-only version of this check
-    # is the defect this pass exists to fix, so it is not repeated here.
-    wanted = {v for table in SUBSTITUTE.values() for v in table}
-    lines = edited.splitlines()
-    bounds = _bounds([l + "\n" for l in lines])
-    survivors = []
-    for name in ALL_DICTS:
-        start, end = bounds[name]
-        for i in range(start, end):
-            m = re.match(r"^\s*'([a-z_0-9]+)':\s*'(#[0-9a-fA-F]{6}|"
-                         r"#[0-9a-fA-F]{8})',", lines[i])
-            if m and m.group(2).lower() in wanted:
-                survivors.append(f"{name}[{m.group(1)!r}] = {m.group(2)}")
-    if survivors:
-        raise SystemExit("a value this pass names is still a literal:\n  "
-                         + "\n  ".join(survivors))
+    before, after = _palette_values(original), _palette_values(edited)
+    if not before or len(before) != len(after):
+        raise SystemExit(f"expected the same number of palettes before and "
+                         f"after; found {len(before)} and {len(after)}")
 
-    # The plate must not land on the floor. If #e8e8e8 ever reaches a hover key
-    # here, the reason APP["hover-light"] moved has been undone.
-    for name, palette in after.items():
-        for key, value in palette.items():
-            if ("hover" in key and isinstance(value, str)
-                    and value.lower() == "#e8e8e8"):
+    for old_palette, new_palette in zip(before, after):
+        for old_name, new_name in RENAME.items():
+            if old_name not in old_palette:
+                continue
+            if new_name not in new_palette:
+                raise SystemExit(f"{new_name} missing after the rename")
+            if old_palette[old_name] != new_palette[new_name]:
                 raise SystemExit(
-                    f"{name}[{key!r}] is #e8e8e8 -- that is "
-                    f"GOLD_TEXT_GROUND_FLOOR, not an interaction plate.")
+                    f"{old_name} -> {new_name} changed its value expression:\n"
+                    f"  before {old_palette[old_name]}\n"
+                    f"  after  {new_palette[new_name]}\n"
+                    f"A rename that changes a value is not a rename.")
+        # and nothing ELSE in the palette moved either
+        untouched_before = {k: v for k, v in old_palette.items()
+                            if k not in RENAME}
+        untouched_after = {k: v for k, v in new_palette.items()
+                           if k not in RENAME.values()}
+        if untouched_before != untouched_after:
+            differing = {k for k in set(untouched_before) | set(untouched_after)
+                         if untouched_before.get(k) != untouched_after.get(k)}
+            raise SystemExit(f"keys outside the rename changed: {sorted(differing)}")
 
-    if SENTINEL not in edited:
-        raise SystemExit(f"expected {SENTINEL!r} in the edited palette")
+    main_family = sum(1 for p in after for k in p if k.startswith("main_btn_"))
+    if main_family == 0:
+        raise SystemExit("the main button family vanished from utils/config.py")
+    print(f"  guards: no old name survives, every value expression identical, "
+          f"{main_family} main_btn_* entries untouched")
 
 
-GUARD_SOURCE = '"""The dark ladder, the light plate, the translucent overlays, and one\ndeliberate coincidence.\n\nWHAT THIS PASS DID. rnv-brand rev 22 registered the two ends of the dark\nsurface ladder -- APP["canvas"] #0a0a0a and APP["panel-hover"] #3a3a3a -- rev\n23 registered APP["hover-light"] #eeeeee, and rev 24 registered #e8e8e8 as\nGOLD_TEXT_GROUND_FLOOR. All were app-owned here. No value changed: the pass\nchanges provenance and spelling, not pixels.\n\n    BRAND_BLACK + n * 0x10,  n in -1..+2\n    #0a0a0a canvas   #1a1a1a panel   #2a2a2a card   #3a3a3a panel-hover\n\nWHY THE LADDER WAS NOT "TWO-THIRDS SPECIFIED". The register said it was,\nbecause APP["border"] #333333 is not #3a3a3a and so looked like a missing rung.\nIt is not a rung -- #333333 is grey(3) on the INK grid, which governs inks and\nEDGES, and a border is an edge. Measured against the wrong family.\n\nWHY THE PLATE IS #eeeeee AND NOT #e8e8e8. #e8e8e8 is the ground\nBRAND_DARK_GOLD_DEEP is calibrated against -- the smallest uniform step that\nclears it is -14, and -13 gives 4.4675 and fails. The hover plate on that value\nwould have pinned every hover in the app to the one ground the gold cannot\nafford to lose, with 0.0334 of margin. A boundary is not a plate.\n\nWHY THE OVERLAYS ARE HERE AT ALL. Qt spells a translucent colour #AARRGGBB.\nThe 2026-08-29 wiring pass swept for six-digit literals, so #ED000000 never\nmatched #000000 and four registered values sat in IMAGE_MODE_COLORS while the\nguard reported clean. They are named now, and the sweep normalises both\nlengths.\n"""\nfrom __future__ import annotations\n\nimport ast\nimport pathlib\n\nimport pytest\n\nfrom utils import config as colors\nfrom utils.config import (DARK_THEME_COLORS as DARK,\n                          IMAGE_MODE_COLORS as IMAGE,\n                          LIGHT_THEME_COLORS as LIGHT)\n\nROOT = pathlib.Path(__file__).resolve().parents[1]\nSRC = ROOT / \'utils/config.py\'\n\nGRID_STEP = 0x11\nLADDER_STEP = 0x10\nTEXT_FLOOR = 4.5\n\n#: Constant name -> the APP key it mirrors, and the value both hold.\nNEW = {\n    \'APP_CANVAS\': (\'canvas\', \'#0a0a0a\'),\n    \'APP_PANEL_HOVER\': (\'panel-hover\', \'#3a3a3a\'),\n    \'APP_HOVER_LIGHT\': (\'hover-light\', \'#eeeeee\'),\n}\n\n#: Overlay constant -> (the six-digit constant it composites, its APP key).\nOVERLAYS = {\n    \'APP_WINDOW_OVERLAY\': (\'TRUE_BLACK\', \'window\'),\n    \'APP_CANVAS_OVERLAY\': (\'APP_CANVAS\', \'canvas\'),\n    \'APP_PANEL_OVERLAY\': (\'BRAND_BLACK\', \'panel\'),\n}\n\n#: palette dict name -> the keys in it that must now name a constant.\nWIRED = {\n    \'DARK_THEME_COLORS\': (\'hover_bg\', \'button_hover_bg\', \'list_hover_bg\',\n                          \'image_viewer_bg\'),\n    \'IMAGE_MODE_COLORS\': (\'window_bg\', \'scroll_area_bg\', \'image_viewer_bg\',\n                          \'zoom_label_bg\'),\n    \'LIGHT_THEME_COLORS\': (\'hover_bg\', \'button_hover_bg\', \'tab_hover_bg\',\n                           \'list_hover_bg\', \'image_viewer_bg\'),\n}\n\n#: dict NAME -> the live dict. Looking a key up in the wrong palette is how a\n#: per-mode difference gets checked against the other mode\'s value and passes.\nPALETTES = {\'DARK_THEME_COLORS\': DARK, \'IMAGE_MODE_COLORS\': IMAGE,\n            \'LIGHT_THEME_COLORS\': LIGHT}\n\n#: App-owned values that DELIBERATELY share a hex with a register entry.\n#: Sharing a VALUE is not playing the same ROLE, and a value check cannot tell\n#: the difference -- so the intentional ones are named, with what they share\n#: and why they must NOT follow if the register moves.\n#:\n#: name -> (register constant, why it is not the same role)\nCOINCIDENT = {\n    \'IMAGE_CANVAS_LIGHT\': (\n        \'GOLD_TEXT_GROUND_FLOOR\',\n        \'The register value is the darkest light ground on which the gold \'\n        \'family carries TEXT -- it is the constraint BRAND_DARK_GOLD_DEEP is \'\n        \'derived against. This is the empty canvas behind a loaded image: a \'\n        \'QGraphicsView background brush in RNV_Color_Picker.py with the \'\n        "user\'s own picture drawn on it. No gold, no error red, and no text "\n        \'of any kind is ever drawn on it. If the register moves the floor, \'\n        \'this must NOT follow -- which is why it is named here rather than \'\n        \'mirrored.\'),\n}\n\n\ndef grey(n: int) -> str:\n    v = n * GRID_STEP\n    return \'#%02x%02x%02x\' % (v, v, v)\n\n\ndef _luminance(value: str) -> float:\n    channels = [int(value.lstrip(\'#\')[i:i + 2], 16) / 255 for i in (0, 2, 4)]\n    channels = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4\n                for c in channels]\n    return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]\n\n\ndef _contrast(a: str, b: str) -> float:\n    high, low = sorted((_luminance(a), _luminance(b)), reverse=True)\n    return (high + 0.05) / (low + 0.05)\n\n\ndef _dict_node(name: str) -> ast.Dict:\n    tree = ast.parse(SRC.read_text(encoding=\'utf-8-sig\'))\n    for node in ast.walk(tree):\n        if isinstance(node, (ast.Assign, ast.AnnAssign)):\n            target = node.targets[0] if isinstance(node, ast.Assign) else node.target\n            if getattr(target, \'id\', None) == name and isinstance(node.value, ast.Dict):\n                return node.value\n    raise AssertionError(f\'{name} is not a dict literal in utils/config.py\')\n\n\ndef _entry(node: ast.Dict, key: str):\n    for k, v in zip(node.keys, node.values):\n        if isinstance(k, ast.Constant) and k.value == key:\n            return v\n    return None\n\n\n# ------------------------------------------------------------- guard the guard\n\ndef test_everything_this_file_reads_still_exists():\n    """Renaming a key must fail loudly here rather than let the rest of this\n    file pass quietly over nothing."""\n    for name in list(NEW) + list(OVERLAYS) + list(COINCIDENT):\n        assert hasattr(colors, name), f\'utils.config has no {name}\'\n    for dict_name, keys in WIRED.items():\n        assert dict_name in PALETTES, f\'{dict_name} is not in PALETTES\'\n        for key in keys:\n            assert key in PALETTES[dict_name], f\'{dict_name} has no {key!r}\'\n\n\ndef test_the_wiring_map_is_not_empty():\n    """Every sweep below iterates WIRED. An empty map passes all of them."""\n    assert WIRED and all(WIRED.values())\n    assert sum(len(v) for v in WIRED.values()) >= 13\n\n\n# ------------------------------------------------------------------- the values\n\ndef test_the_new_constants_hold_the_registered_values():\n    """The local half of the mirror. Runs everywhere, including where\n    engine.brand is not importable -- which is why it is not optional."""\n    drift = {n: getattr(colors, n) for n, (_, v) in NEW.items()\n             if getattr(colors, n) != v}\n    assert not drift, (\n        f\'these constants no longer hold their registered values: {drift}\\n\'\n        f\'If the brand moved, update this file in the same commit that updates \'\n        f\'utils/config.py -- never one without the other.\')\n\n\ndef test_the_new_constants_match_rnv_brand():\n    """The upstream half. Skips where rnv-brand is not importable."""\n    brand = pytest.importorskip(\n        \'engine.brand\',\n        reason=\'rnv-brand not importable here; the local pin is doing the work\')\n    drift = []\n    for name, (key, _) in NEW.items():\n        theirs, mine = brand.APP[key], getattr(colors, name)\n        if mine.lower() != theirs.lower():\n            drift.append(f\'{name}: ours {mine}, theirs APP[{key!r}] {theirs}\')\n    assert not drift, \'drift from rnv-brand:\\n  \' + \'\\n  \'.join(drift)\n\n\ndef test_provenance_is_declared_for_everything_this_pass_named():\n    """A classification that lives only in a test drifts from the thing it\n    classifies, so it lives in the module and is read from there. This is also\n    the first thing to read APP_PROVENANCE, whose docstring has claimed since\n    the ink pass that a test reads it. Nothing did."""\n    for name in NEW:\n        assert colors.APP_PROVENANCE.get(name) == \'register\', name\n    for name in OVERLAYS:\n        assert colors.APP_PROVENANCE.get(name) == \'register-overlay\', name\n    for name in COINCIDENT:\n        group = colors.APP_PROVENANCE.get(name)\n        assert group and group.startswith(\'app-\'), (\n            f\'{name} is a coincidence, so it must be declared app-owned. \'\n            f\'Declaring it register-owned would exempt a mirrored value from \'\n            f\'the mirror.\')\n\n\n# ------------------------------------------------------------------ the ladder\n\ndef test_the_dark_rungs_are_exact_steps_on_the_ladder():\n    """BRAND_BLACK + n * 0x10. Two of these were app-owned on the argument that\n    the ladder might not be real. It is, and this is what says so."""\n    base = int(colors.BRAND_BLACK.lstrip(\'#\'), 16)\n    for n, name in ((-1, \'APP_CANVAS\'), (0, \'BRAND_BLACK\'), (1, \'APP_CARD\'),\n                    (2, \'APP_PANEL_HOVER\')):\n        want = base + n * (LADDER_STEP * 0x010101)\n        assert int(getattr(colors, name).lstrip(\'#\'), 16) == want, (\n            f\'{name} is {getattr(colors, name)}, not rung n={n}\')\n\n\ndef test_the_border_is_an_edge_and_not_a_rung():\n    """The distinction that made the ladder look incomplete."""\n    assert colors.APP_BORDER == grey(3)\n    base = int(colors.BRAND_BLACK.lstrip(\'#\'), 16)\n    rungs = {base + n * (LADDER_STEP * 0x010101) for n in range(-1, 3)}\n    assert int(colors.APP_BORDER.lstrip(\'#\'), 16) not in rungs\n\n\ndef test_the_canvas_is_not_the_web_ground():\n    """One byte apart, deliberately. App neutrals are pure grey R = G = B; the\n    web ground #0a0a0f carries a tint the apps do not. That byte is why\n    invert(#0a0a0a) = #f5f5f5 once looked like a light-ground rule and was\n    not."""\n    r, g, b = (int(colors.APP_CANVAS.lstrip(\'#\')[i:i + 2], 16) for i in (0, 2, 4))\n    assert r == g == b, f\'APP_CANVAS {colors.APP_CANVAS} is not a pure grey\'\n    brand = pytest.importorskip(\'engine.brand\', reason=\'rnv-brand not importable\')\n    assert colors.APP_CANVAS.lower() != brand.WEB_BLACK.lower()\n\n\n# ---------------------------------------------------------------- the overlays\n\ndef test_every_overlay_is_its_base_at_the_declared_alpha():\n    """The overlays are written out because Qt wants eight digits and composing\n    them would make the palette resolve to an expression. This is the\n    relationship that composition would have given, asserted instead -- so a\n    register move fails here rather than diverging silently."""\n    for name, (base_name, _key) in OVERLAYS.items():\n        overlay = getattr(colors, name)\n        base = getattr(colors, base_name)\n        assert len(overlay) == 9, f\'{name} is {overlay}, not #AARRGGBB\'\n        assert overlay[1:3].upper() == colors.IMAGE_OVERLAY_ALPHA.upper(), (\n            f\'{name} composites at {overlay[1:3]}, not IMAGE_OVERLAY_ALPHA\')\n        assert overlay[3:].lower() == base[1:].lower(), (\n            f\'{name} is {overlay}, whose colour half is not {base_name} \'\n            f\'{base}. An overlay that stops tracking its base is the exact \'\n            f\'drift this naming exists to prevent.\')\n\n\ndef test_every_overlay_base_is_still_a_register_value():\n    """Guard the guard. If a base stopped being registered, these would be\n    tracking something app-owned under a name that says otherwise."""\n    brand = pytest.importorskip(\'engine.brand\', reason=\'rnv-brand not importable\')\n    for name, (base_name, key) in OVERLAYS.items():\n        assert brand.APP[key].lower() == getattr(colors, base_name).lower(), (\n            f\'{name} claims to composite APP[{key!r}], which the register now \'\n            f\'holds as {brand.APP[key]} rather than {getattr(colors, base_name)}\')\n\n\ndef test_no_translucent_register_value_is_left_as_a_literal():\n    """The defect this pass fixes, asserted from the other side. The previous\n    guard compared whole strings, so an eight-digit spelling of a registered\n    value never matched a six-digit register entry."""\n    registered = {getattr(colors, n).lower()\n                  for n in (\'TRUE_BLACK\', \'WHITE\', \'BRAND_BLACK\', \'APP_CARD\',\n                            \'APP_BORDER\', \'APP_TEXT\', \'APP_TEXT_DIM\',\n                            \'APP_CANVAS\', \'APP_PANEL_HOVER\', \'APP_HOVER_LIGHT\')}\n    looked, found = 0, []\n    for dict_name in PALETTES:\n        node = _dict_node(dict_name)\n        for k, v in zip(node.keys, node.values):\n            if not (isinstance(v, ast.Constant) and isinstance(v.value, str)):\n                continue\n            if len(v.value) == 9 and v.value.startswith(\'#\'):\n                looked += 1\n                if \'#\' + v.value[3:].lower() in registered:\n                    found.append(f\'{dict_name}[{k.value!r}] = {v.value}\')\n    assert looked or True  # image mode may legitimately hold none\n    assert not found, (\n        \'registered values still spelled as translucent literals:\\n  \'\n        + \'\\n  \'.join(found))\n\n\n# ------------------------------------------------------------------- the plate\n\ndef test_the_plate_is_a_step_on_the_ink_grid():\n    assert colors.APP_HOVER_LIGHT == grey(14) == \'#eeeeee\'\n\n\ndef test_the_plate_carries_gold_with_room_to_spare():\n    """The reason the register moved the value. Both plates clear the floor;\n    only one clears it by enough to survive the gold moving."""\n    gold = colors.BRAND_DARK_GOLD_DEEP\n    here = _contrast(gold, colors.APP_HOVER_LIGHT)\n    edge = _contrast(gold, colors.IMAGE_CANVAS_LIGHT)\n    assert here >= TEXT_FLOOR, f\'gold reads {here:.4f} on the plate\'\n    assert here - TEXT_FLOOR >= 0.2, (\n        f\'the plate clears the floor by only {here - TEXT_FLOOR:.4f}. The \'\n        f\'register moved APP["hover-light"] here for margin, not for a pass.\')\n    assert edge - TEXT_FLOOR < 0.05, (\n        f\'#e8e8e8 now clears by {edge - TEXT_FLOOR:.4f}, so it is no longer \'\n        f\'the knife-edge this ruling was about. Either the gold moved or the \'\n        f\'floor did; re-derive before trusting the value above.\')\n\n\ndef test_the_floor_is_not_used_as_a_hover_anywhere():\n    """A negative check needs a companion proving it is still looking."""\n    looked, found = 0, []\n    for dict_name, live in PALETTES.items():\n        for key, value in live.items():\n            if \'hover\' not in key or not isinstance(value, str):\n                continue\n            looked += 1\n            if value.lower() == \'#e8e8e8\':\n                found.append(f\'{dict_name}[{key!r}]\')\n    assert looked >= 8, f\'only {looked} hover keys seen -- the sweep is blind\'\n    assert not found, (\n        f\'#e8e8e8 is being used as a hover plate: {found}. It is \'\n        f\'GOLD_TEXT_GROUND_FLOOR, not an interaction state.\')\n\n\n# -------------------------------------------------------------- the coincidence\n\ndef test_every_coincidence_still_coincides():\n    """A named coincidence that no longer shares a value is a dead exemption,\n    and a dead exemption is a licence waiting for a defect: it would let a\n    genuinely misclassified value hide behind it."""\n    brand = pytest.importorskip(\'engine.brand\', reason=\'rnv-brand not importable\')\n    stale = []\n    for name, (entry, _why) in COINCIDENT.items():\n        mine = getattr(colors, name).lower()\n        theirs = getattr(brand, entry, None)\n        if theirs is None:\n            stale.append(f\'{name}: the register no longer defines {entry}\')\n        elif mine != theirs.lower():\n            stale.append(f\'{name} = {mine} no longer matches {entry} {theirs}\')\n    assert not stale, (\n        \'COINCIDENT entries that no longer describe reality:\\n  \'\n        + \'\\n  \'.join(stale)\n        + \'\\n\\nDelete the entry or correct it -- do not leave it standing.\')\n\n\ndef test_the_coincidence_is_not_wired_as_a_mirror():\n    """The other direction. IMAGE_CANVAS_LIGHT must not be reachable through\n    anything that follows the register, or the separation is decorative."""\n    assert \'IMAGE_CANVAS_LIGHT\' not in NEW\n    assert \'IMAGE_CANVAS_LIGHT\' not in OVERLAYS\n    node = _dict_node(\'LIGHT_THEME_COLORS\')\n    value = _entry(node, \'image_viewer_bg\')\n    assert isinstance(value, ast.Name) and value.id == \'IMAGE_CANVAS_LIGHT\', (\n        \'the light image canvas must name the app-owned constant, not the \'\n        \'register one it happens to equal\')\n\n\n# ------------------------------------------------- the spelling, not the value\n\ndef test_every_wired_entry_names_a_constant_not_a_literal():\n    """A literal cannot follow its base. If the register moves any of these,\n    they move with it or this fails."""\n    allowed = set(NEW) | set(OVERLAYS) | set(COINCIDENT)\n    literals = []\n    for dict_name, keys in WIRED.items():\n        node = _dict_node(dict_name)\n        for key in keys:\n            value = _entry(node, key)\n            if not isinstance(value, ast.Name) or value.id not in allowed:\n                literals.append(\n                    f\'{dict_name}[{key!r}] = \'\n                    f\'{ast.unparse(value) if value else "missing"}\')\n    assert not literals, (\n        \'entries still written as literals:\\n  \' + \'\\n  \'.join(literals))\n\n\ndef test_the_resolved_values_are_the_constants():\n    """The AST check proves the spelling; this proves the value. Both, because\n    a name can be spelled correctly and resolve to something else."""\n    for dict_name, keys in WIRED.items():\n        node = _dict_node(dict_name)\n        for key in keys:\n            name = _entry(node, key).id\n            assert PALETTES[dict_name][key] == getattr(colors, name), (\n                f\'{dict_name}[{key!r}] resolves to \'\n                f\'{PALETTES[dict_name][key]}, not {name}\')\n'
+GUARD_SOURCE = r'''"""The button keys say where the button lives.
+
+RNV-BUTTON-NAMING-GUARD
+
+main_btn_* is the main window at launch. dialog_btn_* is anything that opens
+later. This application ships both schemes -- black-and-white in the main
+window, gold in the dialogs -- and until this pass the dialog family was called
+button_*, a name that means the MAIN scheme in three of the other four
+applications. The rename is what makes the name portable; these tests are what
+stop it drifting back.
+"""
+from __future__ import annotations
+
+import re
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+
+OLD = ("button_bg", "button_text", "button_hover_bg", "button_hover_text",
+       "button_hover_border", "button_pressed_bg", "button_pressed_text",
+       "button_border")
+NEW = tuple("dialog_btn_" + n[len("button_"):] for n in OLD)
+
+MAIN = ("main_btn_bg", "main_btn_text", "main_btn_border", "main_btn_hover_bg",
+        "main_btn_hover_text", "main_btn_pressed_bg", "main_btn_pressed_text")
+
+#: The sixteen dialog values, pinned. A rename that moves one is not a rename.
+PINNED_DIALOG = {
+    "dark": {"dialog_btn_bg": "#2a2a2a", "dialog_btn_text": "#dddddd",
+             "dialog_btn_hover_bg": "#3a3a3a", "dialog_btn_hover_text": "#d2bc93",
+             "dialog_btn_hover_border": "#d2bc93", "dialog_btn_pressed_bg": "#d2bc93",
+             "dialog_btn_pressed_text": "#000000", "dialog_btn_border": "#333333"},
+    "light": {"dialog_btn_bg": "#ffffff", "dialog_btn_text": "#000000",
+              "dialog_btn_hover_bg": "#eeeeee", "dialog_btn_hover_text": "#7e6529",
+              "dialog_btn_hover_border": "#8c7337", "dialog_btn_pressed_bg": "#8c7337",
+              "dialog_btn_pressed_text": "#ffffff", "dialog_btn_border": "#cccccc"},
+}
+
+#: The main family is not touched by this pass, and saying so is the point:
+#: these two schemes are what the naming exists to keep apart.
+PINNED_MAIN = {
+    "dark": {"main_btn_bg": "#1a1a1a", "main_btn_text": "#dddddd",
+             "main_btn_border": "#333333", "main_btn_hover_bg": "#333333",
+             "main_btn_hover_text": "#dddddd", "main_btn_pressed_bg": "#444444",
+             "main_btn_pressed_text": "#000000"},
+    "light": {"main_btn_bg": "#ffffff", "main_btn_text": "#000000",
+              "main_btn_border": "#cccccc", "main_btn_hover_bg": "#333333",
+              "main_btn_hover_text": "#000000", "main_btn_pressed_bg": "#444444",
+              "main_btn_pressed_text": "#ffffff"},
+}
+
+SKIP = {".git", "build", "dist", ".venv", "__pycache__"}
+
+#: A sweep for a name cannot tell a USE of that name from a MENTION of it, and
+#: the two files certain to mention it are this guard -- which lists the old
+#: names in order to forbid them -- and the delivery script that performs the
+#: rename. Both are skipped by marker rather than by filename, because the
+#: delivery script arrives under whatever name it is saved as.
+MARKERS = ("RNV-BUTTON-NAMING-GUARD", "RNV-BUTTON-NAMING-TOOL-DO-NOT-SWEEP")
+
+
+def _palettes():
+    """Read the palettes the way the application reads them.
+
+    Static resolution is not enough here: light's dialog_btn_hover_text is
+    BRAND_DARK_GOLD_DEEP, which is derived by lighten() rather than written as
+    a literal, and an AST resolver returns None for it -- then compares None
+    with None and passes.
+    """
+    from utils.config import DARK_THEME_COLORS, LIGHT_THEME_COLORS
+    return {"dark": DARK_THEME_COLORS, "light": LIGHT_THEME_COLORS}
+
+
+def _sources():
+    for path in sorted(ROOT.rglob("*")):
+        # Prose is not swept. docs/ is updated in one pass after alignment
+        # settles, so it names the old keys until then, and a guard that failed
+        # on that would be failing on a decision rather than a defect.
+        if path.is_dir() or path.suffix not in (".py", ".ambr"):
+            continue
+        if any(part in SKIP for part in path.parts):
+            continue
+        text = path.read_text(encoding="utf-8-sig", errors="replace")
+        if any(marker in text for marker in MARKERS):
+            continue
+        yield path, text
+
+
+def test_no_old_button_key_name_survives():
+    offenders = []
+    for path, text in _sources():
+        for old in OLD:
+            if re.search(r"(['\"])" + old + r"\1", text):
+                offenders.append(f"{path.relative_to(ROOT)}: {old}")
+    assert not offenders, (
+        "these are dialog button keys and must be named dialog_btn_*:\n  "
+        + "\n  ".join(offenders))
+
+
+def test_the_marker_exemption_covers_only_the_two_tools():
+    """An exemption that grows silently is how a guard stops guarding."""
+    marked = []
+    for path in sorted(ROOT.rglob("*.py")):
+        if any(part in SKIP for part in path.parts):
+            continue
+        text = path.read_text(encoding="utf-8-sig", errors="replace")
+        if any(marker in text for marker in MARKERS):
+            marked.append(path.relative_to(ROOT))
+    assert len(marked) <= 2, f"unexpected marked file(s): {marked}"
+    assert Path(__file__).relative_to(ROOT) in marked
+
+
+def test_both_palettes_carry_the_new_dialog_names():
+    for mode, palette in _palettes().items():
+        missing = [n for n in NEW if n not in palette]
+        assert not missing, f"{mode} palette missing {missing}"
+
+
+def test_the_rename_moved_no_dialog_value():
+    for mode, pins in PINNED_DIALOG.items():
+        palette = _palettes()[mode]
+        actual = {k: palette.get(k) for k in pins}
+        assert actual == pins, (
+            f"the {mode} dialog button values changed.\n"
+            f"  wanted {pins}\n  found  {actual}\n"
+            "A rename that changes a value is not a rename.")
+
+
+def test_the_main_family_is_untouched():
+    for mode, pins in PINNED_MAIN.items():
+        palette = _palettes()[mode]
+        actual = {k: palette.get(k) for k in pins}
+        assert actual == pins, (
+            f"the {mode} main button values changed. This pass renames the "
+            f"DIALOG family and must not reach the main window.\n"
+            f"  wanted {pins}\n  found  {actual}")
+
+
+def test_the_two_schemes_are_still_different():
+    """If the families ever converge, the naming stops carrying information.
+
+    Not a style rule: the main button is black-and-white with an inverting
+    transition, the dialog button is gold. They differ at rest, at hover and
+    at press, in both modes, and that is the whole reason for two families.
+    """
+    for mode, palette in _palettes().items():
+        for main, dialog in (("main_btn_hover_text", "dialog_btn_hover_text"),
+                             ("main_btn_pressed_bg", "dialog_btn_pressed_bg")):
+            assert palette[main] != palette[dialog], (
+                f"{mode}: {main} and {dialog} now hold the same value "
+                f"({palette[main]}). Two families holding one scheme is one "
+                f"family with extra steps.")
+
+
+def test_the_main_window_still_reads_the_main_family():
+    for rel in ("RNV_Color_Picker.py", "utils/cache.py"):
+        src = (ROOT / rel).read_text(encoding="utf-8-sig")
+        assert "'main_btn_bg'" in src, f"{rel} no longer reads main_btn_bg"
+
+
+def test_the_dialogs_read_the_dialog_family():
+    for rel in ("utils/dialog_helper.py", "ui/about_dialog.py",
+                "ui/progress_dialog.py", "ui/settings_panel.py"):
+        src = (ROOT / rel).read_text(encoding="utf-8-sig")
+        assert "dialog_btn_" in src, f"{rel} no longer reads the dialog family"
+        assert "'main_btn_" not in src, (
+            f"{rel} reads the main family. Dialogs open later and take the "
+            f"gold scheme; wiring one to main_btn_* fuses the two.")
+'''
 
 
 # ------------------------------------------------------------------ plumbing
@@ -455,7 +537,12 @@ def verify() -> int:
 def apply(check_only: bool) -> int:
     root = Path.cwd()
     if not (root / SENTINEL_FILE).exists():
-        raise SystemExit(f"run this from the root of a {REPO} checkout "
+        # A script whose sentinel file is created by an EARLIER script cannot
+        # tell "wrong directory" from "prerequisite not run", and the default
+        # message asserts the first while the second is more likely. Such a
+        # script sets MISSING_HELP and says which one to run.
+        raise SystemExit(globals().get("MISSING_HELP") or
+                         f"run this from the root of a {REPO} checkout "
                          f"(no {SENTINEL_FILE} here)")
     if SENTINEL in (root / SENTINEL_FILE).read_text(encoding="utf-8"):
         raise SystemExit(f"already applied -- {SENTINEL!r} is present in "
