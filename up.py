@@ -1,49 +1,104 @@
 #!/usr/bin/env python3
 """
-RNV-BUTTON-NAMING-TOOL-DO-NOT-SWEEP
+RNV-NAMING-TOOL-DO-NOT-SWEEP
 
-Replace tests/test_button_key_names.py. One test in it was wrong.
+One rule for which ink goes on a colour, and the neutrals named for what
+they are rather than what they do.
 
-    python up.py             # replace the guard, then verify
-    python up.py --check     # rehearse, write nothing
+    python up.py             # apply, then verify
+    python up.py --check     # rehearse every edit in memory, write nothing
     python up.py --verify    # run the suites only, change nothing
     python up.py --finish    # delete this file
 
-THE RENAME IS FINE. THE GUARD WAS NOT.
+WHY
 
-test_the_marker_exemption_covers_only_the_two_tools counted the files carrying
-a DO-NOT-SWEEP marker and allowed two: the guard itself, and the delivery
-script. A working tree holding a second copy of that script -- an old up.py
-kept around, a renamed spare, the file saved twice -- puts a third marked file
-in the repository and the count fails. Nothing about the application is wrong
-when that happens, and a guard that fails on the state of somebody's checkout
-is failing on the wrong thing. It did exactly that in rnv-text-transformer.
+Chris, reading the colour tree on 2026-09-02:
 
-WHAT IT SHOULD HAVE ASSERTED
+    "_DRAG_HIGHLIGHT_GOLD reads as a constant but it should read as a key --
+     the constant should denote the colour, as that is what will change to
+     affect the rest of the app elements, not the keys."
 
-Not how many files are exempt, but WHICH. The sweep skips marked files so a
-guard that lists the old names in order to forbid them does not report itself.
-The risk that creates is an application file gaining a marker and going quiet.
-So the test now checks that every marked file other than the guard is a
-delivery script, identified by the tool marker in its own header. Any number
-of those may be lying in the tree; none of them is application source.
+That is the naming half of rule 1: a constant names a COLOUR, a key names a
+ROLE. A name that answers both is a role frozen to a colour, and a brand swap
+cannot flow through it.
 
-Verified in both directions before shipping: with three tool copies present it
-passes, and with a marker planted in an application file it still fails.
+The survey proposed turning CONTRAST_ON_DARK / CONTRAST_ON_LIGHT and the
+SWATCH_BORDER pair into palette keys. Reading the call sites showed that was
+wrong, and it is worth writing down why, because the name is what misled the
+survey: "on dark" does not mean "in dark mode". It means "on a dark GROUND",
+and the ground is a colour the user picked at run time. The picker proves it
+by using CONTRAST_ON_LIGHT inside its is_dark branch -- correctly, because in
+dark mode the button is filled with BRIGHT gold, which is a light ground.
 
-This is the ninth use-versus-mention failure this programme has recorded, and
-the first where the fix was to stop counting and start naming.
+A per-swatch runtime choice cannot be a palette key. Ruled by Chris: make it
+a function.
 
-WHAT THIS SCRIPT DOES
+THE FOUR ANSWERS TO ONE QUESTION
 
-Rewrites tests/test_button_key_names.py and nothing else. It refuses to run
-unless the rename already landed, so it cannot be mistaken for the pass itself.
-If your guard is currently passing, this still replaces it -- the old test
-passes by luck of what is in your working tree, not by being right.
+    core/palette_formats.py:426   sum(color) / 3 < 128
+    core/accessibility.py:240     relative luminance < 0.179    -- correct, and
+                                                                  called by no
+                                                                  one else
+    and over in rnv-icon-builder, two more that disagree with both.
+
+The mean and the ITU-R 601 luma part company on saturated colour: 601 weights
+green 587/1000 where the mean weights it 333. On pure green the mean calls it
+dark and puts WHITE on it at 1.37:1, where the right answer is black at
+15.30:1. Rendered for Chris and ruled: unify on WCAG relative luminance.
+
+Stated as a ratio comparison rather than a threshold, so swatch_edge() can
+share the rule with contrast_ink() -- a threshold would have to be
+re-derived for every pair of candidates.
+
+WHAT MOVES
+
+  * an arbitrary swatch whose colour is saturated may get the other ink or
+    the other edge. That is the fix, and it is the whole pixel cost.
+  * NOTHING on a brand surface. The gold buttons keep black-on-bright and
+    white-on-dark by ruling, not by measurement -- dark gold measures 4.54
+    white against 4.62 black, and flipping it on a 0.08 margin would be
+    obeying the arithmetic instead of the brand.
+
+ALSO HERE
+
+    PREVIEW_BORDER "#444444"      dead -- named, exported, never used
+    PREVIEW_BORDER_THIN "#444"    the same value, three digits, 13 uses
+                                  -> both become GREY_44 "#444444"
+    SWATCH_BORDER_ON_DARK "#ccc"  -> GREY_CC "#cccccc"
+
+Three-digit hexes are why these were invisible to the census, which reads
+six. Naming them puts them on the chart for the first time.
+
+    core/palette_formats.py       four cp1252 em-dashes, not valid UTF-8
+
+CPython tolerates them because they sit in comments, so the app has always
+run. Tooling does not: an audit script of mine read the file with plain UTF-8,
+caught the decode error, skipped the file, and reported two live constants as
+dead. The shipped guards all pass errors="replace" and were never fooled, but
+the byte is a landmine for the next sweep that is not so careful. Normalised
+to real em-dashes here.
+
+NOT HERE, DELIBERATELY
+
+    IMAGE_CANVAS_LIGHT "#e8e8e8"  role + mode in one name, so class C by the
+                                  letter of the rule. Left alone: rev 27
+                                  retires #e8e8e8 into pressed-light
+                                  "#e0e0e0", and the ladder guard pins this
+                                  constant BY NAME. Renaming it now means
+                                  editing that guard twice in a fortnight.
+
+    SVG_EXPORT_BG / _STROKE       reclassified. These read as roles, but
+                                  their whole point is that they must NOT
+                                  follow a brand swap -- an exported SVG is
+                                  paper white and ink black whatever the app
+                                  is wearing. Same category as
+                                  CONTRAST_DEMO_*: fixed reference values,
+                                  not paint. Class D, left alone.
 """
 from __future__ import annotations
 
 import argparse
+import ast
 import os
 import re
 import subprocess
@@ -52,23 +107,11 @@ import tempfile
 from pathlib import Path
 
 REPO = "rnv-color-picker"
-DESCRIPTION = "replace the button-naming guard's exemption test"
-GUARD = "tests/test_button_key_names.py"
-SENTINEL_FILE = GUARD
-SENTINEL = "test_no_application_file_is_exempt_from_the_sweep"
+DESCRIPTION = "one ink rule, and the neutrals named for their colour"
+SENTINEL_FILE = "utils/config.py"
+SENTINEL = "RNV-INK-RULE"
+GUARD = "tests/test_ink_rule.py"
 SHADOWS = {"colors.py", "config.py", "conftest.py", "run_tests.py"}
-
-PALETTE = "utils/config.py"
-PROOF = "'dialog_btn_bg'"
-
-MISSING_HELP = """\
-tests/test_button_key_names.py is not here, so the button key rename has not
-run in this checkout yet.
-
-This script only replaces that guard. Run the rename script first -- the one
-whose header begins "Rename the eight dialog button keys from button_* to dialog_btn_*" -- and then run this one. There is no filename
-to look for: every script arrives as an attachment and is saved as up.py.
-"""
 
 SUITES = [
     ('pytest tests/',
@@ -77,239 +120,402 @@ SUITES = [
      [sys.executable, "-m", "unittest", "test_rnv_color_picker"]),
 ]
 
-#: The tests the shipped guard already carries. This pass replaces ONE of them;
-#: a replacement that quietly dropped the others would be a regression wearing
-#: the shape of a fix.
-KEEP = (
-    'test_no_old_button_key_name_survives',
-    'test_both_palettes_carry_the_new_dialog_names',
-    'test_the_rename_moved_no_dialog_value',
-    'test_the_main_family_is_untouched',
-    'test_the_two_schemes_are_still_different',
-    'test_the_main_window_still_reads_the_main_family',
-    'test_the_dialogs_read_the_dialog_family',
-)
+RETIRED = ("CONTRAST_ON_DARK", "CONTRAST_ON_LIGHT",
+           "SWATCH_BORDER_ON_DARK", "SWATCH_BORDER_ON_LIGHT",
+           "PREVIEW_BORDER", "PREVIEW_BORDER_THIN")
+
+EDITS = [
+    ('utils/config.py',
+     'CONTRAST_ON_LIGHT: Final[str] = "#000000"\n"""Black text for use on light/bright backgrounds (e.g. color swatches)"""\n\nCONTRAST_ON_DARK: Final[str] = "#ffffff"\n"""White text for use on dark/dim backgrounds (e.g. color swatches)"""\n\nSWATCH_BORDER_ON_LIGHT: Final[str] = "#333"\n"""Dark border for color swatches on light-colored surfaces"""\n\nSWATCH_BORDER_ON_DARK: Final[str] = "#ccc"\n"""Light border for color swatches on dark-colored surfaces"""\n\n# ── Swatch preview border ──\n# Neutral gray that reads well on both dark and light backgrounds.\n# Color-preview widgets need a consistent subtle outline so the swatch\n# is visible even when the color itself is near-white or near-black.\nPREVIEW_BORDER: Final[str] = "#444444"\nPREVIEW_BORDER_THIN: Final[str] = "#444"\n',
+     '# ── Neutral edges ──\n# RNV-INK-RULE (2026-09-02). Named for the colour, not the job.\n#\n# GREY_44 was the swatch-preview outline, held under two role names at once:\n# the same value written twice, once in full and once in three digits, which\n# is how it stayed invisible to a census that reads six. Only the short form\n# was ever used.\n#\n# GREY_CC is the light edge swatch_edge() reaches for on a dark ground. It\n# was three digits too, and equally invisible.\nGREY_44: Final[str] = "#444444"\nGREY_CC: Final[str] = "#cccccc"\n\n\n# ── Which ink goes on this ground ──\n#\n# RNV-INK-RULE (2026-09-02, ruled by Chris). Four places in the fleet asked\n# this question and gave three different answers, none of them a contrast\n# measurement:\n#\n#     core/palette_formats.py   sum(color) / 3 < 128\n#     ui/settings_dialog.py     (r + g + b) / 3 > 128     (icon-builder)\n#     ui/preview_utils.py       ITU-R 601 luma > 128      (icon-builder)\n#     core/accessibility.py     relative luminance < 0.179   -- correct, unused\n#\n# The mean and the 601 luma disagree with each other on saturated colour,\n# because 601 weights green 587/1000 where the mean weights it 333. On pure\n# green the mean puts white on it at 1.37:1 where the right answer is black\n# at 15.30:1.\n#\n# So: one rule, stated once, as a real comparison rather than a threshold --\n# whichever candidate has the higher contrast ratio against the ground wins.\n# A threshold would need re-deriving for every pair; a ratio does not, which\n# is what lets swatch_edge() share the rule with contrast_ink().\n#\n# This is the same maths as the surface ladder and the 4.5 floor.\n\n\ndef _channel(value: float) -> float:\n    """One sRGB channel, 0-255, linearised."""\n    c = value / 255.0\n    return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4\n\n\ndef _rgb(color: "str | tuple[int, int, int]") -> tuple[int, int, int]:\n    """Accept either shape. Callers hold hex strings and RGB triples both."""\n    if isinstance(color, str):\n        h = color.lstrip("#")\n        if len(h) == 3:\n            h = "".join(ch * 2 for ch in h)\n        return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))\n    return (int(color[0]), int(color[1]), int(color[2]))\n\n\ndef relative_luminance(color: "str | tuple[int, int, int]") -> float:\n    """WCAG 2.x relative luminance, 0.0 (black) to 1.0 (white)."""\n    r, g, b = _rgb(color)\n    return 0.2126 * _channel(r) + 0.7152 * _channel(g) + 0.0722 * _channel(b)\n\n\ndef contrast_ratio(a: "str | tuple[int, int, int]",\n                   b: "str | tuple[int, int, int]") -> float:\n    """WCAG contrast ratio between two colours, 1.0 to 21.0."""\n    la, lb = relative_luminance(a), relative_luminance(b)\n    hi, lo = (la, lb) if la >= lb else (lb, la)\n    return (hi + 0.05) / (lo + 0.05)\n\n\ndef better_on(background: "str | tuple[int, int, int]", *candidates: str) -> str:\n    """Whichever candidate reads best on this ground. Ties go to the first."""\n    return max(candidates, key=lambda c: contrast_ratio(background, c))\n\n\ndef contrast_ink(background: "str | tuple[int, int, int]") -> str:\n    """Text colour for an arbitrary ground: WHITE or TRUE_BLACK.\n\n    For a colour the USER chose -- a swatch, an exported palette entry. Not\n    for brand surfaces: what sits on a brand gold is a ruling, not a\n    measurement, and the two are only 0.08 apart on BRAND_DARK_GOLD.\n    """\n    return better_on(background, TRUE_BLACK, WHITE)\n\n\ndef prefers_dark_ink(background: "str | tuple[int, int, int]") -> bool:\n    """True when TRUE_BLACK reads better on this ground than WHITE does.\n\n    The shape the old call sites wanted: they all read\n    `X if brightness > 128 else Y`, so this drops straight into the\n    condition and leaves the two branches alone.\n    """\n    return contrast_ink(background) == TRUE_BLACK\n\n\ndef contrast_ink_rgb(background: "str | tuple[int, int, int]") -> tuple[int, int, int]:\n    """The same answer as an RGB triple, for the QColor and Pillow callers."""\n    return (0, 0, 0) if prefers_dark_ink(background) else (255, 255, 255)\n\n\ndef swatch_edge(background: "str | tuple[int, int, int]") -> str:\n    """Outline for a swatch of an arbitrary colour: GREY_CC or APP_BORDER."""\n    return better_on(background, APP_BORDER, GREY_CC)\n',
+     1),
+    ('utils/config.py',
+     '- Standalone constants (CONTRAST_ON_LIGHT, PREVIEW_BORDER, DEBUG_TEXT, etc.)\n',
+     '- Standalone constants (GREY_44, DEBUG_TEXT, etc.) and the ink rule\n',
+     1),
+    ('utils/config.py',
+     "    'CONTRAST_ON_LIGHT',\n    'CONTRAST_ON_DARK',",
+     "    'GREY_44',\n    'GREY_CC',\n    'relative_luminance',\n    'contrast_ratio',\n    'better_on',\n    'contrast_ink',\n    'contrast_ink_rgb',\n    'prefers_dark_ink',\n    'swatch_edge',",
+     1),
+    ('utils/config.py',
+     "    'SWATCH_BORDER_ON_LIGHT',\n    'SWATCH_BORDER_ON_DARK',\n",
+     '',
+     1),
+    ('utils/config.py',
+     "    'PREVIEW_BORDER',\n    'PREVIEW_BORDER_THIN',\n",
+     '',
+     1),
+    ('utils/cache.py',
+     '    SWATCH_BORDER_ON_LIGHT,\n    CONTRAST_ON_LIGHT, CONTRAST_ON_DARK,\n',
+     '    TRUE_BLACK, WHITE,\n    swatch_edge, contrast_ink_rgb,\n',
+     1),
+    ('utils/cache.py',
+     '                bg      = BRAND_GOLD\n                fg      = CONTRAST_ON_LIGHT   # black text on bright gold\n',
+     '                bg      = BRAND_GOLD\n                # RNV-INK-RULE: a brand decision, not a measurement. Bright\n                # gold is a light ground and takes black; dark gold takes\n                # white. Measured, dark gold is 4.54 white against 4.62 black\n                # -- a coin flip that would have moved a pixel for nothing.\n                fg      = TRUE_BLACK\n',
+     1),
+    ('utils/cache.py',
+     '                bg      = BRAND_DARK_GOLD\n                fg      = CONTRAST_ON_DARK    # white text on dark gold\n',
+     '                bg      = BRAND_DARK_GOLD\n                fg      = WHITE\n',
+     1),
+    ('utils/cache.py',
+     '        r, g, b = rgb\n        # Perceived brightness formula (ITU-R BT.601)\n        brightness = (r * 299 + g * 587 + b * 114) / 1000\n        return (0, 0, 0) if brightness > 128 else (255, 255, 255)\n',
+     '        # RNV-INK-RULE (2026-09-02): was ITU-R BT.601 perceived brightness,\n        # which is a photographic weighting, not a contrast measurement. It\n        # put white on a mid grey that reads 5.32:1 in black and 3.95:1 in\n        # white. One rule now, stated in utils/config.py.\n        return contrast_ink_rgb(rgb)\n',
+     1),
+    ('utils/cache.py',
+     '                    border: 2px solid {SWATCH_BORDER_ON_LIGHT};\n',
+     '                    border: 2px solid {swatch_edge(hex_color)};\n',
+     1),
+    ('core/palette_formats.py',
+     '    CONTRAST_ON_LIGHT, CONTRAST_ON_DARK,\n',
+     '    contrast_ink,\n',
+     1),
+    ('core/palette_formats.py',
+     '                brightness = sum(color) / 3\n                text_color = CONTRAST_ON_DARK if brightness < 128 else CONTRAST_ON_LIGHT\n',
+     '                # RNV-INK-RULE: was sum(color) / 3 < 128, which is not a\n                # contrast measurement and put white on pure green.\n                text_color = contrast_ink(color)\n',
+     1),
+    ('core/accessibility.py',
+     'from utils.logger import Logger\nfrom utils.cache import ColorCache\n',
+     'from utils import config\nfrom utils.logger import Logger\nfrom utils.cache import ColorCache\n',
+     1),
+    ('ui/settings_panel.py',
+     '    PREVIEW_BORDER_THIN,\n',
+     '    GREY_44,\n',
+     1),
+]
+
+BAD_BYTES_FILE = "core/palette_formats.py"
+
+# Every file that inlined its own copy of the rule as a ColorCache fallback.
+FALLBACKS = ("RNV_Color_Picker.py", "core/workers.py",
+             "ui/settings_panel.py", "ui/color_swatch_widget.py")
+
+IMPORT_ANCHORS = {
+    "RNV_Color_Picker.py": None,
+    "core/workers.py": None,
+    "ui/settings_panel.py": None,
+    "ui/color_swatch_widget.py": None,
+}
+
+
+def _add_import(rel: str, text: str) -> str:
+    """Put prefers_dark_ink on an existing `from utils.config import (` list.
+
+    Every one of these files already imports from utils.config, so there is
+    an anchor to extend rather than a new import line to place.
+    """
+    m = re.search(r"from utils\.config import \(\n", text)
+    if m:
+        return text[:m.end()] + "    prefers_dark_ink,\n" + text[m.end():]
+    m = re.search(r"^from utils\.config import (.+)$", text, re.M)
+    if m:
+        return text[:m.end()] + ", prefers_dark_ink" + text[m.end():]
+    # No utils.config import yet. Land it beside the other utils imports
+    # rather than at the top of the file, where it would sit above the
+    # third-party block and read as a mistake.
+    m = re.search(r"^from utils\.[a-z_]+ import [^\n]*\n", text, re.M)
+    if m:
+        return text[:m.start()] + "from utils.config import prefers_dark_ink\n" + text[m.start():]
+    m = re.search(r"^(import |from )", text, re.M)
+    if not m:
+        raise SystemExit(f"{rel}: nowhere to add the import")
+    return text[:m.start()] + "from utils.config import prefers_dark_ink\n" + text[m.start():]
+
+ACC_PATTERN = '        luminance = ColorAccessibility\\.get_relative_luminance\\(background\\)\\n[ \\t]*\\n        # If background is dark, use white text; otherwise black\\n        if luminance < 0\\.179:\\n            return \\(255, 255, 255\\)\\n        else:\\n            return \\(0, 0, 0\\)\\n'
+ACC_REPLACEMENT = '        # RNV-INK-RULE (2026-09-02): one rule, one implementation. This used\n        # to hold its own copy -- luminance < 0.179, the rounded WCAG\n        # crossover -- while three other places in the fleet each held a\n        # different one. It now asks the palette module, which compares the\n        # two ratios outright instead of rounding the crossover.\n        #\n        # The two agree on 16,772,703 of the 16,777,216 sRGB colours. The\n        # 4,513 that differ all sit inside luminance 0.17900 to 0.17913,\n        # where both inks land within 0.01 of 4.5:1 and neither is visibly\n        # better than the other.\n        ink = config.contrast_ink(background)\n        return (255, 255, 255) if ink == config.WHITE else (0, 0, 0)\n'
 
 
 def edits(tree) -> None:
-    if PROOF not in tree.read(PALETTE):
-        raise SystemExit(
-            f"{PALETTE} does not carry {PROOF}, so the rename has not "
-            f"landed. This script replaces the guard only; run the rename "
-            f"first.")
-    if "test_the_marker_exemption_covers_only_the_two_tools" not in tree.read(GUARD):
-        raise SystemExit(
-            "the guard in this checkout is not the one this script fixes -- it "
-            "does not contain test_the_marker_exemption_covers_only_the_two_"
-            "tools. Nothing was written.")
-    print("  rename confirmed present; replacing the guard")
+    # FIRST, before anything reads it. The harness reads UTF-8 and this file
+    # is not UTF-8, so any earlier tree.read() of it raises rather than edits.
+    # That is the landmine this fix is about, met on the way to defusing it.
+    raw = (Path(tree.root) / BAD_BYTES_FILE).read_bytes()
+    hits = raw.count(b"\x97")
+    if hits != 4:
+        raise SystemExit(f"expected 4 cp1252 dashes in {BAD_BYTES_FILE}, "
+                         f"found {hits} -- the file moved")
+    tree.write(BAD_BYTES_FILE, raw.decode("cp1252"))
+    print(f"  {BAD_BYTES_FILE}: {hits} cp1252 byte(s) normalised to UTF-8")
+
+    for rel, old, new, times in EDITS:
+        tree.sub(rel, old, new, times)
+    print(f"  {len(EDITS)} edit(s) composed")
+
+    # core/accessibility.py's block carries a trailing space on its blank
+    # line, so it is anchored by pattern rather than by literal text -- a
+    # hand-typed anchor with the whitespace guessed is a script that fails
+    # on the machine it was not written on.
+    # The four CACHE_AVAILABLE fallback branches. Each is the same two lines
+    # as the canonical helper, inlined because ColorCache might not import.
+    # config always imports, so the condition can just ask the rule; the two
+    # branches around it are left exactly as they were.
+    BRIGHT = re.compile(
+        r"(?P<i>[ \t]*)brightness = \(\s*(?P<r>[^*]+?)\s*\* 299 \+\s*"
+        r"(?P<g>[^*]+?)\s*\* 587 \+\s*(?P<b>[^*]+?)\s*\* 114\s*\) / 1000\n"
+        r"(?P=i)(?P<rest>[^\n]*?)brightness > 128(?P<tail>[^\n]*)\n")
+    swept = 0
+    for rel in FALLBACKS:
+        text = tree.read(rel)
+        def _one(m):
+            return (f"{m.group('i')}{m.group('rest')}"
+                    f"prefers_dark_ink(({m.group('r')}, {m.group('g')}, "
+                    f"{m.group('b')})){m.group('tail')}\n")
+        text, n = BRIGHT.subn(_one, text)
+        if n != 1:
+            raise SystemExit(f"{rel}: expected 1 hand-rolled brightness rule, "
+                             f"found {n}")
+        if "prefers_dark_ink" not in text.split("\n\n")[0]:
+            text = _add_import(rel, text)
+        tree.write(rel, text)
+        swept += n
+    print(f"  {swept} inlined copy/copies of the rule replaced by a call")
+
+    src = tree.read("core/accessibility.py")
+    src, n = re.subn(ACC_PATTERN, lambda m: ACC_REPLACEMENT, src)
+    if n != 1:
+        raise SystemExit(f"expected 1 optimal-text-colour block, found {n}")
+    tree.write("core/accessibility.py", src)
+    print("  core/accessibility.py: delegated to the one rule")
+
+    # ui/settings_panel.py holds the only heavy user of the retired thin
+    # border: 13 f-string interpolations. A token swap, whole words only.
+    src = tree.read("ui/settings_panel.py")
+    src, n = re.subn(r"\bPREVIEW_BORDER_THIN\b", "GREY_44", src)
+    if n != 12:
+        raise SystemExit(f"expected 12 uses in ui/settings_panel.py, found {n}")
+    tree.write("ui/settings_panel.py", src)
+    print(f"  ui/settings_panel.py: {n} border reference(s) renamed")
 
 
 def checks(tree) -> None:
-    new = tree.read(GUARD)
-    if "test_the_marker_exemption_covers_only_the_two_tools" in new:
-        raise SystemExit("the old exemption test survived the replacement")
-    if SENTINEL not in new:
-        raise SystemExit("the replacement guard is missing its new test")
-    missing = [name for name in KEEP if name not in new]
-    if missing:
-        raise SystemExit(
-            f"these tests are gone from the replacement: {missing}. This "
-            f"pass replaces one test and keeps the rest.")
-    print(f"  guards: the {len(KEEP)} passing tests are still there, the "
-          f"failing one is replaced")
+    src = tree.read(SENTINEL_FILE)
+    if SENTINEL not in src:
+        raise SystemExit("the ruling note did not land")
+
+    root = Path(tree.root)
+    strays = []
+    for path in sorted(root.rglob("*.py")):
+        if any(p in {".git", "build", "dist", ".venv", "__pycache__"}
+               for p in path.parts):
+            continue
+        if path.name in ("up.py", "up1.py", "up2.py"):
+            continue
+        rel = str(path.relative_to(root))
+        text = tree.files.get(rel)
+        if text is None:
+            text = path.read_text(encoding="utf-8-sig", errors="replace")
+        if "RNV-NAMING-TOOL-DO-NOT-SWEEP" in text or "RNV-INK-RULE-GUARD" in text:
+            continue
+        for old in RETIRED:
+            if re.search(r"\b%s\b" % re.escape(old), text):
+                strays.append(f"{rel}: {old}")
+    if strays:
+        raise SystemExit("retired names survived:\n  " + "\n  ".join(strays))
+
+    for name in ("GREY_44", "GREY_CC", "contrast_ink", "contrast_ink_rgb",
+                 "prefers_dark_ink", "swatch_edge", "relative_luminance",
+                 "contrast_ratio", "better_on"):
+        if f"'{name}'," not in src:
+            raise SystemExit(f"{name} is not exported from {SENTINEL_FILE}")
+
+    # A three-digit hex is what hid two of these from the census. None left.
+    for rel in (SENTINEL_FILE,):
+        for m in re.finditer(r"""['"]#[0-9a-fA-F]{3}['"]""", tree.read(rel)):
+            raise SystemExit(f"{rel} still writes a three-digit hex: {m.group(0)}")
+
+    body = tree.read(BAD_BYTES_FILE)
+    body.encode("utf-8")            # would raise if anything survived
+    if "—" not in body:
+        raise SystemExit("the em-dashes did not survive the re-encode")
+
+    print(f"  guards: {len(RETIRED)} names retired, ink rule stated once, "
+          f"{BAD_BYTES_FILE} is UTF-8")
 
 
-GUARD_SOURCE = r'''"""The button keys say where the button lives.
+GUARD_SOURCE = r'''"""One rule for which ink goes on a ground. RNV-INK-RULE-GUARD
 
-RNV-BUTTON-NAMING-GUARD
+Ruled by Chris on 2026-09-02 after seeing the three rules rendered side by
+side: unify on WCAG relative luminance.
 
-main_btn_* is the main window at launch. dialog_btn_* is anything that opens
-later. This application ships both schemes -- black-and-white in the main
-window, gold in the dialogs -- and until this pass the dialog family was called
-button_*, a name that means the MAIN scheme in three of the other four
-applications. The rename is what makes the name portable; these tests are what
-stop it drifting back.
+Four places in the fleet answered this question and gave three different
+answers, none of them a contrast measurement. This guard exists because that
+is a failure that reappears -- the next person who needs an ink for a swatch
+will reach for (r+g+b)/3 unless something stops them.
 """
 from __future__ import annotations
 
 import re
 from pathlib import Path
 
+from utils import config
+
 ROOT = Path(__file__).resolve().parent.parent
-
-OLD = ("button_bg", "button_text", "button_hover_bg", "button_hover_text",
-       "button_hover_border", "button_pressed_bg", "button_pressed_text",
-       "button_border")
-NEW = tuple("dialog_btn_" + n[len("button_"):] for n in OLD)
-
-MAIN = ("main_btn_bg", "main_btn_text", "main_btn_border", "main_btn_hover_bg",
-        "main_btn_hover_text", "main_btn_pressed_bg", "main_btn_pressed_text")
-
-#: The sixteen dialog values, pinned. A rename that moves one is not a rename.
-PINNED_DIALOG = {
-    "dark": {"dialog_btn_bg": "#2a2a2a", "dialog_btn_text": "#dddddd",
-             "dialog_btn_hover_bg": "#3a3a3a", "dialog_btn_hover_text": "#d2bc93",
-             "dialog_btn_hover_border": "#d2bc93", "dialog_btn_pressed_bg": "#d2bc93",
-             "dialog_btn_pressed_text": "#000000", "dialog_btn_border": "#333333"},
-    "light": {"dialog_btn_bg": "#ffffff", "dialog_btn_text": "#000000",
-              "dialog_btn_hover_bg": "#eeeeee", "dialog_btn_hover_text": "#7e6529",
-              "dialog_btn_hover_border": "#8c7337", "dialog_btn_pressed_bg": "#8c7337",
-              "dialog_btn_pressed_text": "#ffffff", "dialog_btn_border": "#cccccc"},
-}
-
-#: The main family is not touched by this pass, and saying so is the point:
-#: these two schemes are what the naming exists to keep apart.
-PINNED_MAIN = {
-    "dark": {"main_btn_bg": "#1a1a1a", "main_btn_text": "#dddddd",
-             "main_btn_border": "#333333", "main_btn_hover_bg": "#333333",
-             "main_btn_hover_text": "#dddddd", "main_btn_pressed_bg": "#444444",
-             "main_btn_pressed_text": "#000000"},
-    "light": {"main_btn_bg": "#ffffff", "main_btn_text": "#000000",
-              "main_btn_border": "#cccccc", "main_btn_hover_bg": "#333333",
-              "main_btn_hover_text": "#000000", "main_btn_pressed_bg": "#444444",
-              "main_btn_pressed_text": "#ffffff"},
-}
-
+RETIRED = ('CONTRAST_ON_DARK', 'CONTRAST_ON_LIGHT', 'SWATCH_BORDER_ON_DARK', 'SWATCH_BORDER_ON_LIGHT', 'PREVIEW_BORDER', 'PREVIEW_BORDER_THIN')
 SKIP = {".git", "build", "dist", ".venv", "__pycache__"}
 
-#: A sweep for a name cannot tell a USE of that name from a MENTION of it, and
-#: the two files certain to mention it are this guard -- which lists the old
-#: names in order to forbid them -- and the delivery script that performs the
-#: rename. Both are skipped by marker rather than by filename, because the
-#: delivery script arrives under whatever name it is saved as.
-MARKERS = ("RNV-BUTTON-NAMING-GUARD", "RNV-BUTTON-NAMING-TOOL-DO-NOT-SWEEP")
 
+def _code_only(text: str) -> str:
+    """The file with every comment and string literal removed.
 
-def _palettes():
-    """Read the palettes the way the application reads them.
-
-    Static resolution is not enough here: light's dialog_btn_hover_text is
-    BRAND_DARK_GOLD_DEEP, which is derived by lighten() rather than written as
-    a literal, and an AST resolver returns None for it -- then compares None
-    with None and passes.
-    """
-    from utils.config import DARK_THEME_COLORS, LIGHT_THEME_COLORS
-    return {"dark": DARK_THEME_COLORS, "light": LIGHT_THEME_COLORS}
+    Written after the first version of this guard failed on its own
+    explanation. A guard that sweeps for the thing it forbids must be able to
+    tell a use from a mention, and every previous attempt at that in this
+    programme did it by excluding files, which stops working the moment a
+    third file has a legitimate reason to say the word. Tokenising is the
+    version that does not need a list."""
+    import io
+    import tokenize
+    out = []
+    try:
+        for tok in tokenize.generate_tokens(io.StringIO(text).readline):
+            if tok.type in (tokenize.COMMENT, tokenize.STRING):
+                continue
+            out.append(tok.string)
+    except (tokenize.TokenError, IndentationError, SyntaxError):
+        return text          # unparseable: fall back to the whole text
+    return " ".join(out)
 
 
 def _sources():
-    for path in sorted(ROOT.rglob("*")):
-        # Prose is not swept. docs/ is updated in one pass after alignment
-        # settles, so it names the old keys until then, and a guard that failed
-        # on that would be failing on a decision rather than a defect.
-        if path.is_dir() or path.suffix not in (".py", ".ambr"):
-            continue
-        if any(part in SKIP for part in path.parts):
+    for path in sorted(ROOT.rglob("*.py")):
+        if any(p in SKIP for p in path.parts):
             continue
         text = path.read_text(encoding="utf-8-sig", errors="replace")
-        if any(marker in text for marker in MARKERS):
+        if "RNV-INK-RULE-GUARD" in text or "RNV-NAMING-TOOL-DO-NOT-SWEEP" in text:
             continue
         yield path, text
 
 
-def test_no_old_button_key_name_survives():
-    offenders = []
-    for path, text in _sources():
-        for old in OLD:
-            if re.search(r"(['\"])" + old + r"\1", text):
-                offenders.append(f"{path.relative_to(ROOT)}: {old}")
-    assert not offenders, (
-        "these are dialog button keys and must be named dialog_btn_*:\n  "
-        + "\n  ".join(offenders))
+def test_the_rule_is_a_real_contrast_measurement():
+    """Black on white and white on black, the two ends. If the rule were
+    inverted or the luminance formula wrong, these are what break first."""
+    assert config.contrast_ink("#ffffff") == config.TRUE_BLACK
+    assert config.contrast_ink("#000000") == config.WHITE
+    assert round(config.contrast_ratio("#ffffff", "#000000"), 2) == 21.0
+    assert round(config.contrast_ratio("#777777", "#777777"), 2) == 1.0
 
 
-TOOL_MARKER = "RNV-BUTTON-NAMING-TOOL-DO-NOT-SWEEP"
+def test_the_rule_gets_saturated_colour_right():
+    """The case the mean got wrong. Pure green is a LIGHT ground -- it is 71%
+    of the luminance of white -- and the mean called it dark because it only
+    looked at how many channels were lit."""
+    assert config.contrast_ink((0, 255, 0)) == config.TRUE_BLACK
+    assert config.contrast_ratio((0, 255, 0), config.TRUE_BLACK) > 15
+    # and the mean, for the record, would have chosen the other one
+    assert sum((0, 255, 0)) / 3 < 128
 
 
-def test_no_application_file_is_exempt_from_the_sweep():
-    """The exemption is by marker, and the marker is how a file could hide.
+def test_it_takes_a_hex_string_or_an_rgb_triple():
+    """Callers hold both shapes, and a silent TypeError inside an f-string
+    renders as an empty colour rather than an exception."""
+    assert config.contrast_ink("#00ff00") == config.contrast_ink((0, 255, 0))
+    assert config.contrast_ink("#0f0") == config.contrast_ink("#00ff00")
 
-    An earlier version of this counted marked files and allowed two. That
-    failed in a working tree holding a second copy of the delivery script --
-    a guard failing on the state of somebody's checkout rather than on a
-    defect in the application, which is the wrong thing to fail on.
 
-    What actually matters is that no APPLICATION file is exempt. This guard
-    may carry a marker; it lists the old names in order to forbid them.
-    Everything else must be a delivery script, identified by the tool marker
-    in its own header -- those arrive under whatever name they are saved as,
-    there can be several of them lying around, and none is application source.
-    """
-    here = Path(__file__).resolve()
+def test_the_edge_rule_shares_the_ink_rule():
+    """swatch_edge answers the same question with a different pair. If it
+    ever grows its own threshold, this is what catches it."""
+    assert config.swatch_edge("#ffffff") == config.APP_BORDER
+    assert config.swatch_edge("#000000") == config.GREY_CC
+    for ground in ("#ffffff", "#000000", "#8c7337", "#00ff00", "#777777"):
+        edge = config.swatch_edge(ground)
+        other = config.GREY_CC if edge == config.APP_BORDER else config.APP_BORDER
+        assert config.contrast_ratio(ground, edge) >= \
+            config.contrast_ratio(ground, other)
+
+
+def test_the_brand_golds_are_ruled_not_measured():
+    """The close button keeps black on bright gold and white on dark gold.
+
+    Dark gold measures 4.54 white against 4.62 black -- close enough that the
+    arithmetic would flip it, which is exactly why the two call sites in
+    utils/cache.py name the colour outright instead of asking the rule. This
+    test states the margin so that a later 'cleanup' that routes them through
+    contrast_ink() has to argue with a number."""
+    white = config.contrast_ratio(config.BRAND_DARK_GOLD, config.WHITE)
+    black = config.contrast_ratio(config.BRAND_DARK_GOLD, config.TRUE_BLACK)
+    assert abs(white - black) < 0.15, (
+        "the golds moved; re-take the ruling rather than the measurement")
+    src = (ROOT / "utils" / "cache.py").read_text(encoding="utf-8-sig")
+    assert "fg      = TRUE_BLACK" in src and "fg      = WHITE" in src, (
+        "the gold button inks are no longer written as a decision")
+
+
+def test_the_accessibility_helper_does_not_hold_a_second_copy():
+    """It held its own luminance < 0.179 while three other places each held
+    something else. One rule, one implementation."""
+    src = _code_only(
+        (ROOT / "core" / "accessibility.py").read_text(encoding="utf-8-sig"))
+    assert "0.179" not in src, "a second crossover threshold is back"
+    assert config.contrast_ink("#ffffff") == config.TRUE_BLACK
+    from core.accessibility import ColorAccessibility
+    assert ColorAccessibility.get_optimal_text_color((255, 255, 255)) == (0, 0, 0)
+    assert ColorAccessibility.get_optimal_text_color((0, 0, 0)) == (255, 255, 255)
+    assert ColorAccessibility.get_optimal_text_color((0, 255, 0)) == (0, 0, 0)
+
+
+def test_no_call_site_measures_brightness_by_hand():
+    """The rule is only one rule while nothing else computes its own.
+
+    Matches the two shapes that were actually here -- a mean of the three
+    channels, and the ITU-R 601 weights -- rather than any arithmetic, so it
+    stays readable and does not fire on unrelated maths."""
+    mean = re.compile(r"sum \( colou?r \) / 3|\( r \+ g \+ b \) / 3")
+    luma = re.compile(r"\* 299\b|\* 587\b|\* 114\b")
     strays = []
+    for path, text in _sources():
+        code = _code_only(text)
+        if mean.search(code) or luma.search(code):
+            strays.append(str(path.relative_to(ROOT)))
+    assert not strays, f"hand-rolled brightness rules are back in: {strays}"
+
+
+def test_the_fallback_branches_no_longer_hold_their_own_copy():
+    """Four files inlined the rule as a `if CACHE_AVAILABLE ... else` fallback,
+    each an exact copy of ColorCache's own. Seven implementations of one
+    question in one application, on three different rules, is what the sweep
+    above exists to stop coming back."""
+    for rel in ("RNV_Color_Picker.py", "core/workers.py",
+                "ui/settings_panel.py", "ui/color_swatch_widget.py",
+                "utils/cache.py"):
+        code = _code_only((ROOT / rel).read_text(encoding="utf-8-sig"))
+        assert "brightness > 128" not in code, f"{rel} still rolls its own"
+    from utils.cache import ColorCache
+    assert ColorCache.get_text_color_for_background((128, 128, 128)) == (0, 0, 0)
+    assert ColorCache.get_text_color_for_background((0, 0, 0)) == (255, 255, 255)
+
+
+def test_the_retired_names_are_gone():
+    strays = []
+    for path, text in _sources():
+        for old in RETIRED:
+            if re.search(r"\b%s\b" % re.escape(old), text):
+                strays.append(f"{path.relative_to(ROOT)}: {old}")
+    assert not strays, "retired names are still in use:\n  " + "\n  ".join(strays)
+
+
+def test_every_source_file_is_utf8():
+    """core/palette_formats.py carried four cp1252 em-dashes. CPython let it
+    run because they sat in comments; an audit script read it with plain
+    UTF-8, swallowed the decode error, skipped the file, and reported two
+    live constants as dead. A sweep that cannot read a file is worse than one
+    that fails."""
+    bad = []
     for path in sorted(ROOT.rglob("*.py")):
-        if any(part in SKIP for part in path.parts):
+        if any(p in SKIP for p in path.parts):
             continue
-        text = path.read_text(encoding="utf-8-sig", errors="replace")
-        if not any(marker in text for marker in MARKERS):
-            continue
-        if path.resolve() == here or TOOL_MARKER in text:
-            continue
-        strays.append(str(path.relative_to(ROOT)))
-    assert not strays, (
-        "these files are skipped by the name sweep but are not a delivery "
-        f"script: {strays}")
-    assert MARKERS[0] in here.read_text(encoding="utf-8-sig"), (
-        "this guard lost its own marker and is now sweeping itself")
+        try:
+            path.read_bytes().decode("utf-8-sig")
+        except UnicodeDecodeError as exc:
+            bad.append(f"{path.relative_to(ROOT)}: {exc}")
+    assert not bad, "not valid UTF-8:\n  " + "\n  ".join(bad)
 
 
-def test_both_palettes_carry_the_new_dialog_names():
-    for mode, palette in _palettes().items():
-        missing = [n for n in NEW if n not in palette]
-        assert not missing, f"{mode} palette missing {missing}"
-
-
-def test_the_rename_moved_no_dialog_value():
-    for mode, pins in PINNED_DIALOG.items():
-        palette = _palettes()[mode]
-        actual = {k: palette.get(k) for k in pins}
-        assert actual == pins, (
-            f"the {mode} dialog button values changed.\n"
-            f"  wanted {pins}\n  found  {actual}\n"
-            "A rename that changes a value is not a rename.")
-
-
-def test_the_main_family_is_untouched():
-    for mode, pins in PINNED_MAIN.items():
-        palette = _palettes()[mode]
-        actual = {k: palette.get(k) for k in pins}
-        assert actual == pins, (
-            f"the {mode} main button values changed. This pass renames the "
-            f"DIALOG family and must not reach the main window.\n"
-            f"  wanted {pins}\n  found  {actual}")
-
-
-def test_the_two_schemes_are_still_different():
-    """If the families ever converge, the naming stops carrying information.
-
-    Not a style rule: the main button is black-and-white with an inverting
-    transition, the dialog button is gold. They differ at rest, at hover and
-    at press, in both modes, and that is the whole reason for two families.
-    """
-    for mode, palette in _palettes().items():
-        for main, dialog in (("main_btn_hover_text", "dialog_btn_hover_text"),
-                             ("main_btn_pressed_bg", "dialog_btn_pressed_bg")):
-            assert palette[main] != palette[dialog], (
-                f"{mode}: {main} and {dialog} now hold the same value "
-                f"({palette[main]}). Two families holding one scheme is one "
-                f"family with extra steps.")
-
-
-def test_the_main_window_still_reads_the_main_family():
-    for rel in ("RNV_Color_Picker.py", "utils/cache.py"):
-        src = (ROOT / rel).read_text(encoding="utf-8-sig")
-        assert "'main_btn_bg'" in src, f"{rel} no longer reads main_btn_bg"
-
-
-def test_the_dialogs_read_the_dialog_family():
-    for rel in ("utils/dialog_helper.py", "ui/about_dialog.py",
-                "ui/progress_dialog.py", "ui/settings_panel.py"):
-        src = (ROOT / rel).read_text(encoding="utf-8-sig")
-        assert "dialog_btn_" in src, f"{rel} no longer reads the dialog family"
-        assert "'main_btn_" not in src, (
-            f"{rel} reads the main family. Dialogs open later and take the "
-            f"gold scheme; wiring one to main_btn_* fuses the two.")
+def test_no_three_digit_hex_in_the_palette():
+    """Two of the retired constants were "#333" and "#ccc". The census reads
+    six-digit hexes, so a three-digit one is a value the chart cannot see."""
+    src = (ROOT / "utils" / "config.py").read_text(encoding="utf-8-sig")
+    hits = re.findall(r"""['"]#[0-9a-fA-F]{3}['"]""", src)
+    assert not hits, f"three-digit hexes are back: {hits}"
 '''
 
 
@@ -351,12 +557,18 @@ class Tree:
         self.write(rel, src.replace(old, new, times))
 
     def flush(self) -> list[str]:
+        """Compare and write BYTES, not decoded text.
+
+        read_text('utf-8') here raised on a file that was not valid UTF-8 --
+        which is precisely the file some scripts exist to fix. Bytes compare
+        identically for everything else and cannot refuse to look."""
         touched = []
         for rel, text in self.files.items():
             p = self.root / rel
             p.parent.mkdir(parents=True, exist_ok=True)
-            if not p.exists() or p.read_text(encoding="utf-8") != text:
-                p.write_text(text, encoding="utf-8")
+            data = text.encode("utf-8")
+            if not p.exists() or p.read_bytes() != data:
+                p.write_bytes(data)
                 touched.append(rel)
         return touched
 
