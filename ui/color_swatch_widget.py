@@ -20,7 +20,7 @@ from PyQt6.QtGui import QPainter, QColor, QPen, QFont, QAction, QPaintEvent
 from utils.logger import Logger
 from utils.cache import QColorCache, ColorCache, StylesheetCache
 from utils.signal_manager import SignalConnectionManager
-from utils.config import BRAND_GOLD
+from utils.config import BRAND_GOLD, prefers_dark_ink
 
 logger = Logger("ColorSwatch")
 CACHE_AVAILABLE = True
@@ -323,8 +323,7 @@ class ColorSwatchWidget(QWidget):
             text_rgb = ColorCache.get_text_color_for_background((r, g, b))
             text_color = QColorCache.get(text_rgb)
         else:
-            brightness = (r * 299 + g * 587 + b * 114) / 1000
-            text_color = QColorCache.BLACK if brightness > 128 else QColorCache.WHITE
+            text_color = QColorCache.BLACK if prefers_dark_ink((r, g, b)) else QColorCache.WHITE
     
         # Draw color number at top
         global_font = QApplication.font()

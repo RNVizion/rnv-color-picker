@@ -15,6 +15,7 @@ from sklearn.cluster import KMeans
 from typing import Callable
 from dataclasses import dataclass
 
+from utils.config import prefers_dark_ink
 from utils.logger import Logger
 from utils.error_handler import ErrorHandler, ErrorContext
 from utils.signal_manager import SignalConnectionManager
@@ -485,8 +486,7 @@ class PaletteExportWorker(QThread):
                     text_color = ColorCache.get_text_color_for_background((r, g, b))
                     hex_code = ColorCache.rgb_to_hex((r, g, b))
                 else:
-                    brightness = (r * 299 + g * 587 + b * 114) / 1000
-                    text_color = (0, 0, 0) if brightness > 128 else (255, 255, 255)
+                    text_color = (0, 0, 0) if prefers_dark_ink((r, g, b)) else (255, 255, 255)
                     hex_code = f'#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}'
                 
                 # Draw text

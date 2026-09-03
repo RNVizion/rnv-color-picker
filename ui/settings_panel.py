@@ -24,8 +24,9 @@ from utils.session_manager import get_session_manager
 from utils.error_handler import ErrorHandler
 from utils.signal_manager import SignalConnectionManager
 from utils.config import (
+    prefers_dark_ink,
     BRAND_GOLD, BRAND_DARK_GOLD, BRAND_DARK_GOLD_DEEP,
-    PREVIEW_BORDER_THIN,
+    GREY_44,
     CONTRAST_DEMO_BLACK_BG, CONTRAST_DEMO_WHITE_BG,
     CONTRAST_DEMO_BLACK_FG, CONTRAST_DEMO_WHITE_FG,
     STATUS_SUCCESS_BG, STATUS_SUCCESS_FG,
@@ -78,8 +79,7 @@ class ColorHistoryItem(QListWidgetItem):
             else:
                 color = QColor(rgb[0], rgb[1], rgb[2])
                 # Determine text color based on brightness
-                brightness = (rgb[0] * 299 + rgb[1] * 587 + rgb[2] * 114) / 1000
-                text_color = QColorCache.BLACK if brightness > 128 else QColorCache.WHITE
+                text_color = QColorCache.BLACK if prefers_dark_ink((rgb[0], rgb[1], rgb[2])) else QColorCache.WHITE
             
             self.setBackground(color)
             self.setForeground(text_color)
@@ -726,7 +726,7 @@ class SettingsPanel(QDialog):
         self.harmony_base_preview.setFixedSize(60, 60)
         self.harmony_base_preview.setStyleSheet(f"""
             background-color: {self._get_accent()};
-            border: 2px solid {PREVIEW_BORDER_THIN};
+            border: 2px solid {GREY_44};
             border-radius: 4px;
         """)
         base_layout.addWidget(self.harmony_base_preview)
@@ -826,7 +826,7 @@ class SettingsPanel(QDialog):
         
         self.harmony_base_preview.setStyleSheet(f"""
             background-color: rgb({r}, {g}, {b});
-            border: 2px solid {PREVIEW_BORDER_THIN};
+            border: 2px solid {GREY_44};
             border-radius: 4px;
         """)
         
@@ -909,7 +909,7 @@ class SettingsPanel(QDialog):
         # Color box
         color_box = QLabel()
         color_box.setFixedSize(66, 50)
-        border = f"3px solid {self._get_accent()}" if is_base else f"2px solid {PREVIEW_BORDER_THIN}"
+        border = f"3px solid {self._get_accent()}" if is_base else f"2px solid {GREY_44}"
         color_box.setStyleSheet(f"""
             background-color: rgb({rgb[0]}, {rgb[1]}, {rgb[2]});
             border: {border};
@@ -1046,7 +1046,7 @@ class SettingsPanel(QDialog):
             color: {CONTRAST_DEMO_WHITE_FG};
             font-size: 24px;
             font-weight: bold;
-            border: 2px solid {PREVIEW_BORDER_THIN};
+            border: 2px solid {GREY_44};
             border-radius: 4px;
         """)
         fg_layout.addWidget(self.access_fg_preview)
@@ -1101,7 +1101,7 @@ class SettingsPanel(QDialog):
         self.access_bg_preview.setFixedSize(80, 60)
         self.access_bg_preview.setStyleSheet(f"""
             background-color: {CONTRAST_DEMO_WHITE_BG};
-            border: 2px solid {PREVIEW_BORDER_THIN};
+            border: 2px solid {GREY_44};
             border-radius: 4px;
         """)
         bg_layout.addWidget(self.access_bg_preview)
@@ -1140,7 +1140,7 @@ class SettingsPanel(QDialog):
             background-color: {CONTRAST_DEMO_WHITE_BG};
             color: {CONTRAST_DEMO_BLACK_FG};
             font-size: 14px;
-            border: 2px solid {PREVIEW_BORDER_THIN};
+            border: 2px solid {GREY_44};
             border-radius: 4px;
         """)
         preview_layout.addWidget(self.access_preview_box)
@@ -1189,7 +1189,7 @@ class SettingsPanel(QDialog):
         
         self.sim_color_preview = QLabel()
         self.sim_color_preview.setFixedSize(40, 30)
-        self.sim_color_preview.setStyleSheet(f"background-color: {self._get_accent()}; border: 1px solid {PREVIEW_BORDER_THIN};")
+        self.sim_color_preview.setStyleSheet(f"background-color: {self._get_accent()}; border: 1px solid {GREY_44};")
         sim_color_layout.addWidget(self.sim_color_preview)
         
         self.sim_r = QSpinBox()
@@ -1260,13 +1260,13 @@ class SettingsPanel(QDialog):
             color: rgb({bg[0]}, {bg[1]}, {bg[2]});
             font-size: 24px;
             font-weight: bold;
-            border: 2px solid {PREVIEW_BORDER_THIN};
+            border: 2px solid {GREY_44};
             border-radius: 4px;
         """)
         
         self.access_bg_preview.setStyleSheet(f"""
             background-color: rgb({bg[0]}, {bg[1]}, {bg[2]});
-            border: 2px solid {PREVIEW_BORDER_THIN};
+            border: 2px solid {GREY_44};
             border-radius: 4px;
         """)
         
@@ -1274,7 +1274,7 @@ class SettingsPanel(QDialog):
             background-color: rgb({bg[0]}, {bg[1]}, {bg[2]});
             color: rgb({fg[0]}, {fg[1]}, {fg[2]});
             font-size: 14px;
-            border: 2px solid {PREVIEW_BORDER_THIN};
+            border: 2px solid {GREY_44};
             border-radius: 4px;
         """)
         
@@ -1328,7 +1328,7 @@ class SettingsPanel(QDialog):
         # Update color preview
         self.sim_color_preview.setStyleSheet(f"""
             background-color: rgb({rgb[0]}, {rgb[1]}, {rgb[2]});
-            border: 1px solid {PREVIEW_BORDER_THIN};
+            border: 1px solid {GREY_44};
         """)
         
         # Clear existing results
@@ -1359,7 +1359,7 @@ class SettingsPanel(QDialog):
             color_box.setFixedSize(76, 50)
             color_box.setStyleSheet(f"""
                 background-color: rgb({sim_rgb[0]}, {sim_rgb[1]}, {sim_rgb[2]});
-                border: 2px solid {PREVIEW_BORDER_THIN};
+                border: 2px solid {GREY_44};
                 border-radius: 4px;
             """)
             swatch_layout.addWidget(color_box)

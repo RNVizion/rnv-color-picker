@@ -48,6 +48,7 @@ from ui.progress_dialog import LoadingDialog, QuickProgressDialog
 
 # Utilities
 from utils.config import (
+    prefers_dark_ink,
     ThemeManager, MAX_COLORS, APP_VERSION,
     BUTTON_HEIGHT_MIN, BUTTON_HEIGHT_MAX,
     WINDOW_WIDTH_MIN, WINDOW_WIDTH_MAX, SWATCH_SIZE,
@@ -1142,8 +1143,7 @@ class ColorPickerApp(QMainWindow):
                     text_color = ColorCache.get_text_color_for_background((r, g, b))
                     hex_code = ColorCache.rgb_to_hex((r, g, b))
                 else:
-                    brightness = (r * 299 + g * 587 + b * 114) / 1000
-                    text_color = (0, 0, 0) if brightness > 128 else (255, 255, 255)
+                    text_color = (0, 0, 0) if prefers_dark_ink((r, g, b)) else (255, 255, 255)
                     hex_code = f'#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}'
                 
                 draw.text((x + 10, y + 10), f"#{idx + 1}", fill=text_color, font=font)

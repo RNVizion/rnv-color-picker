@@ -16,7 +16,7 @@ from utils.logger import Logger
 from utils.cache import ColorCache
 from utils.error_handler import ErrorHandler
 from utils.config import (
-    CONTRAST_ON_LIGHT, CONTRAST_ON_DARK,
+    contrast_ink,
     SVG_EXPORT_BG, SVG_EXPORT_STROKE,
 )
 
@@ -33,7 +33,7 @@ _logger = logger
 # ============================================================================
 # Matches data lines starting with a hex color (#RRGGBB or #RGB) followed by
 # a non-hex char (space / EOL / punctuation). Used by importers whose data
-# lines start with the same '#' as their comment lines — without this
+# lines start with the same '#' as their comment lines â€” without this
 # positive identification, we can't tell `#ff0000 50` (data) apart from
 # `# Format: ...` (comment) cheaply.
 _HEX_DATA_LINE = re.compile(r'^(#(?:[0-9A-Fa-f]{6}|[0-9A-Fa-f]{3}))(?![0-9A-Fa-f])')
@@ -423,8 +423,9 @@ class PaletteFormats:
                 
                 text_x = x + swatch_size // 2
                 text_y = y + swatch_size // 2
-                brightness = sum(color) / 3
-                text_color = CONTRAST_ON_DARK if brightness < 128 else CONTRAST_ON_LIGHT
+                # RNV-INK-RULE: was sum(color) / 3 < 128, which is not a
+                # contrast measurement and put white on pure green.
+                text_color = contrast_ink(color)
                 
                 f.write(f'  <text x="{text_x}" y="{text_y}" ')
                 f.write(f'text-anchor="middle" dominant-baseline="central" ')
@@ -717,7 +718,7 @@ class PaletteFormats:
                         continue
                     m = _HEX_DATA_LINE.match(line)
                     if not m:
-                        continue  # comment, header, or non-hex line — skip
+                        continue  # comment, header, or non-hex line â€” skip
                     # Drop trailing inline comment, then split remaining fields
                     rest = line[m.end():].split('#', 1)[0].strip()
                     parts = rest.split()
@@ -762,7 +763,7 @@ class PaletteFormats:
                         continue
                     m = _HEX_DATA_LINE.match(line)
                     if not m:
-                        continue  # comment, header, or non-hex line — skip
+                        continue  # comment, header, or non-hex line â€” skip
                     hex_color = m.group(1)
                     # Strip the hex token and any trailing inline comment
                     rest = line[m.end():].split('#', 1)[0].strip()
@@ -824,7 +825,7 @@ class PaletteFormats:
                                 l = float(parts[2]) / 100.0
                                 weight = int(parts[3]) if len(parts) > 3 else 50
                                 # hsl_to_rgb in this codebase expects
-                                # (h, l, s) — see ColorMath. 
+                                # (h, l, s) â€” see ColorMath. 
                                 # Passing (h, s, l) silently corrupts loaded HSL palettes.
                                 rgb = ColorMath.hsl_to_rgb((h, l, s))
                                 colors.append((rgb, weight))

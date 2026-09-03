@@ -21,8 +21,8 @@ from utils.config import (
     BRAND_GOLD, BRAND_DARK_GOLD,
     BRAND_GOLD_HOVER, BRAND_GOLD_PRESSED,
     BRAND_DARK_GOLD_HOVER, BRAND_DARK_GOLD_PRESSED,
-    SWATCH_BORDER_ON_LIGHT,
-    CONTRAST_ON_LIGHT, CONTRAST_ON_DARK,
+    TRUE_BLACK, WHITE,
+    swatch_edge, contrast_ink_rgb,
     STATUS_ERROR_BG,
 )
 
@@ -96,10 +96,11 @@ class ColorCache:
         Returns:
             (0,0,0) for dark text or (255,255,255) for light text
         """
-        r, g, b = rgb
-        # Perceived brightness formula (ITU-R BT.601)
-        brightness = (r * 299 + g * 587 + b * 114) / 1000
-        return (0, 0, 0) if brightness > 128 else (255, 255, 255)
+        # RNV-INK-RULE (2026-09-02): was ITU-R BT.601 perceived brightness,
+        # which is a photographic weighting, not a contrast measurement. It
+        # put white on a mid grey that reads 5.32:1 in black and 3.95:1 in
+        # white. One rule now, stated in utils/config.py.
+        return contrast_ink_rgb(rgb)
     
     @staticmethod
     @functools.lru_cache(maxsize=512)
@@ -492,12 +493,16 @@ class StylesheetCache:
         if key not in cls._cache:
             if is_dark:
                 bg      = BRAND_GOLD
-                fg      = CONTRAST_ON_LIGHT   # black text on bright gold
+                # RNV-INK-RULE: a brand decision, not a measurement. Bright
+                # gold is a light ground and takes black; dark gold takes
+                # white. Measured, dark gold is 4.54 white against 4.62 black
+                # -- a coin flip that would have moved a pixel for nothing.
+                fg      = TRUE_BLACK
                 hover   = BRAND_GOLD_HOVER
                 pressed = BRAND_GOLD_PRESSED
             else:
                 bg      = BRAND_DARK_GOLD
-                fg      = CONTRAST_ON_DARK    # white text on dark gold
+                fg      = WHITE
                 hover   = BRAND_DARK_GOLD_HOVER
                 pressed = BRAND_DARK_GOLD_PRESSED
             cls._cache[key] = f"""
@@ -602,7 +607,7 @@ class StylesheetCache:
             cls._cache[key] = f"""
                 QLabel {{
                     background-color: {hex_color};
-                    border: 2px solid {SWATCH_BORDER_ON_LIGHT};
+                    border: 2px solid {swatch_edge(hex_color)};
                     border-radius: 8px;
                     min-width: {size}px;
                     min-height: {size}px;

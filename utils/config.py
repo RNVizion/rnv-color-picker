@@ -6,7 +6,7 @@ This module is the SINGLE SOURCE OF TRUTH for all colors in the application.
 Structure:
 - Brand colors (BRAND_GOLD, BRAND_DARK_GOLD) — referenced everywhere, never duplicated
 - Theme color dicts (DARK_THEME_COLORS, LIGHT_THEME_COLORS, IMAGE_MODE_COLORS)
-- Standalone constants (CONTRAST_ON_LIGHT, PREVIEW_BORDER, DEBUG_TEXT, etc.)
+- Standalone constants (GREY_44, DEBUG_TEXT, etc.) and the ink rule
 - get_theme_colors() entry function
 - ThemeManager class for runtime theme state
 
@@ -657,24 +657,107 @@ CONTRAST_DEMO_WHITE_BG: Final[str] = "#ffffff"
 CONTRAST_DEMO_BLACK_FG: Final[str] = "#000000"
 CONTRAST_DEMO_WHITE_FG: Final[str] = "#ffffff"
 
-CONTRAST_ON_LIGHT: Final[str] = "#000000"
-"""Black text for use on light/bright backgrounds (e.g. color swatches)"""
+# ── Neutral edges ──
+# RNV-INK-RULE (2026-09-02). Named for the colour, not the job.
+#
+# GREY_44 was the swatch-preview outline, held under two role names at once:
+# the same value written twice, once in full and once in three digits, which
+# is how it stayed invisible to a census that reads six. Only the short form
+# was ever used.
+#
+# GREY_CC is the light edge swatch_edge() reaches for on a dark ground. It
+# was three digits too, and equally invisible.
+GREY_44: Final[str] = "#444444"
+GREY_CC: Final[str] = "#cccccc"
 
-CONTRAST_ON_DARK: Final[str] = "#ffffff"
-"""White text for use on dark/dim backgrounds (e.g. color swatches)"""
 
-SWATCH_BORDER_ON_LIGHT: Final[str] = "#333"
-"""Dark border for color swatches on light-colored surfaces"""
+# ── Which ink goes on this ground ──
+#
+# RNV-INK-RULE (2026-09-02, ruled by Chris). Four places in the fleet asked
+# this question and gave three different answers, none of them a contrast
+# measurement:
+#
+#     core/palette_formats.py   sum(color) / 3 < 128
+#     ui/settings_dialog.py     (r + g + b) / 3 > 128     (icon-builder)
+#     ui/preview_utils.py       ITU-R 601 luma > 128      (icon-builder)
+#     core/accessibility.py     relative luminance < 0.179   -- correct, unused
+#
+# The mean and the 601 luma disagree with each other on saturated colour,
+# because 601 weights green 587/1000 where the mean weights it 333. On pure
+# green the mean puts white on it at 1.37:1 where the right answer is black
+# at 15.30:1.
+#
+# So: one rule, stated once, as a real comparison rather than a threshold --
+# whichever candidate has the higher contrast ratio against the ground wins.
+# A threshold would need re-deriving for every pair; a ratio does not, which
+# is what lets swatch_edge() share the rule with contrast_ink().
+#
+# This is the same maths as the surface ladder and the 4.5 floor.
 
-SWATCH_BORDER_ON_DARK: Final[str] = "#ccc"
-"""Light border for color swatches on dark-colored surfaces"""
 
-# ── Swatch preview border ──
-# Neutral gray that reads well on both dark and light backgrounds.
-# Color-preview widgets need a consistent subtle outline so the swatch
-# is visible even when the color itself is near-white or near-black.
-PREVIEW_BORDER: Final[str] = "#444444"
-PREVIEW_BORDER_THIN: Final[str] = "#444"
+def _channel(value: float) -> float:
+    """One sRGB channel, 0-255, linearised."""
+    c = value / 255.0
+    return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+
+
+def _rgb(color: "str | tuple[int, int, int]") -> tuple[int, int, int]:
+    """Accept either shape. Callers hold hex strings and RGB triples both."""
+    if isinstance(color, str):
+        h = color.lstrip("#")
+        if len(h) == 3:
+            h = "".join(ch * 2 for ch in h)
+        return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+    return (int(color[0]), int(color[1]), int(color[2]))
+
+
+def relative_luminance(color: "str | tuple[int, int, int]") -> float:
+    """WCAG 2.x relative luminance, 0.0 (black) to 1.0 (white)."""
+    r, g, b = _rgb(color)
+    return 0.2126 * _channel(r) + 0.7152 * _channel(g) + 0.0722 * _channel(b)
+
+
+def contrast_ratio(a: "str | tuple[int, int, int]",
+                   b: "str | tuple[int, int, int]") -> float:
+    """WCAG contrast ratio between two colours, 1.0 to 21.0."""
+    la, lb = relative_luminance(a), relative_luminance(b)
+    hi, lo = (la, lb) if la >= lb else (lb, la)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+def better_on(background: "str | tuple[int, int, int]", *candidates: str) -> str:
+    """Whichever candidate reads best on this ground. Ties go to the first."""
+    return max(candidates, key=lambda c: contrast_ratio(background, c))
+
+
+def contrast_ink(background: "str | tuple[int, int, int]") -> str:
+    """Text colour for an arbitrary ground: WHITE or TRUE_BLACK.
+
+    For a colour the USER chose -- a swatch, an exported palette entry. Not
+    for brand surfaces: what sits on a brand gold is a ruling, not a
+    measurement, and the two are only 0.08 apart on BRAND_DARK_GOLD.
+    """
+    return better_on(background, TRUE_BLACK, WHITE)
+
+
+def prefers_dark_ink(background: "str | tuple[int, int, int]") -> bool:
+    """True when TRUE_BLACK reads better on this ground than WHITE does.
+
+    The shape the old call sites wanted: they all read
+    `X if brightness > 128 else Y`, so this drops straight into the
+    condition and leaves the two branches alone.
+    """
+    return contrast_ink(background) == TRUE_BLACK
+
+
+def contrast_ink_rgb(background: "str | tuple[int, int, int]") -> tuple[int, int, int]:
+    """The same answer as an RGB triple, for the QColor and Pillow callers."""
+    return (0, 0, 0) if prefers_dark_ink(background) else (255, 255, 255)
+
+
+def swatch_edge(background: "str | tuple[int, int, int]") -> str:
+    """Outline for a swatch of an arbitrary colour: GREY_CC or APP_BORDER."""
+    return better_on(background, APP_BORDER, GREY_CC)
 
 # ── Debug overlay ──
 # High-visibility terminal green on semi-transparent black. Used by the
@@ -989,16 +1072,19 @@ __all__: list[str] = [
     'IMAGE_MODE_COLORS',
     'get_theme_colors',
     # Standalone constants
-    'CONTRAST_ON_LIGHT',
-    'CONTRAST_ON_DARK',
+    'GREY_44',
+    'GREY_CC',
+    'relative_luminance',
+    'contrast_ratio',
+    'better_on',
+    'contrast_ink',
+    'contrast_ink_rgb',
+    'prefers_dark_ink',
+    'swatch_edge',
     'CONTRAST_DEMO_BLACK_BG',
     'CONTRAST_DEMO_WHITE_BG',
     'CONTRAST_DEMO_BLACK_FG',
     'CONTRAST_DEMO_WHITE_FG',
-    'SWATCH_BORDER_ON_LIGHT',
-    'SWATCH_BORDER_ON_DARK',
-    'PREVIEW_BORDER',
-    'PREVIEW_BORDER_THIN',
     'DEBUG_TEXT',
     'DEBUG_BG',
     'STATUS_SUCCESS_BG',
