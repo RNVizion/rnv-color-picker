@@ -450,13 +450,16 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
     'tab_hover_text':     BRAND_GOLD,
     
     # ── Scrollbars ──
-    'scrollbar_bg':            '#252525',
+    # RNV-COLLAPSE-252525 (2026-09-02): was #252525, a value a third of
+    # the way from panel to card and on neither ladder nor grid. Ruled
+    # onto the card rung. Image mode inherits this through the splat.
+    'scrollbar_bg':            APP_CARD,
     'scrollbar_handle':        '#444444',
     'scrollbar_handle_hover':  '#666666',
     'scrollbar_border':        APP_BORDER,
     
     # ── List / Table ──
-    'list_bg':            '#252525',
+    'list_bg':            APP_CARD,   # was #252525, see scrollbar_bg
     'list_alt_bg':        BRAND_BLACK,
     'list_selected_bg':   BRAND_GOLD,
     'list_selected_text': TRUE_BLACK,
