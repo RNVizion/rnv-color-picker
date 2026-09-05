@@ -341,38 +341,108 @@ APP_PROVENANCE: Final[dict[str, str]] = {
 lives only in a test drifts from the thing it classifies."""
 
 # ============================================================================
-# STATUS RED
+# THE STATUS FAMILY
 # ============================================================================
 #
-# The same shape as the gold: one registered value, one derivative, and the
-# derivative is COMPUTED so it cannot drift from its base.
+# RNV-STATUS-FAMILY (2026-09-03). The register replaced Bootstrap's three
+# values outright. Two measurements made keeping them indefensible: the amber
+# read 1.63 on #ffffff and 1.49 on #f5f5f5 against a 3:1 fill floor, and
+# success and error sat about 4 apart under deuteranopia -- one olive, and
+# they are the two most consequential colours in any interface. The RNV family
+# leaves the red-green axis entirely.
 #
-# No red carries text at 4.5:1 on a real light panel. #dc3545 clears only on
-# pure white, at 4.5275, and the Material red this family retired fails even
-# there at 3.6824 -- its value is deliberately not written here, because
-# test_one_status_family_only forbids it appearing in this file at all.
-# So light spends a derivative on TEXT for exactly the reason the gold does:
-# the fill and text jobs occupy non-overlapping luminance bands.
+# The shape this block already described for the red now holds for all three:
+# one registered FILL per role, and separate TEXT values per ground, because
+# the fill and text jobs occupy non-overlapping luminance bands. A value that
+# clears 3:1 on a dark AND a light ground sits at L* 48-59 by arithmetic, and
+# a mid-tone reaches 4.5:1 on neither side. That is why there are five values
+# here rather than three.
+#
+# The Material red this family retired is deliberately not written here,
+# because test_one_status_family_only forbids it appearing in this file at
+# all.
 
-STATUS_ERROR: Final[str] = "#dc3545"
+STATUS_SUCCESS: Final[str] = "#926c89"
+"""Registered. Fills, badges, and the ground that black is drawn on.
+
+Black on it reads 4.73, so STATUS_SUCCESS_FG stays #000000.
+
+WAS #28a745, written out four times in this file with no constant between the
+value and its uses -- twice in the palettes, once as STATUS_SUCCESS_BG and
+once as STATUS_ACTIVE_COLOR. Named here so it has one home."""
+
+STATUS_WARNING: Final[str] = "#a2703c"
+"""Registered. WAS #ffc107, retired on arithmetic rather than taste: it read
+1.63 on #ffffff and 1.49 on #f5f5f5, so it could not legally carry a boundary
+on a light ground at all.
+
+It reads as gold-adjacent because it half IS one -- the register derives it
+50% toward BRAND_DARK_GOLD in OKLab, landing 9.1 CIEDE2000 away, which clears
+the register's own 8.40 "clearly different" threshold by 0.7."""
+
+STATUS_SUCCESS_TEXT: Final[str] = "#ad85a3"
+"""Registered. Success TEXT on a dark panel: 5.52 on #1a1a1a, 4.55 on #2a2a2a.
+
+Here for STATUS_ACTIVE_COLOR below, which is painted with `color:` and cannot
+take the fill. The register ruled on 2026-09-04 that an active label aliases
+success-text rather than success, after finding the same alias in
+rnv-icon-builder about to fail on adoption day."""
+
+STATUS_SUCCESS_TEXT_LIGHT: Final[str] = "#8a6581"
+"""Registered. The same text on a light panel: 4.52 on #f5f5f5.
+
+Carried so the light sibling exists before it is needed. Every value the
+register has published this month has needed one, and adding it later is how
+an asymmetry gets built in -- which is exactly what Bootstrap's missing light
+variants cost this fleet.
+
+RNV-STATUS-LIGHT-FLOOR applies to this value too: it reads 4.25 on #eeeeee
+and 4.02 on #e8e8e8, both registered rungs, both below the 4.5 floor."""
+
+STATUS_ERROR: Final[str] = "#c75b64"
 """Registered. Fills, borders, and the ground that black is drawn on.
 
-Black on it reads 4.6383, which passes and is not affected by the text
-derivative below."""
+Black on it reads 5.11, which passes and is not affected by the text values
+below. WAS #dc3545."""
 
-STATUS_ERROR_LIGHT: Final[str] = lighten(STATUS_ERROR, -20)   # -> #c82131
-"""Derived. Error TEXT on a light panel.
+STATUS_ERROR_TEXT: Final[str] = "#dd6f77"
+"""Registered. Error TEXT on a dark panel. 5.48 on #1a1a1a, 4.52 on #2a2a2a.
 
-5.1811 on #f5f5f5, 4.8685 on #eeeeee, 4.6100 on #e8e8e8 -- the same coverage
-boundary BRAND_DARK_GOLD_DEEP publishes. Below #e8e8e8 the red does not carry
-text, which is a ruling rather than a gap.
+WAS #e56b77, which this file carried as a literal in two palettes. That value
+was derived from #dc3545; with the base retired it is an ORPHAN -- a value
+derived from something no longer in the palette -- so it moves with its base.
+The replacement has slightly LESS headroom on every dark ground -- 4.5210
+against 4.5801 on the card -- and is still above the floor.
 
-Uniform per-channel holds hue at 354.25 degrees, identical to the base. The
-hand-written reds in this family drift: #e56b77 is (+9, +54, +50) off the
-base and #ff6b6b is (+35, +54, +38).
+Named rather than written out, so the two palettes that carry it move
+together. They previously held it as a bare literal in two places."""
 
-Dark keeps #e56b77 by decision, not oversight -- it reads 5.5537 on #1a1a1a
-and was never short."""
+STATUS_ERROR_TEXT_LIGHT: Final[str] = "#b84e58"
+"""Registered. The same text on a light panel. 4.51 on #f5f5f5, where the
+undarkened fill reads 3.77.
+
+WAS STATUS_ERROR_LIGHT, and was lighten(STATUS_ERROR, -20). RENAMED because
+the register records that this one colour was derived independently under TWO
+identifiers across three applications, and names it error-text-light -- which
+is also the more accurate name here: it is not "the light error", it is the
+error TEXT for a light ground.
+
+WRITTEN DOWN rather than derived, and that is a change. The formula no longer
+produces the registered value: against the new base it yields #b44753, which
+is neither the old #c82131 nor #b84e58. The register's family rule is a
+different one -- hold hue and chroma, move lightness only, take the first step
+clearing 4.5 on the worst ground -- and it publishes the RESULT with the walk
+as provenance, so retuning the rule cannot silently change what an error looks
+like in five applications. Same call the register made for
+BRAND_STANDBY_GOLD.
+
+RNV-STATUS-LIGHT-FLOOR: this value does NOT reach the coverage boundary its
+predecessor did. #c82131 read 4.6100 on #e8e8e8; this reads 4.0150 there and
+4.2401 on APP hover-light #eeeeee. The register walks its light text variants
+against #f5f5f5 as "the worst light ground", and rev 27 put three registered
+rungs below it. The question is open with the brand chat; if it re-walks
+against #e8e8e8 the answer here is #ae4650, moving 3.1 -- inside the
+register's own 8.40 bar, so it stays the same red."""
 
 
 # ============================================================================
@@ -381,9 +451,11 @@ and was never short."""
 
 DARK_THEME_COLORS: Final[dict[str, str | int]] = {
     # Error message text. Theme-aware because no single red clears both
-    # grounds. Dark keeps #e56b77 (5.5537 on #1a1a1a); light uses the derived
-    # STATUS_ERROR_LIGHT. See the STATUS RED block above.
-    'status_error_text': '#e56b77',
+    # grounds: this value reads 5.48 on #1a1a1a and 2.91 on #f5f5f5.
+    # RNV-STATUS-FAMILY: was the literal #e56b77, an orphan of the
+    # retired #dc3545. Named now, so this palette and image mode
+    # cannot drift apart. See the STATUS FAMILY block above.
+    'status_error_text': STATUS_ERROR_TEXT,
     'name': 'Dark',
     
     # ── Base surfaces ──
@@ -478,9 +550,16 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
     'tooltip_text':       APP_TEXT,
     
     # ── Semantic status ──
-    'success':            '#28a745',
-    'warning':            '#ffc107',
-    'error':              '#dc3545',
+    # RNV-STATUS-FAMILY: the fills, now named. All three were
+    # bare literals; every hex a palette carries needs a
+    # constant, or nothing can move it. These three keys are
+    # looked up nowhere in this application and are not wired
+    # up by this pass -- if any is ever painted as TEXT it
+    # must take a _TEXT value instead, because a fill sits at
+    # L* 48-59 and cannot reach 4.5:1 on either ground.
+    'success':            STATUS_SUCCESS,
+    'warning':            STATUS_WARNING,
+    'error':              STATUS_ERROR,
     'info':               BRAND_GOLD,
     
     # ── Picker-specific (unique to this app) ──
@@ -504,10 +583,11 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
 # ============================================================================
 
 LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
-    # Error message text. STATUS_ERROR_LIGHT, derived from the registered
-    # red so it cannot drift from it. 5.1811 on this panel's #f5f5f5, where
-    # the undarkened #dc3545 read 4.1528 and was carried as an exemption.
-    'status_error_text': STATUS_ERROR_LIGHT,
+    # Error message text. 4.5123 on this panel's #f5f5f5, where the
+    # undarkened fill reads 3.74. RNV-STATUS-FAMILY: renamed from
+    # STATUS_ERROR_LIGHT, and no longer computed -- the old formula
+    # against the new base gives #b44753, a third answer.
+    'status_error_text': STATUS_ERROR_TEXT_LIGHT,
     'name': 'Light',
     
     # ── Base surfaces ──
@@ -597,9 +677,16 @@ LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
     'tooltip_text':       '#000000',
     
     # ── Semantic status ──
-    'success':            '#28a745',
-    'warning':            '#ffc107',
-    'error':              '#dc3545',
+    # RNV-STATUS-FAMILY: the fills, now named. All three were
+    # bare literals; every hex a palette carries needs a
+    # constant, or nothing can move it. These three keys are
+    # looked up nowhere in this application and are not wired
+    # up by this pass -- if any is ever painted as TEXT it
+    # must take a _TEXT value instead, because a fill sits at
+    # L* 48-59 and cannot reach 4.5:1 on either ground.
+    'success':            STATUS_SUCCESS,
+    'warning':            STATUS_WARNING,
+    'error':              STATUS_ERROR,
     'info':               BRAND_DARK_GOLD,
     
     # ── Picker-specific ──
@@ -628,7 +715,9 @@ IMAGE_MODE_COLORS: Final[dict[str, str | int]] = {
     **DARK_THEME_COLORS,
     # Error message text. Image mode inherits dark's value; the entry sits
     # AFTER the splat because a key listed before it is silently discarded.
-    'status_error_text': '#e56b77',
+    # RNV-STATUS-FAMILY: named rather than written out, so this and
+    # dark move together. They held the same literal twice.
+    'status_error_text': STATUS_ERROR_TEXT,
     'name': 'Image',
     # ── Picker-specific overrides for image mode ──
     'window_bg':          APP_WINDOW_OVERLAY,
@@ -770,11 +859,34 @@ DEBUG_TEXT: Final[str] = "#00ff00"
 DEBUG_BG: Final[str] = "rgba(0, 0, 0, 200)"
 
 # ── Status / feedback colors (universal semantic meaning) ──
-STATUS_SUCCESS_BG: Final[str] = "#28a745"
+# RNV-STATUS-FAMILY: these are ROLE names over the colour constants
+# above, which is what STATUS_ERROR_BG already was. The other two
+# held their own copies of the green, so one colour lived at four
+# addresses in this file and none of them named it.
+#
+# The _FG values stay #000000: black reads 4.73 on the new success
+# fill and 5.11 on the new error fill, both above the 4.5 floor
+# test_status_badge_text_clears_its_fill asserts. White would fail
+# on both, at 4.44 and 4.11.
+STATUS_SUCCESS_BG: Final[str] = STATUS_SUCCESS
 STATUS_SUCCESS_FG: Final[str] = "#000000"
 STATUS_ERROR_BG:   Final[str] = STATUS_ERROR
 STATUS_ERROR_FG:   Final[str] = "#000000"
-STATUS_ACTIVE_COLOR: Final[str] = "#28a745"
+# Unreferenced outside this file. Kept as an alias rather than
+# deleted -- rnv-icon-builder holds the same name for the folder
+# watcher, and the register still has no name for `running` as
+# distinct from `succeeded`; it recorded on 2026-09-04 that the
+# trigger for registering one is a SECOND consumer, not a date.
+#
+# IT ALIASES success-text, NOT success. Ruled by the register the
+# same day, after the identically-named constant in icon-builder --
+# which IS painted, with `color:` -- turned out to be about to fail
+# the 4.5 text floor on adoption day. Bootstrap's green read 5.55 on
+# BRAND_BLACK and doubled as text by accident; the RNV fills are
+# mid-tones by design and #926c89 reads 3.91 there. Nothing paints
+# this one today, and that is the reason to get it right now rather
+# than the reason not to: it is what the next reader will copy.
+STATUS_ACTIVE_COLOR: Final[str] = STATUS_SUCCESS_TEXT
 
 
 # ── Semi-transparent black overlays (fixed visual effects) ──

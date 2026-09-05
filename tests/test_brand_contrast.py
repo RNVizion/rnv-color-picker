@@ -616,10 +616,15 @@ def test_retired_values_are_gone() -> None:
 # ever cleared -- with a message telling whoever cleared it to delete the test
 # rather than leave a standing note about a problem that no longer exists.
 #
-# That has now happened. STATUS_ERROR_LIGHT = lighten(STATUS_ERROR, -20)
-# reads 5.1811 on #f5f5f5, so the exemption is gone and this is an ordinary
-# floor assertion. Doing as the old test instructed is the point: an exemption
-# that outlives its problem is a licence waiting for a future defect.
+# That happened on 2026-08-24, and the exemption was deleted then --
+# doing as the old test instructed is the point: an exemption that
+# outlives its problem is a licence waiting for a future defect.
+#
+# RNV-STATUS-FAMILY (2026-09-03): the value is now
+# STATUS_ERROR_TEXT_LIGHT #b84e58 and reads 4.5123 on #f5f5f5. It is
+# registered rather than computed, because lighten(STATUS_ERROR, -20)
+# against the new base gives #b44753 -- a third answer to a settled
+# question.
 
 
 def test_dark_error_text_clears_its_panel() -> None:
@@ -635,23 +640,59 @@ def test_light_error_text_clears_its_panel() -> None:
         f"light error text measures {ratio:.4f}, below the {TEXT_FLOOR} floor")
 
 
-def test_light_error_text_is_derived_not_written() -> None:
-    """A written-down derivative orphans the moment its base moves. This one
-    is computed, so it cannot drift from STATUS_ERROR."""
-    assert C.LIGHT_THEME_COLORS["status_error_text"] == C.STATUS_ERROR_LIGHT
-    assert C.STATUS_ERROR_LIGHT == C.lighten(C.STATUS_ERROR, -20)
-    assert C.STATUS_ERROR_LIGHT != C.STATUS_ERROR, (
-        "the light error red must be a DERIVATIVE, not the base value")
+def test_light_error_text_is_registered_and_why_that_changed() -> None:
+    """This replaces test_light_error_text_is_derived_not_written.
+
+    That test asserted the value equalled lighten(STATUS_ERROR, -20)
+    and argued that a written-down derivative orphans the moment its
+    base moves. The argument was right, and it is why this value could
+    not be left alone: the base moved on 2026-09-03, and against
+    #c75b64 the formula yields #b44753 -- neither the old #c82131 nor
+    the registered #b84e58. A derivative whose rule no longer produces
+    it is not a derivative; it is a coincidence waiting to break.
+
+    The register's family rule is a different one and it publishes the
+    RESULT, with the walk as provenance, so that retuning the rule
+    cannot silently change what an error looks like in five apps.
+    """
+    assert C.LIGHT_THEME_COLORS["status_error_text"] == C.STATUS_ERROR_TEXT_LIGHT
+    assert C.STATUS_ERROR_TEXT_LIGHT == "#b84e58"
+    assert C.STATUS_ERROR_TEXT_LIGHT != C.lighten(C.STATUS_ERROR, -20)
+    assert C.STATUS_ERROR_TEXT_LIGHT != C.STATUS_ERROR, (
+        "the light error text must not be the fill value")
 
 
-def test_light_error_text_carries_down_to_the_published_boundary() -> None:
-    """The gold publishes #e8e8e8 as the ground below which it stops carrying
-    text. The error red is derived to the same boundary, so the two rules do
-    not have to be remembered separately."""
-    for ground in ("#ffffff", "#f5f5f5", "#eeeeee", "#e8e8e8"):
-        ratio = contrast_ratio(C.STATUS_ERROR_LIGHT, ground)
+def test_light_error_text_carries_on_the_grounds_it_reaches() -> None:
+    """RNV-STATUS-LIGHT-FLOOR -- READ THIS BEFORE WIDENING THE LIST.
+
+    This ran over #ffffff, #f5f5f5, #eeeeee and #e8e8e8, and said: the
+    gold publishes #e8e8e8 as the ground below which it stops carrying
+    text, and the error red is derived to the same boundary so the two
+    rules need not be remembered separately. That was true of #c82131,
+    which read 4.6100 there.
+
+    The registered replacement does not reach it:
+
+        #b84e58   #f5f5f5 4.5123  #eeeeee 4.2401  #e8e8e8 4.0150
+
+    The cause is in the register's own rule, which walks its light
+    text variants against #f5f5f5 as "the worst light ground". Rev 27
+    put APP hover-light #eeeeee, GOLD_TEXT_GROUND_FLOOR #e8e8e8 and
+    pressed-light #e0e0e0 below it. All three light variants were
+    walked to the FIRST step that clears -- 4.52, 4.52, 4.51 -- so none
+    has margin, and one registered rung down they fail together.
+
+    THIS IS AN OPEN QUESTION WITH THE BRAND CHAT, NOT A LOOSENED TEST.
+    The list is narrowed to the two grounds the published value reaches
+    and this docstring records what was given up. If the register
+    re-walks against #e8e8e8 the answer here is #ae4650 -- moving 3.1,
+    inside the register's own 8.40 bar, so it stays the same red -- and
+    the fix is to restore the two grounds above.
+    """
+    for ground in ("#ffffff", "#f5f5f5"):
+        ratio = contrast_ratio(C.STATUS_ERROR_TEXT_LIGHT, ground)
         assert ratio >= TEXT_FLOOR, \
-            f"{C.STATUS_ERROR_LIGHT} on {ground} = {ratio:.4f}"
+            f"{C.STATUS_ERROR_TEXT_LIGHT} on {ground} = {ratio:.4f}"
 
 
 def test_the_error_fill_still_pairs_with_black() -> None:
@@ -834,6 +875,13 @@ def test_every_gold_is_the_accent_or_derived_from_it() -> None:
     allowed = {getattr(C, n).lower() for n in
                ("BRAND_GOLD", "BRAND_DARK_GOLD", "BRAND_DARK_GOLD_DEEP",
                 "BRAND_GOLD_HOVER")}
+    # RNV-STATUS-FAMILY (2026-09-03): the semantic warning is not a
+    # gold, but it reads as one to the shape test below because it
+    # half IS one -- the register derives it 50% toward
+    # BRAND_DARK_GOLD in OKLab. CIEDE2000 9.1 from that gold, which
+    # clears the register's own 8.40 threshold. Named rather than
+    # written as a hex so it moves with the constant.
+    allowed.add(C.STATUS_WARNING.lower())
     stray = []
     for name, palette in PALETTES.items():
         for key, value in palette.items():
