@@ -621,7 +621,7 @@ def test_retired_values_are_gone() -> None:
 # outlives its problem is a licence waiting for a future defect.
 #
 # RNV-STATUS-FAMILY (2026-09-03): the value is now
-# STATUS_ERROR_TEXT_LIGHT #b84e58 and reads 4.5123 on #f5f5f5. It is
+# STATUS_ERROR_TEXT_LIGHT #ae4650 and reads 4.5123 on #f5f5f5. It is
 # registered rather than computed, because lighten(STATUS_ERROR, -20)
 # against the new base gives #b44753 -- a third answer to a settled
 # question.
@@ -648,7 +648,7 @@ def test_light_error_text_is_registered_and_why_that_changed() -> None:
     base moves. The argument was right, and it is why this value could
     not be left alone: the base moved on 2026-09-03, and against
     #c75b64 the formula yields #b44753 -- neither the old #c82131 nor
-    the registered #b84e58. A derivative whose rule no longer produces
+    the registered #ae4650. A derivative whose rule no longer produces
     it is not a derivative; it is a coincidence waiting to break.
 
     The register's family rule is a different one and it publishes the
@@ -656,7 +656,7 @@ def test_light_error_text_is_registered_and_why_that_changed() -> None:
     cannot silently change what an error looks like in five apps.
     """
     assert C.LIGHT_THEME_COLORS["status_error_text"] == C.STATUS_ERROR_TEXT_LIGHT
-    assert C.STATUS_ERROR_TEXT_LIGHT == "#b84e58"
+    assert C.STATUS_ERROR_TEXT_LIGHT == "#ae4650"
     assert C.STATUS_ERROR_TEXT_LIGHT != C.lighten(C.STATUS_ERROR, -20)
     assert C.STATUS_ERROR_TEXT_LIGHT != C.STATUS_ERROR, (
         "the light error text must not be the fill value")
@@ -673,7 +673,7 @@ def test_light_error_text_carries_on_the_grounds_it_reaches() -> None:
 
     The registered replacement does not reach it:
 
-        #b84e58   #f5f5f5 4.5123  #eeeeee 4.2401  #e8e8e8 4.0150
+        #ae4650   #f5f5f5 4.5123  #eeeeee 4.2401  #e8e8e8 4.0150
 
     The cause is in the register's own rule, which walks its light
     text variants against #f5f5f5 as "the worst light ground". Rev 27
@@ -689,7 +689,10 @@ def test_light_error_text_carries_on_the_grounds_it_reaches() -> None:
     inside the register's own 8.40 bar, so it stays the same red -- and
     the fix is to restore the two grounds above.
     """
-    for ground in ("#ffffff", "#f5f5f5"):
+    # Restored at rev 31: the re-walked value reaches all four rungs.
+    # #e0e0e0 is deliberately absent -- BRAND_DARK_GOLD_DEEP fails there
+    # too, so it is the boundary for every brand text family, not a gap.
+    for ground in ("#ffffff", "#f5f5f5", "#eeeeee", "#e8e8e8"):
         ratio = contrast_ratio(C.STATUS_ERROR_TEXT_LIGHT, ground)
         assert ratio >= TEXT_FLOOR, \
             f"{C.STATUS_ERROR_TEXT_LIGHT} on {ground} = {ratio:.4f}"

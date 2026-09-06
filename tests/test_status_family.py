@@ -33,9 +33,9 @@ REGISTERED = {
     "STATUS_WARNING": "#a2703c",
     "STATUS_ERROR": "#c75b64",
     "STATUS_SUCCESS_TEXT": "#ad85a3",
-    "STATUS_SUCCESS_TEXT_LIGHT": "#8a6581",
+    "STATUS_SUCCESS_TEXT_LIGHT": "#825d79",
     "STATUS_ERROR_TEXT": "#dd6f77",
-    "STATUS_ERROR_TEXT_LIGHT": "#b84e58",
+    "STATUS_ERROR_TEXT_LIGHT": "#ae4650",
 }
 
 FILLS = ("STATUS_SUCCESS", "STATUS_WARNING", "STATUS_ERROR")
@@ -234,7 +234,7 @@ def test_the_two_spellings_did_not_come_back():
 
 def test_the_light_text_is_not_computed_from_the_fill():
     """lighten(STATUS_ERROR, -20) against the current base gives #b44753 --
-    neither the old #c82131 nor the registered #b84e58. A derivative whose
+    neither the old #c82131 nor the registered #ae4650. A derivative whose
     rule no longer produces it is not a derivative."""
     assert C.STATUS_ERROR_TEXT_LIGHT != C.lighten(C.STATUS_ERROR, -20)
     src = (ROOT / "utils" / "config.py").read_text(encoding="utf-8-sig")
