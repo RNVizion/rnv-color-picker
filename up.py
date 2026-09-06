@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-RNV-STATUS-TOOL-DO-NOT-SWEEP
+RNV-WIRING-TOOL-DO-NOT-SWEEP
 
-Re-walk rnv-color-picker's light status text to the boundary the gold already stops at.
+Give every hex in rnv-color-picker's palettes a constant, and collapse the strays.
 
     python up.py             # apply, then verify
     python up.py --check     # rehearse every edit in memory, write nothing
@@ -10,73 +10,79 @@ Re-walk rnv-color-picker's light status text to the boundary the gold already st
     python up.py --finish    # delete this file
 
 
-THIS IS A FOLLOW-UP, NOT A SECOND MIGRATION
+WHY
 
-The status family landed here against register rev 30. Rev 31, on 2026-09-05,
-moved three values and nothing else -- the LIGHT text variants -- and closed
-the question the migration scripts carried as RNV-STATUS-LIGHT-FLOOR.
+55 palette entries in this repository were written as bare hex literals
+-- 47 of them in the light palette. A literal cannot follow a register
+change: when rnv-brand moves a value, every constant that mirrors it moves and
+every literal stays behind. That is how #c4a458 was orphaned, and it is why
+this programme's standing rule is that every hex a palette carries has a
+constant between the value and its use.
 
-    STATUS_SUCCESS_TEXT_LIGHT  #8a6581  ->  #825d79
-    STATUS_ERROR_TEXT_LIGHT    #b84e58  ->  #ae4650
-
-Everything else the migration did is untouched. The fills, the dark text
-variants and the two gamut-corrected reds are already at rev 31 and are
-asserted here so this script cannot run against a repository that is not.
-
-
-WHY THE VALUES MOVED
-
-They were first walked against #f5f5f5, which the register's rule called "the
-worst light ground". It was not: rev 27 had put APP hover-light #eeeeee,
-GOLD_TEXT_GROUND_FLOOR #e8e8e8 and pressed-light #e0e0e0 below it, and because
-the rule takes the FIRST step that clears, each value stopped at 4.52 with no
-margin and they failed one rung down together.
-
-THE DECIDING REASON IS NOT THE SIZE OF THE MOVE. The desktop side argued from
-cost -- a small move, the same colours -- and that does not pick between
-#e8e8e8 and #e0e0e0, because #e0e0e0 was affordable on identical grounds. The
-register's reason does: #e8e8e8 is where BRAND_DARK_GOLD_DEEP already stops.
-
-    on #e8e8e8   gold-deep 4.53   the three 4.52 / 4.53 / 4.52   pass
-    on #e0e0e0   gold-deep 4.21   the three 4.20 / 4.20 / 4.20   fail
-
-ONE boundary for every brand text family instead of two. Walking to #e0e0e0
-would have covered the pressed plate and left an author having to remember
-which family they were in to know where text stops.
+The dark palette was already wired, almost entirely. Light was not, because
+light was built later and by hand. So this is mostly a light pass -- but the
+rule is per palette, and the handful of dark literals go with it.
 
 
-WHAT THIS ALSO DOES
+WHAT IS WIRED, AND HOW THE NAMES WERE CHOSEN
 
-The migration NARROWED a boundary test to #ffffff and #f5f5f5 while the
-question was open, and recorded in the docstring what it had given up. This
-restores the full four rungs -- and they pass, because the values reach them.
-That is the point of the re-walk being visible in the test rather than only in
-the register.
+Registered values take the register's name, as APP_CARD / APP_BORDER /
+APP_HOVER_LIGHT already do here. Ramp greys take the ramp name, by byte, as
+rnv-text-transformer does: GREY_CC, GREY_66. Nothing here is a new colour;
+every constant this script adds is a hex the palettes already carried.
+
+THE SPLIT. rnv-text-transformer ruled, in tests/test_ladder_and_plate.py, that
+a hex whose register role is an INTERACTION STATE takes the register's name
+only on keys that play that role -- "GREY_EE IS SPLIT, NOT RENAMED ... a
+resting ground is not an interaction state, and wiring all four would claim a
+role for three of them on the strength of a shared hex." The same shape is
+applied here:
+
+    #e0e0e0  pressed_bg          -> APP_PRESSED_LIGHT   plays the role
+    #e0e0e0  tab_bg, scrollbar_bg -> GREY_E0            static, shares the hex
+    #eeeeee  a hover             -> APP_HOVER_LIGHT
+    #eeeeee  a list header       -> GREY_EE
+    #dddddd  text                -> APP_TEXT
+    #dddddd  a grid line         -> GREY_DD
+
+Surfaces (#f5f5f5, #fbfbfb) and the border (#333333) are not split, because
+every key that carries them plays the role.
 
 
-ONE THING IS STILL OPEN, ON THE OTHER SIDE
+THREE STRAYS COLLAPSE, AND THIS MOVES PIXELS
 
-The DARK text variants have the identical fault. They were derived against APP
-card #2a2a2a; rev 29 then registered panel-hover #3a3a3a, which is LIGHTER and
-therefore worse for light text on a dark ground. All three fail there --
-success-text 3.61, warning-text 3.64, error-text 3.58 -- while BRAND_GOLD
-clears every dark surface at 6.15.
+Three light greys sat on no ladder -- named nowhere, in any of the five
+applications -- and each was a fraction of a step from a registered rung:
 
-The register left it open because the fix is not symmetric: on light the worst
-surface is a PRESSED plate and ruling that running text is not carried on a
-transient state is defensible, while on dark the worst is a HOVER, which a
-label sits under for as long as a cursor rests there.
+    #fafafa  ->  #fbfbfb  APP surface-light-2   CIEDE2000 0.20
+    #f8f8f8  ->  #fbfbfb  APP surface-light-2   CIEDE2000 0.60
+    #f0f0f0  ->  #eeeeee  APP hover-light       CIEDE2000 0.42
 
-The fleet's exposure today is ZERO. The element sweep across all five
-applications resolves four status elements, every one a plain dialog label
-painted with an inline `color:` on a dialog ground; no status key appears in a
-selector carrying :hover, in any mode. This script does not touch the dark
-values, and the guard it installs asserts them at their current numbers so a
-future re-walk has to come through the register rather than by hand.
+Ruled by Chris on 2026-09-06 onto the nearest rung, on the same reasoning as
+#252525 onto the card and #505050 onto grey 44: a value under one CIEDE2000
+from a registered one is that one, misspelled. Below any threshold this
+register has ever called a visible step. Everything else in this script is a
+rename with no pixel moved.
+
+In this repository: list_alt_bg (#f8f8f8) and list_header_bg (#f0f0f0).
+Both keys are looked up nowhere -- they are on the dead-key list -- so
+no pixel actually moves here today. They are collapsed anyway, because
+a dead key holding a stray is a stray waiting for a reader.
+
+WHAT THE GUARD PINS
+
+It reads the three palette dicts back through `ast` and fails on any value
+that is a string hex, so a literal cannot come back. It asserts the split --
+that `pressed_bg` resolves to the register's pressed plate and the static keys
+do not -- and it asserts the collapsed keys resolve to their rung. And it
+checks that no two constants in this module hold the same hex UNLESS they are
+a declared split pair, so a second name for one colour cannot appear without
+saying which role it plays.
 """
 from __future__ import annotations
 
 import argparse
+import ast
 import os
 import re
 import subprocess
@@ -85,18 +91,11 @@ import tempfile
 from pathlib import Path
 
 REPO = "rnv-color-picker"
-DESCRIPTION = "re-walk the light status text to #e8e8e8 (register rev 31)"
+DESCRIPTION = "wire every palette literal through a constant; collapse three strays"
 SENTINEL_FILE = "utils/config.py"
-SENTINEL = "RNV-STATUS-LIGHT-FLOOR, CLOSED"
-GUARD = "tests/test_light_rewalk.py"
+SENTINEL = "RNV-LIGHT-WIRING"
+GUARD = "tests/test_light_wiring.py"
 SHADOWS = {"colors.py", "config.py", "conftest.py", "run_tests.py"}
-
-MISSING_HELP = (
-    "run this from the root of a rnv-color-picker checkout.\n\n"
-    "If you ARE in one, the status-family migration has not been applied here "
-    "yet -- run up-for-rnv-color-picker-status-family.py first. This script only moves "
-    "the three values rev 31 changed; it does not perform the migration."
-)
 
 SUITES = [
     ("pytest tests/",
@@ -105,173 +104,460 @@ SUITES = [
      [sys.executable, "-m", "unittest", "test_rnv_color_picker"]),
 ]
 
-# the value this repository holds now -> the value at register rev 31
-REWALK = {'#8a6581': '#825d79', '#b84e58': '#ae4650'}
-
-# already at rev 31 before this script runs. Asserted so a repository that is
-# NOT on rev 30 cannot be half-moved by this follow-up.
-ALREADY = {'STATUS_SUCCESS': '#926c89', 'STATUS_WARNING': '#a2703c', 'STATUS_ERROR': '#c75b64', 'STATUS_ERROR_TEXT': '#dd6f77'}
-
-EDITS = [
-    ('utils/config.py',
-     'RNV-STATUS-LIGHT-FLOOR applies to this value too: it reads 4.25 on #eeeeee\nand 4.02 on #e8e8e8, both registered rungs, both below the 4.5 floor."""\n',
-     'RNV-STATUS-LIGHT-FLOOR closed at rev 31: re-walked against #e8e8e8, where\nit now reads 4.52. See STATUS_ERROR_TEXT_LIGHT below for why that ground\nand not #e0e0e0."""\n', 1),
-    ('utils/config.py',
-     'RNV-STATUS-LIGHT-FLOOR: this value does NOT reach the coverage boundary its\npredecessor did. #c82131 read 4.6100 on #e8e8e8; this reads 4.0150 there and\n4.2401 on APP hover-light #eeeeee. The register walks its light text variants\nagainst #f5f5f5 as "the worst light ground", and rev 27 put three registered\nrungs below it. The question is open with the brand chat; if it re-walks\nagainst #e8e8e8 the answer here is #ae4650, moving 3.1 -- inside the\nregister\'s own 8.40 bar, so it stays the same red."""\n',
-     'RNV-STATUS-LIGHT-FLOOR, CLOSED 2026-09-05 at register rev 31.\n\nThese were first walked against #f5f5f5 as "the worst light ground". It was\nnot the worst: rev 27 had put APP hover-light #eeeeee, GOLD_TEXT_GROUND_FLOOR\n#e8e8e8 and pressed-light #e0e0e0 below it, and because the rule takes the\nFIRST step that clears, each value stopped at 4.52 with no margin and they\nfailed one rung down together.\n\nRe-walked against #e8e8e8. THE DECIDING REASON IS NOT THE SIZE OF THE MOVE --\n#e0e0e0 was affordable on identical grounds, so cost does not pick between\nthem. It is that #e8e8e8 is where BRAND_DARK_GOLD_DEEP already stops:\n\n    on #e8e8e8   gold-deep 4.53   these 4.52 / 4.53 / 4.52   pass\n    on #e0e0e0   gold-deep 4.21   these 4.20 / 4.20 / 4.20   fail\n\nONE boundary for every brand text family instead of two. Walking to #e0e0e0\nwould have covered the pressed plate and left an author having to remember\nwhich family they were in to know where text stops. Below #e8e8e8, no brand\ntext of any family.\n\nThis value reads 4.52 on #e8e8e8 and 5.08 on #f5f5f5, so it reaches the\ncoverage boundary its predecessor #c82131 did -- which the intermediate\n#b84e58 did not, at 4.0150."""\n', 1),
-    ('tests/test_brand_contrast.py',
-     '    for ground in ("#ffffff", "#f5f5f5"):\n        ratio = contrast_ratio(C.STATUS_ERROR_TEXT_LIGHT, ground)\n',
-     '    for ground in ("#ffffff", "#f5f5f5", "#eeeeee", "#e8e8e8"):\n        ratio = contrast_ratio(C.STATUS_ERROR_TEXT_LIGHT, ground)\n', 1),
-    ('tests/test_brand_contrast.py',
-     '    for ground in ("#ffffff", "#f5f5f5", "#eeeeee", "#e8e8e8"):\n        ratio = contrast_ratio(C.STATUS_ERROR_TEXT_LIGHT, ground)\n',
-     '    # Restored at rev 31: the re-walked value reaches all four rungs.\n    # #e0e0e0 is deliberately absent -- BRAND_DARK_GOLD_DEEP fails there\n    # too, so it is the boundary for every brand text family, not a gap.\n    for ground in ("#ffffff", "#f5f5f5", "#eeeeee", "#e8e8e8"):\n        ratio = contrast_ratio(C.STATUS_ERROR_TEXT_LIGHT, ground)\n', 1),
-]
-
+PALETTES = ['DARK_THEME_COLORS', 'LIGHT_THEME_COLORS', 'IMAGE_MODE_COLORS']
 QUOTE = '"'
-NAMES = ['STATUS_SUCCESS_TEXT_LIGHT', 'STATUS_ERROR_TEXT_LIGHT']
-BEFORE = {'STATUS_SUCCESS_TEXT_LIGHT': '#8a6581', 'STATUS_ERROR_TEXT_LIGHT': '#b84e58'}
-VALUE_FILES = ['utils/config.py', 'tests/test_status_family.py', 'tests/test_brand_contrast.py']
 
-GUARD_SOURCE = r'''"""RNV-STATUS-LIGHT-REWALK -- the light boundary is #e8e8e8, and it is shared.
+# hex -> the constant a key holding it takes, unless SPLIT says otherwise
+WIRE = {'#ffffff': 'WHITE', '#000000': 'TRUE_BLACK', '#f5f5f5': 'APP_SURFACE_LIGHT_3', '#aaaaaa': 'APP_TEXT_DIM', '#333333': 'APP_BORDER', '#dddddd': 'GREY_DD', '#eeeeee': 'GREY_EE', '#e0e0e0': 'GREY_E0', '#cccccc': 'GREY_CC', '#666666': 'GREY_66', '#888888': 'GREY_88', '#444444': 'GREY_44', '#555555': 'GREY_55', '#606060': 'GREY_60', '#fafafa': 'APP_SURFACE_LIGHT_2', '#f8f8f8': 'APP_SURFACE_LIGHT_2', '#f0f0f0': 'GREY_EE'}
+# (hex, key) -> constant, where the key plays the register's role
+SPLIT = {('#e0e0e0', 'pressed_bg'): 'APP_PRESSED_LIGHT'}
+# old hex -> new hex, for the three strays
+COLLAPSE = {'#fafafa': '#fbfbfb', '#f8f8f8': '#fbfbfb', '#f0f0f0': '#eeeeee'}
+EXPECTED = 55
+EXTRA_EDITS = [('tests/test_register_wiring.py', "LIGHT_RULED = ('APP_HOVER_LIGHT',)\n", "# RNV-LIGHT-WIRING (2026-09-06). Widened on purpose, with the pass that\n# wires them: light ink is TRUE_BLACK and light edges are APP_BORDER,\n# both already ruled in the register and until now written as literals.\nLIGHT_RULED = ('APP_HOVER_LIGHT', 'TRUE_BLACK', 'APP_BORDER')\n", 1)]
+EXTRA_SWEEP = []
+# Blocks that already define a constant the palettes need, but define it
+# BELOW the palettes -- legal where nothing referenced them, fatal the moment
+# a palette does. Moved verbatim into the ladder block, comments and all.
+RELOCATE = ['# ── Neutral edges ──\n# RNV-INK-RULE (2026-09-02). Named for the colour, not the job.\n#\n# GREY_44 was the swatch-preview outline, held under two role names at once:\n# the same value written twice, once in full and once in three digits, which\n# is how it stayed invisible to a census that reads six. Only the short form\n# was ever used.\n#\n# GREY_CC is the light edge swatch_edge() reaches for on a dark ground. It\n# was three digits too, and equally invisible.\nGREY_44: Final[str] = "#444444"\nGREY_CC: Final[str] = "#cccccc"\n\n\n']
 
-Installed by the rev 31 follow-up. Two things it pins that the migration's own
-guard does not:
+NEW = ['APP_SURFACE_LIGHT_3', 'APP_SURFACE_LIGHT_2', 'APP_PRESSED_LIGHT', 'GREY_E0', 'GREY_EE', 'GREY_DD', 'GREY_66', 'GREY_88', 'GREY_55']
+DOCS = {'APP_SURFACE_LIGHT_3': ('#f5f5f5', 'engine/brand.py APP["surface-light-3"]. The light window and panel\nground -- what a dialog sits on in light mode.\n\nRNV-LIGHT-WIRING (2026-09-06): this value was written out as a literal\nin every palette that used it, so nothing could move it. Registered by\nrev 27 as the third rung of the light surface ladder; named here under\nthe register\'s key, the way APP_PANEL_HOVER and APP_HOVER_LIGHT are.\nEvery key that carries it is a surface, so it is not split.'), 'APP_SURFACE_LIGHT_2': ('#fbfbfb', 'engine/brand.py APP["surface-light-2"]. One rung above the panel ground.\n\nRNV-LIGHT-WIRING (2026-09-06): new to this application. It arrives\nbecause two strays collapse onto it -- #f8f8f8 and #fafafa, which sat\n0.60 and 0.20 CIEDE2000 from this rung and on no ladder at all. Same\nruling as #252525 onto the card: a value a fraction of a step from a\nregistered one is that one, misspelled.'), 'APP_PRESSED_LIGHT': ('#e0e0e0', 'engine/brand.py APP["pressed-light"]. The light PRESSED plate -- an\ninteraction state, which is why this name goes only on `pressed_bg`.\n\nRNV-LIGHT-WIRING (2026-09-06): SPLIT, NOT RENAMED. Other keys hold\n#e0e0e0 as a static surface (a tab, a scrollbar track) and keep the\nramp-step name GREY_E0 below. Wiring a resting ground to a pressed\nstate would claim a role for it on the strength of a shared hex --\nthe same ruling rnv-text-transformer made for GREY_EE / APP_HOVER_LIGHT.'), 'GREY_E0': ('#e0e0e0', 'grey(14) on the ramp, #e0e0e0. Static surfaces that share a hex with\nAPP_PRESSED_LIGHT without being a pressed state. See the split note\nthere. Named by its byte, like every other ramp step.'), 'GREY_EE': ('#eeeeee', 'grey(14) on the ramp, #eeeeee. Static surfaces that share a hex with\nAPP_HOVER_LIGHT without being a hover: a list header, a scroll ground.\nSame split rnv-text-transformer ruled for its diff headers.'), 'GREY_DD': ('#dddddd', 'grey(13) on the ramp, #dddddd. Edges and grid lines that share a hex\nwith APP_TEXT without being text. The register\'s APP["text"] is ink;\na gridline is not, and moving the ink should not move the grid.'), 'GREY_66': ('#666666', 'grey(6) on the ramp, #666666. Secondary and muted text on light.'), 'GREY_88': ('#888888', 'grey(8) on the ramp, #888888. Muted text on dark, a scrollbar handle\nhover on light.'), 'GREY_55': ('#555555', 'grey(5) on the ramp, #555555. Disabled text and a checkbox edge on dark.')}
+ANCHOR = 'plate. This value is a grid step inside it and gold reads 4.7875 on it.\n"""\n'
+PROVENANCE_ANCHOR = '    "IMAGE_CANVAS_LIGHT": "app-canvas",\n}\n'
+PINNED_ANCHOR = "    'APP_HOVER_LIGHT': '#eeeeee',\n}\n"
 
-  * the light text variants reach #e8e8e8, which they did not at rev 30;
-  * they stop at #e0e0e0, and so does BRAND_DARK_GOLD_DEEP -- one boundary for
-    every brand text family rather than one per family.
+GUARD_SOURCE = r'''"""RNV-LIGHT-WIRING-GUARD -- every palette value has a name, and the split holds.
 
-The second is the load-bearing half. A test that only asserted "these clear
-#e8e8e8" would pass equally on values walked to #e0e0e0, which is the choice
-the register explicitly did not make.
+Installed 2026-09-06. Three things it pins:
+
+  * no value in any palette is a bare hex -- a literal cannot follow the
+    register, so one appearing here is a value that will be orphaned;
+  * the SPLIT: the register's interaction-state names sit only on keys that
+    play the role, and static keys sharing the hex keep the ramp name;
+  * the three collapsed strays resolve to their rung, and the old values are
+    gone from the module.
 """
 from __future__ import annotations
+
+import ast
+import re
+from pathlib import Path
 
 import pytest
 
 from utils import config as C
 
-TEXT_FLOOR = 4.5
+ROOT = Path(__file__).resolve().parent.parent
+SOURCE = ROOT / 'utils/config.py'
+PALETTES = ['DARK_THEME_COLORS', 'LIGHT_THEME_COLORS', 'IMAGE_MODE_COLORS']
+HEX = re.compile(r"#[0-9a-fA-F]{6}$")
 
-REWALKED = {'STATUS_SUCCESS_TEXT_LIGHT': '#825d79', 'STATUS_ERROR_TEXT_LIGHT': '#ae4650'}
-
-# The rungs the register publishes, lightest first. #e0e0e0 is in the list on
-# purpose: it is asserted to FAIL, which is what makes it a boundary.
-REACHES = ("#ffffff", "#fbfbfb", "#f5f5f5", "#eeeeee", "#e8e8e8")
-STOPS_AT = "#e0e0e0"
-
-GOLD_DEEP = "#7e6529"   # BRAND_DARK_GOLD_DEEP, the family this shares with
-
-
-def _lin(c: float) -> float:
-    c = c / 255.0
-    return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
-
-
-def _luminance(value: str) -> float:
-    h = value.lstrip("#")
-    t = [int(h[i:i + 2], 16) for i in (0, 2, 4)]
-    return 0.2126 * _lin(t[0]) + 0.7152 * _lin(t[1]) + 0.0722 * _lin(t[2])
-
-
-def contrast(a: str, b: str) -> float:
-    la, lb = _luminance(a), _luminance(b)
-    hi, lo = (la, lb) if la >= lb else (lb, la)
-    return (hi + 0.05) / (lo + 0.05)
+# (hex, key) -> the constant that key must resolve THROUGH, in source.
+# Narrowed to the splits this repository actually holds; the fleet's other
+# split keys are listed below and asserted absent.
+SPLIT = {('#e0e0e0', 'pressed_bg'): 'APP_PRESSED_LIGHT'}
+SPLIT_ABSENT = ['platform_btn_hover_bg']
+# old hex -> new hex
+COLLAPSE = {'#fafafa': '#fbfbfb', '#f8f8f8': '#fbfbfb', '#f0f0f0': '#eeeeee'}
+# Hexes that legitimately carry two constant names here, with the role each
+# one plays. A pair listed here is a decision on the record; anything else
+# sharing a hex is a duplicate until someone says otherwise.
+EXTRA_ALLOWED_PAIRS = ()
+# Source lines that legitimately hold a stray value and must NOT be collapsed.
+# Each one is a value this application does not own -- platform chrome, a file
+# format's fixed background -- and the sweep below subtracts them by exact text
+# so that removing one is a visible edit, not a silent widening.
+STRAY_EXEMPT = ()
 
 
-@pytest.mark.parametrize("name,value", sorted(REWALKED.items()))
-def test_the_light_values_are_the_re_walked_ones(name, value):
-    """Pinned by value. rev 30 held #8a6581 / #976633 / #b84e58, walked against
-    #f5f5f5; rev 31 holds these, walked against #e8e8e8."""
-    assert getattr(C, name) == value
+def _palette_dicts():
+    mod = ast.parse(SOURCE.read_text(encoding="utf-8-sig"))
+    out = {}
+    for node in mod.body:
+        target = None
+        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            target, value = node.target.id, node.value
+        elif isinstance(node, ast.Assign) and len(node.targets) == 1 \
+                and isinstance(node.targets[0], ast.Name):
+            target, value = node.targets[0].id, node.value
+        if target in PALETTES and isinstance(value, ast.Dict):
+            out[target] = value
+    assert set(out) == set(PALETTES), f"palettes not found: {set(PALETTES) - set(out)}"
+    return out
 
 
-@pytest.mark.parametrize("name", sorted(REWALKED))
-@pytest.mark.parametrize("ground", REACHES)
-def test_the_light_text_reaches_every_rung_down_to_the_ground_floor(name, ground):
-    ratio = contrast(getattr(C, name), ground)
-    assert ratio >= TEXT_FLOOR, f"{name} on {ground} = {ratio:.4f}"
+def _entries(d):
+    """(key, value) for the literal entries of a dict node.
 
-
-@pytest.mark.parametrize("name", sorted(REWALKED))
-def test_the_light_text_stops_where_the_gold_stops(name):
-    """The half that makes #e8e8e8 a BOUNDARY rather than an arbitrary target.
-
-    Values walked to #e0e0e0 would pass the test above and fail this one. The
-    register chose #e8e8e8 because BRAND_DARK_GOLD_DEEP already stops there --
-    4.53 on #e8e8e8, 4.21 on #e0e0e0 -- so below it no brand text of any
-    family is carried, and an author does not have to remember which family
-    they are in to know where text stops.
-
-    If this ever goes green, either the values were re-walked deeper without
-    the gold moving with them, or the gold moved. Either way the two families
-    have separated and the boundary is two boundaries again.
+    A palette may open with `**OTHER_PALETTE`, and ast records that as a key
+    of None. It is not an entry -- it has no name of its own -- and calling
+    literal_eval on it raises rather than skipping it.
     """
-    assert contrast(GOLD_DEEP, STOPS_AT) < TEXT_FLOOR, (
-        "BRAND_DARK_GOLD_DEEP now clears #e0e0e0 -- the shared boundary moved "
-        "and these values should be re-walked with it")
-    assert contrast(getattr(C, name), STOPS_AT) < TEXT_FLOOR, (
-        f"{name} now clears {STOPS_AT}, which BRAND_DARK_GOLD_DEEP does "
-        f"not. The two text families no longer share a boundary.")
+    for k, v in zip(d.keys, d.values):
+        if k is None:
+            continue
+        yield ast.literal_eval(k), v
 
 
-def test_this_guard_is_measuring_the_right_thing():
-    """Guard the guard. If contrast() ever returned a constant, every
-    assertion above would pass while checking nothing."""
-    assert contrast("#000000", "#ffffff") == pytest.approx(21.0, abs=0.01)
-    assert contrast("#ffffff", "#ffffff") == pytest.approx(1.0, abs=0.001)
-    assert contrast(GOLD_DEEP, "#e8e8e8") == pytest.approx(4.53, abs=0.02)
+@pytest.mark.parametrize("palette", PALETTES)
+def test_no_palette_value_is_a_bare_hex(palette):
+    """Read from SOURCE rather than from the resolved dict, because the
+    resolved dict cannot tell a literal from a constant -- both are strings by
+    the time they are values."""
+    d = _palette_dicts()[palette]
+    bad = []
+    for key, v in _entries(d):
+        if isinstance(v, ast.Constant) and isinstance(v.value, str) \
+                and HEX.match(v.value):
+            bad.append((key, v.value))
+    assert not bad, (
+        f"{palette} writes these as literals; a literal cannot follow the "
+        f"register and will be orphaned the first time it moves: {bad}")
+
+
+def test_the_split_puts_register_names_only_on_role_keys():
+    """rnv-text-transformer's ruling, applied here: a pressed plate is an
+    interaction state, a tab is not, and they do not share a name on the
+    strength of a shared hex."""
+    src = SOURCE.read_text(encoding="utf-8-sig")
+    for (hexv, key), const in SPLIT.items():
+        assert re.search(r"'%s':\s+%s," % (key, const), src), (
+            f"{key} does not resolve through {const}")
+    # The fleet declares two splits; this repository holds the ones in SPLIT
+    # above and genuinely has no key by the other names. Asserted rather than
+    # assumed, so that a key arriving later under one of those names is not
+    # quietly wired to the ramp step.
+    all_keys = {key for d in _palette_dicts().values() for key, _ in _entries(d)}
+    for key in SPLIT_ABSENT:
+        assert key not in all_keys, (
+            f"{key!r} now exists in a palette here. It is a declared split in "
+            f"the fleet; wire it to its register name rather than to the ramp "
+            f"step, and move it into SPLIT.")
+    # and the static keys that share those hexes do NOT carry the role name
+    for pal_name, d in _palette_dicts().items():
+        for key, v in _entries(d):
+            if isinstance(v, ast.Name) and v.id == "APP_PRESSED_LIGHT":
+                assert key == "pressed_bg", (
+                    f"{pal_name}[{key!r}] carries APP_PRESSED_LIGHT but is not a "
+                    f"pressed state; a static surface keeps GREY_E0")
+
+
+@pytest.mark.parametrize("old,new", sorted(COLLAPSE.items()))
+def test_the_strays_are_gone_and_resolve_to_their_rung(old, new):
+    """Swept across the whole module, minus the sites that are not brand.
+
+    A stray can come back anywhere, not only in a palette, so the sweep is
+    module-wide. But module-wide is too wide on its own: some values in this
+    file are not the brand's to move -- an OS chrome simulation, an export
+    background fixed by a file format. Those are listed in STRAY_EXEMPT with
+    the reason, so an exemption is a decision on the record rather than a
+    hole in the sweep.
+    """
+    src = SOURCE.read_text(encoding="utf-8-sig")
+    lines = [l for l in src.splitlines()
+             if not l.lstrip().startswith("#") and l not in STRAY_EXEMPT]
+    code = "\n".join(lines)
+    assert f"'{old}'" not in code and f'"{old}"' not in code, (
+        f"{old} is back as a value; it collapsed onto {new} on 2026-09-06")
+    for pal in (C.LIGHT_THEME_COLORS,):
+        for k, v in pal.items():
+            assert v != old, f"light[{k!r}] is still {old}"
+
+
+def test_every_exemption_is_still_there_and_still_needed():
+    """An exemption that no longer matches a line is dead, and a dead
+    exemption silently widens the sweep's blind spot the next time someone
+    edits near it. Fail loudly instead."""
+    src = SOURCE.read_text(encoding="utf-8-sig").splitlines()
+    for line in STRAY_EXEMPT:
+        assert src.count(line) == 1, (
+            f"exempted line is not present exactly once: {line!r}. If it was "
+            f"deliberately removed, remove the exemption with it.")
+
+
+def test_one_hex_one_name_unless_it_is_a_declared_split():
+    """A second constant for one colour is either a split with a stated role,
+    or a defect. This is what stops GREY_XX and APP_YY drifting into two
+    names for one thing with nobody having decided that."""
+    src = SOURCE.read_text(encoding="utf-8-sig")
+    pat = re.compile(r"^([A-Z][A-Z0-9_]+):\s*Final\[str\]\s*=\s*['\"](#[0-9a-fA-F]{6})['\"]", re.M)
+    by_hex = {}
+    for name, hexv in pat.findall(src):
+        by_hex.setdefault(hexv.lower(), []).append(name)
+    allowed_pairs = {
+        frozenset({"APP_PRESSED_LIGHT", "GREY_E0"}),
+        frozenset({"APP_HOVER_LIGHT", "GREY_EE"}),
+        frozenset({"APP_TEXT", "GREY_DD"}),
+        # pre-existing, documented elsewhere in this module
+        frozenset({"WHITE", "CONTRAST_DEMO_WHITE_BG"}),
+        frozenset({"TRUE_BLACK", "CONTRAST_DEMO_BLACK_BG"}),
+        frozenset({"WHITE", "SVG_EXPORT_BG"}),
+        frozenset({"TRUE_BLACK", "SVG_EXPORT_STROKE"}),
+        frozenset({"BRAND_BLACK", "APP_PANEL"}),
+        frozenset({"APP_HOVER_LIGHT", "IMAGE_CANVAS_LIGHT"}),
+    }
+    allowed_pairs |= {frozenset(p) for p in EXTRA_ALLOWED_PAIRS}
+    for hexv, names in by_hex.items():
+        if len(names) < 2:
+            continue
+        pair = frozenset(names)
+        ok = any(pair <= p or p <= pair for p in allowed_pairs) or \
+             any(frozenset(c) in allowed_pairs
+                 for c in __import__("itertools").combinations(names, 2))
+        assert ok, (
+            f"{hexv} has {len(names)} names -- {names} -- and is not a "
+            f"declared split. Either one is a duplicate, or a split needs "
+            f"declaring with the role each name plays.")
+
+
+def test_every_name_a_palette_uses_is_defined_above_it():
+    """Wiring gives constants callers they did not have.
+
+    This module already held a constant defined two hundred lines BELOW the
+    palettes -- legal for as long as nothing in a palette named it. The first
+    palette entry to reach for it turns the file into a NameError at import,
+    which surfaces as a collection error rather than as a failing assertion,
+    and a collection error names one symbol and explains nothing.
+
+    So: read the source, not the imported module. By the time the module
+    imports, this has either worked or taken the whole suite down with it.
+    """
+    mod = ast.parse(SOURCE.read_text(encoding="utf-8-sig"))
+    assigned, dicts = {}, {}
+    for node in mod.body:
+        target = value = None
+        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            target, value = node.target.id, node.value
+        elif isinstance(node, ast.Assign) and len(node.targets) == 1 \
+                and isinstance(node.targets[0], ast.Name):
+            target, value = node.targets[0].id, node.value
+        if target is None:
+            continue
+        assigned.setdefault(target, node.lineno)
+        if target in PALETTES and isinstance(value, ast.Dict):
+            dicts[target] = node
+    late = set()
+    for pal, node in dicts.items():
+        for sub in ast.walk(node):
+            if isinstance(sub, ast.Name) and isinstance(sub.ctx, ast.Load):
+                at = assigned.get(sub.id)
+                if at is not None and at > node.lineno:
+                    late.add((pal, sub.id, at))
+    assert not late, (
+        f"assigned below the palette that reads them, which is a NameError "
+        f"at import, not a style point: {sorted(late)}")
+
+
+def test_this_guard_can_see_the_source():
+    src = SOURCE.read_text(encoding="utf-8-sig")
+    assert "RNV-LIGHT-WIRING" in src
+    assert len(_palette_dicts()) == len(PALETTES)
 '''
 
 
+LINE = re.compile(r"^(\s+)'([a-z_0-9]+)':(\s+)'(#[0-9a-fA-F]{6})'(,.*)$")
+
+
+def _palette_span(src: str, name: str):
+    """(start, end) of the dict literal assigned to `name`, top-level only."""
+    m = re.search(r"^%s\b[^\n]*=\s*\{\n" % re.escape(name), src, re.M)
+    if not m:
+        raise SystemExit(f"{SENTINEL_FILE}: no palette named {name}")
+    start = m.end()
+    end = src.index("\n}\n", start)
+    return start, end
+
+
+def _defined_after_use(mod):
+    """Names read inside a palette dict but assigned below it.
+
+    Python reads a module top to bottom, so a dict literal can only name
+    constants already assigned. A constant sitting below the palettes is
+    harmless until a palette reaches for it, which is exactly what wiring
+    does -- so this has to be checked here, not assumed.
+    """
+    assigned, dicts = {}, {}
+    for node in mod.body:
+        target = value = None
+        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            target, value = node.target.id, node.value
+        elif isinstance(node, ast.Assign) and len(node.targets) == 1 \
+                and isinstance(node.targets[0], ast.Name):
+            target, value = node.targets[0].id, node.value
+        if target is None:
+            continue
+        assigned.setdefault(target, node.lineno)
+        if target in PALETTES and isinstance(value, ast.Dict):
+            dicts[target] = node
+    late = set()
+    for pal, node in dicts.items():
+        for sub in ast.walk(node):
+            if isinstance(sub, ast.Name) and isinstance(sub.ctx, ast.Load):
+                at = assigned.get(sub.id)
+                if at is not None and at > node.lineno:
+                    late.add((pal, sub.id, at))
+    return sorted(late)
+
+
+def _constant_block() -> str:
+    out = []
+    for name in NEW:
+        hexv, doc = DOCS[name]
+        out.append(f'{name}: Final[str] = {QUOTE}{hexv}{QUOTE}\n"""{doc}"""\n\n')
+    return "".join(out)
+
+
 def edits(tree) -> None:
-    for rel, old, new, times in EDITS:
+    src = tree.read(SENTINEL_FILE)
+
+    # --- 1. the constants, in one block after the light hover plate. Every
+    # one is a hex the palettes already carry; the block adds names, not
+    # colours. Anchored on the last line of APP_HOVER_LIGHT's docstring.
+    if src.count(ANCHOR) != 1:
+        raise SystemExit(f"{SENTINEL_FILE}: the APP_HOVER_LIGHT anchor is not "
+                         f"where this script expects it")
+    for name in NEW:
+        if re.search(r"^%s\b" % name, src, re.M):
+            raise SystemExit(f"{name} already exists in {SENTINEL_FILE}")
+    marker = (f"\n# RNV-LIGHT-WIRING (2026-09-06): the constants below name values the\n"
+              f"# palettes already carried as literals. Nothing here is a new colour.\n"
+              f"# Registered values take the register's key; ramp greys take their byte.\n\n")
+    # constants that exist but sit BELOW the palettes: lift them, verbatim,
+    # into the same block. A name is not available to a dict literal that runs
+    # before the assignment -- Python reads the module top to bottom.
+    moved = ""
+    for block in RELOCATE:
+        if src.count(block) != 1:
+            raise SystemExit(f"{SENTINEL_FILE}: the block to relocate is not "
+                             f"present exactly once; re-derive this script")
+        src = src.replace(block, "", 1)
+        moved += ("# RNV-LIGHT-WIRING (2026-09-06): moved up from below the\n"
+                  "# palettes, unchanged. It now has palette callers, and a\n"
+                  "# name defined after its use is a NameError at import.\n"
+                  + block)
+    src = src.replace(ANCHOR, ANCHOR + marker + _constant_block() + moved, 1)
+
+    # --- 2. the palettes. Every 6-digit literal inside the three dicts is
+    # rewritten to its constant, chosen by (hex, key) so the split is explicit.
+    # Counted exactly: fewer means the file changed shape, more means a
+    # literal appeared that this script has no name for.
+    rewired = []
+    for pal in PALETTES:
+        start, end = _palette_span(src, pal)
+        body = src[start:end]
+        new_lines = []
+        for line in body.split("\n"):
+            m = LINE.match(line)
+            if not m:
+                new_lines.append(line)
+                continue
+            indent, key, gap, hexv, rest = m.groups()
+            hexv = hexv.lower()
+            const = SPLIT.get((hexv, key)) or WIRE.get(hexv)
+            if const is None:
+                raise SystemExit(f"{pal}: {key!r} holds {hexv}, which this "
+                                 f"script has no constant for")
+            note = ""
+            if hexv in COLLAPSE:
+                new_hex = COLLAPSE[hexv]
+                note = f"   # was {hexv}, collapsed onto {new_hex}"
+            # keep the column alignment the file already has
+            pad = gap if len(gap) > 1 else " "
+            new_lines.append(f"{indent}'{key}':{pad}{const}{rest.rstrip()}{note}"
+                             if not rest.strip().startswith("#") or note
+                             else f"{indent}'{key}':{pad}{const}{rest}")
+            rewired.append((pal, key, hexv, const))
+        src = src[:start] + "\n".join(new_lines) + src[end:]
+
+    if len(rewired) != EXPECTED:
+        raise SystemExit(f"rewired {len(rewired)} entries, expected {EXPECTED}. "
+                         f"The palettes have changed shape since this script "
+                         f"was derived; re-derive it rather than trusting it.")
+    tree.write(SENTINEL_FILE, src)
+
+    # --- 3. APP_PROVENANCE: the register mirrors declared register-owned, the
+    # ramp steps app-owned, the way tests/test_ladder_and_plate.py reads it.
+    prov = "".join(
+        f'    "{n}": "{"register" if n.startswith("APP_") else "app-ramp"}",\n'
+        for n in NEW)
+    tree.sub(SENTINEL_FILE, PROVENANCE_ANCHOR,
+             PROVENANCE_ANCHOR.replace("}\n", prov + "}\n"), 1)
+
+    # --- 4. the local pin in tests/test_app_mirror.py, so the register
+    # mirrors are checked where rnv-brand is not importable.
+    pins = "".join(f"    '{n}': '{DOCS[n][0]}',\n" for n in NEW if n.startswith("APP_"))
+    tree.sub("tests/test_app_mirror.py", PINNED_ANCHOR,
+             PINNED_ANCHOR.replace("}\n", pins + "}\n"), 1)
+
+    # --- 5. repository-specific edits outside the palettes.
+    for rel, old, new, times in EXTRA_EDITS:
         tree.sub(rel, old, new, times)
 
-    # The values themselves, everywhere they are written in the files this
-    # repository keeps them in. Counted rather than swept: a value that turns
-    # up more times than expected means the file grew a copy while nobody was
-    # looking, which is the condition the naming rule exists to prevent.
-    for rel in VALUE_FILES:
-        text = tree.read(rel)
-        for old, new in REWALK.items():
-            n = text.count(old)
-            if n:
-                text = text.replace(old, new)
-        tree.write(rel, text)
-    print(f"  {len(EDITS)} anchored edit(s) plus the values in "
-          f"{len(VALUE_FILES)} file(s)")
+    print(f"  {len(NEW)} constant(s) added, {len(rewired)} palette entries wired, "
+          f"{sum(1 for _,_,h,_ in rewired if h in COLLAPSE)} collapsed")
+    for pal, key, hexv, const in rewired:
+        flag = "  <- MOVES" if hexv in COLLAPSE else ""
+        print(f"     {pal[:5]:5} {key:28} {hexv} -> {const}{flag}")
 
 
 def checks(tree) -> None:
     src = tree.read(SENTINEL_FILE)
+    # rnv-color-picker's files carry a UTF-8 BOM; ast.parse refuses it.
+    mod = ast.parse(src.lstrip("\ufeff"))
 
-    # every re-walked value is in, and none of the old ones survives
-    for old, new in REWALK.items():
-        if old in src:
-            raise SystemExit(f"{old} survives in {SENTINEL_FILE}")
-    for name, want in ALREADY.items():
-        if f"{name}: Final[str] = {QUOTE}{want}{QUOTE}" not in src:
-            raise SystemExit(
-                f"{name} is not {want}. This repository is not at register "
-                f"rev 30, so this follow-up would leave it half-moved. Apply "
-                f"the status-family migration first.")
-    for name in NAMES:
-        want = REWALK[BEFORE[name]]
-        if f"{name}: Final[str] = {QUOTE}{want}{QUOTE}" not in src:
-            raise SystemExit(f"{name} is not {want}")
+    # no string hex survives inside the three palette dicts
+    for node in mod.body:
+        target = None
+        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            target, value = node.target.id, node.value
+        elif isinstance(node, ast.Assign) and len(node.targets) == 1 \
+                and isinstance(node.targets[0], ast.Name):
+            target, value = node.targets[0].id, node.value
+        if target in PALETTES and isinstance(value, ast.Dict):
+            for k, v in zip(value.keys, value.values):
+                if isinstance(v, ast.Constant) and isinstance(v.value, str) \
+                        and re.fullmatch(r"#[0-9a-fA-F]{6}", v.value):
+                    raise SystemExit(f"{target}[{ast.literal_eval(k)!r}] is "
+                                     f"still the literal {v.value}")
 
-    for rel in VALUE_FILES:
-        text = tree.read(rel)
-        for old in REWALK:
-            if old in text:
-                raise SystemExit(f"{old} survives in {rel}")
+    for name in NEW:
+        hexv = DOCS[name][0]
+        if f"{name}: Final[str] = {QUOTE}{hexv}{QUOTE}" not in src:
+            raise SystemExit(f"{name} did not land as {hexv}")
+    # The strays are gone from the PALETTES. Not from the whole file: the
+    # icon builder's OS_SIM_COLORS holds #f0f0f0 as the colour of a Windows
+    # taskbar, which is a fixed platform value that must NOT follow the brand
+    # -- the same class as SVG_EXPORT_BG. A sweep of the whole module would
+    # have "fixed" it.
+    for pal in PALETTES:
+        start, end = _palette_span(src, pal)
+        body = src[start:end]
+        for old in COLLAPSE:
+            if f"'{old}'" in body or f'"{old}"' in body:
+                raise SystemExit(f"stray {old} survives in {pal}")
+    for extra in EXTRA_SWEEP:
+        text = tree.read(extra)
+        for old in COLLAPSE:
+            if f"'{old}'" in text or f'"{old}"' in text:
+                raise SystemExit(f"stray {old} survives in {extra}")
+    # Every name a palette reaches for is assigned ABOVE the palette that
+    # reaches for it. This is the guard that was missing: the icon builder
+    # already defined GREY_CC two hundred lines BELOW its palettes, which was
+    # legal only while nothing in a palette named it. Wiring gave it a caller
+    # and turned the file into a NameError at import -- caught by a test
+    # collection error, which is a poor place to learn it.
+    late = _defined_after_use(mod)
+    if late:
+        raise SystemExit(
+            f"{SENTINEL_FILE}: these names are used by a palette but assigned "
+            f"below it, which is a NameError at import: {late}")
 
     if SENTINEL not in src:
-        raise SystemExit("the closing note did not land")
-    print(f"  guards: {len(REWALK)} value(s) re-walked, "
-          f"{len(ALREADY)} unchanged value(s) confirmed at rev 31")
+        raise SystemExit("the wiring note did not land")
+    print(f"  guards: 0 literals left in {len(PALETTES)} palettes, "
+          f"{len(NEW)} constants in, {len(COLLAPSE)} strays gone, "
+          f"every palette name defined above its use")
 
 
 # ------------------------------------------------------------------ plumbing
