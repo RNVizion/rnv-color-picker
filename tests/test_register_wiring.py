@@ -148,7 +148,10 @@ def test_the_dark_palettes_actually_use_some_of_them():
 
 #: The light half is ruled one value at a time. This is the allowlist, and it
 #: is what a later pass has to extend ON PURPOSE.
-LIGHT_RULED = ('APP_HOVER_LIGHT',)
+# RNV-LIGHT-WIRING (2026-09-06). Widened on purpose, with the pass that
+# wires them: light ink is TRUE_BLACK and light edges are APP_BORDER,
+# both already ruled in the register and until now written as literals.
+LIGHT_RULED = ('APP_HOVER_LIGHT', 'TRUE_BLACK', 'APP_BORDER')
 
 
 def test_the_light_palettes_reference_only_what_the_register_has_ruled():
