@@ -2,7 +2,7 @@
 """
 RNV-WIRING-TOOL-DO-NOT-SWEEP
 
-rnv-color-palette-manager: make the dependency declarations coherent.
+rnv-color-picker: make the dependency declarations coherent.
 
     python up.py             # apply, then verify
     python up.py --check     # rehearse, write nothing
@@ -48,7 +48,7 @@ Three findings, all measured across the five rather than assumed.
    `<13.0`, fleet-wide and identical in all five: past the version that
    matters, still short of a major boundary nobody has tested.
 
-WHAT THIS DOES HERE. Rewrites 5 specifier(s) in 3 file(s).
+WHAT THIS DOES HERE. Rewrites 6 specifier(s) in 3 file(s).
 
 WHAT IT DOES NOT DO. No package is added or removed. No floor is lowered.
 No source file is touched. The test-tooling ranges are governed separately
@@ -72,12 +72,12 @@ import sys
 import tempfile
 from pathlib import Path
 
-REPO = "rnv-color-palette-manager"
+REPO = "rnv-color-picker"
 SENTINEL_FILE = "pyproject.toml"
 SENTINEL = "RNV-DEPENDENCY-COHERENCE"
 GUARD = "tests/test_dependency_coherence.py"
 DESCRIPTION = "make the dependency declarations agree with each other"
-SUITES = [("run_tests.py (unittest + pytest)", [sys.executable, "run_tests.py"])]
+SUITES = [("pytest tests/", [sys.executable, "-m", "pytest", "tests/", "-q", "-p", "no:cacheprovider"])]
 
 SHADOWS = {"colors.py", "config.py", "conftest.py", "run_tests.py"}
 
@@ -342,7 +342,7 @@ def test_a_tool_setting_is_not_read_as_a_dependency():
         f'the parser missed the real requirement in the same file: {found}')
 '''
 
-EDITS = [('pyproject.toml', '    "Pillow>=10.0.0,<12.0",\n', '    "Pillow>=10.0.0,<13.0",\n', 1), ('requirements.txt', 'PyQt6>=6.5.0\n', 'PyQt6>=6.5.0,<7.0\n', 1), ('requirements.txt', 'Pillow>=10.0.0\n', 'Pillow>=10.0.0,<13.0\n', 1), ('tests/requirements-dev.txt', 'PyQt6>=6.5.0\n', 'PyQt6>=6.5.0,<7.0\n', 1), ('tests/requirements-dev.txt', 'Pillow>=10.0.0\n', 'Pillow>=10.0.0,<13.0\n', 1)]
+EDITS = [('pyproject.toml', '    "PyQt6==6.10.2",\n', '    "PyQt6>=6.10.2,<7.0",\n', 1), ('pyproject.toml', '    "Pillow>=10.0.0",\n', '    "Pillow>=10.0.0,<13.0",\n', 1), ('pyproject.toml', '    "hypothesis==6.152.4",\n', '    "hypothesis>=6.152.4,<7.0",\n', 1), ('requirements.txt', 'PyQt6==6.10.2\n', 'PyQt6>=6.10.2,<7.0\n', 1), ('requirements.txt', 'Pillow>=10.0.0\n', 'Pillow>=10.0.0,<13.0\n', 1), ('tests/requirements-dev.txt', 'hypothesis==6.152.4\n', 'hypothesis>=6.152.4,<7.0\n', 1)]
 DECLARING_FILES = ['pyproject.toml', 'requirements.txt', 'tests/requirements-dev.txt']
 FLEET = {'pillow': '>=10.0.0,<13.0'}
 
