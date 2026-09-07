@@ -2,10 +2,10 @@
 # Python 3.13+
 
 # GUI framework — pinned because Qt rendering and signal behavior are version-sensitive
-PyQt6==6.10.2
+PyQt6>=6.10.2,<7.0
 
 # Image processing — used for loading, resizing, and palette swatch generation
-Pillow>=10.0.0
+Pillow>=10.0.0,<13.0
 
 # Numerical operations — pixel array reshaping, color statistics, k-means input prep
 numpy>=1.26.0
