@@ -351,6 +351,11 @@ def _palette_can_render(body: str, palette: dict[str, str],
 # that value. This one was found the hard way, because the delivery script
 # is copied in UNTRACKED during rehearsal and COMMITTED in real use, so
 # git ls-files saw it only in the real run.
+# RNV-FLEET-FLOOR 2026-09-11: one marker every scanner in this
+# fleet honours, so a delivery script is skipped whatever it is
+# called. Such a script QUOTES the code it replaces, which reads
+# to a sweep exactly like a live call site.
+DELIVERY_MARKER = "RNV-DELIVERY-SCRIPT-DO-NOT-SWEEP"
 TOOL_MARKER = "RNV-GOLD-ALIGNMENT-TOOL-DO-NOT-SWEEP"
 
 
@@ -371,7 +376,8 @@ def _tracked_python_files() -> list[Path]:
     keep = []
     for p in found:
         try:
-            if TOOL_MARKER in p.read_text(encoding="utf-8-sig", errors="ignore"):
+            _text = p.read_text(encoding="utf-8-sig", errors="ignore")
+            if TOOL_MARKER in _text or DELIVERY_MARKER in _text:
                 continue
         except OSError:
             pass
