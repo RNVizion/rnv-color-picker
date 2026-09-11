@@ -260,17 +260,28 @@ def test_no_translucent_register_value_is_left_as_a_literal():
                   for n in ('TRUE_BLACK', 'WHITE', 'BRAND_BLACK', 'APP_CARD',
                             'APP_BORDER', 'APP_TEXT', 'APP_TEXT_DIM',
                             'APP_CANVAS', 'APP_PANEL_HOVER', 'APP_HOVER_LIGHT')}
-    looked, found = 0, []
+    # RNV-NO-VACUOUS-TESTS, 2026-09-10. `assert looked or True` stood below
+    # this loop, with the note "image mode may legitimately hold none". It
+    # was reaching for the right idea -- that `found` being empty proves
+    # nothing if the sweep read nothing -- and stated it in a form that is
+    # true whatever happens. Zero translucent literals IS a legitimate
+    # result, so `looked` is the wrong thing to assert on. What must never
+    # be zero is the number of values the sweep actually read.
+    scanned, looked, found = 0, 0, []
     for dict_name in PALETTES:
         node = _dict_node(dict_name)
         for k, v in zip(node.keys, node.values):
             if not (isinstance(v, ast.Constant) and isinstance(v.value, str)):
                 continue
+            scanned += 1
             if len(v.value) == 9 and v.value.startswith('#'):
                 looked += 1
                 if '#' + v.value[3:].lower() in registered:
                     found.append(f'{dict_name}[{k.value!r}] = {v.value}')
-    assert looked or True  # image mode may legitimately hold none
+
+    assert scanned, (
+        'the sweep read no palette values at all, so `found` being empty '
+        'proves nothing. PALETTES or _dict_node has stopped seeing them.')
     assert not found, (
         'registered values still spelled as translucent literals:\n  '
         + '\n  '.join(found))
