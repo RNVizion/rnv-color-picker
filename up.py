@@ -1,47 +1,49 @@
 #!/usr/bin/env python3
-"""
-RNV-WIRING-TOOL-DO-NOT-SWEEP
+"""RNV-NO-VACUOUS-TESTS — a test that cannot fail is not a test.
 
-rnv-color-picker: the image budget guards a file this repository does not have.
+    python up.py             # apply, then run the guard and both suites
+    python up.py --check     # rehearse every edit in memory, write nothing
 
-    python up.py             # rewrite the guard, run it, run the suites
-    python up.py --check     # rehearse, write nothing
-    python up.py --verify    # re-run the suites against what is on disk
-    python up.py --finish    # delete this script
+For rnv-color-picker, derived against a fresh clone at the live head.
 
-WHAT WENT WRONG, AND WHOSE FAULT IT IS. The image-budget round wrote one
-guard and installed the same one in all five applications. Its budget carried
+WHY THIS EXISTS HERE. The rule was written for rnv-color-mixer, where one
+assertion in tests/ could not fail:
 
-    ('resources/icons/special_slot.png', 512, 'a slot badge'),
+    assert result is not None or True
 
-and only two applications have that file -- the palette manager, where it is
-the 99-or-more overflow tile drawn by PreviewGrid, and the mixer, where it is
-an unused byte-for-byte duplicate of the app icon. Here it named nothing.
+It sat in a test that had never run — it called a function that does not
+exist, caught the AttributeError, and turned it into a permanent
+`pytest.skip("not in this version")`. A specification reported as a skip
+reads, in a summary line, exactly like coverage.
 
-**Nothing is wrong with your images.** The resize ran and landed: the
-background is 3840 on its long edge, the three gears and the icon are 512,
-and the action buttons and screenshots were never touched. What failed is the
-guard's own scope, on this test:
+Then the same sweep was run across the whole fleet: **5,667 test functions
+in five applications**. This is what it found here.
 
-    test_the_budget_still_matches_real_files
+    one `assert looked or True`, inside a brand guard
 
-which exists because a glob that matches nothing passes every other assertion
-and looks exactly like a repository in good order. It was written against the
-possibility of a budget going stale. The first thing it found was a budget
-that had never been true here.
+WHAT THE GUARD ENFORCES: no assertion true regardless of the code; no test
+body that is only `pass`; no test that can never fail (no assertion AND
+every statement swallowed); no test that skips itself on AttributeError.
 
-WHAT THIS DOES. Rewrites tests/test_image_budget.py with a budget that
-describes THIS repository: background, three gears, icon. The entry is
-removed rather than exempted -- a budget belongs to the repository it
-governs, and an exemption would have left the rule in place with a note
-explaining why it never applies, which is how a guard stops being read.
+WHAT IT DELIBERATELY DOES NOT: forbid a test having no assertion. Hundreds
+of those across this fleet are legitimate — they are named `..._no_crash`
+and they fail if the call raises. A rule against them would be noise that
+gets suppressed, which is worse than no rule.
 
-It also adds one test, stating the same failure from the other side: a budget
-pattern with no wildcard is a claim that a specific path exists, so it is
-checked as one. An assertion that names the missing FILE is easier to act on
-than one that names a glob.
+THE GUARD IS IDENTICAL IN ALL FIVE CHECKOUTS, AND THAT COST TWO MISTAKES.
+Its first version swept `tests/` only and asserted at least 500 test
+functions. Ported unchanged it would have landed **red** in the palette
+manager, which has 443 under tests/, and **blind** in the same repository,
+whose snapshots/ directory holds six more tests it would never have read.
+Both were numbers and paths taken from the repository it was written in. It
+now discovers what to read — every `test_*.py` except the ones at the
+repository root, where each application keeps its locked suite — and its
+floor is structural: at least twenty files, and at least as many test
+functions as files.
 
-NO ASSET IS OPENED, RESIZED, MOVED OR WRITTEN. One test file changes.
+THE LOCKED SUITE IS EXCLUDED EVERYWHERE, by ownership rather than by
+quality. In the mixer it is where every remaining instance lives: all 13
+`except Exception: pass` handlers and all 3 tests that can never fail.
 """
 from __future__ import annotations
 
@@ -54,289 +56,415 @@ import tempfile
 from pathlib import Path
 
 REPO = "rnv-color-picker"
-SENTINEL_FILE = "tests/test_image_budget.py"
-SENTINEL = "RNV-IMAGE-BUDGET-SCOPE"
-GUARD = "tests/test_image_budget.py"
-DESCRIPTION = "correct the image budget's scope for this repository"
-SUITES = [("pytest tests/", [sys.executable, "-m", "pytest", "tests/", "-q", "-p", "no:cacheprovider"])]
+SENTINEL_FILE = "tests/conftest.py"
+SENTINEL = "RNV-NO-VACUOUS-TESTS"
+GUARD = "tests/test_no_vacuous_tests.py"
+DESCRIPTION = "install the rule that a test must be able to fail"
+SUITES = [("\"pytest tests/\"",
+           [sys.executable, "-m", "pytest", "tests/", "-q", "-p", "no:cacheprovider"]),
+          ("\"the LOCKED file\"",
+           [sys.executable, "-m", "pytest", "test_rnv_color_picker.py", "-q",
+            "-p", "no:cacheprovider", "--timeout=120"])]
 
 SHADOWS = {"colors.py", "config.py", "conftest.py", "run_tests.py"}
 
-MISSING_HELP = """\
-tests/test_image_budget.py is not here, so there is no guard to correct.
+GUARD_SOURCE = r'''"""RNV-NO-VACUOUS-TESTS-GUARD -- a test that cannot fail is not a test.
 
-That file is installed by the image-budget script. Run that one first:
+Installed 2026-09-10, after a sweep of all 1,049 test functions in the
+repository.
 
-    python up-for-rnv-color-picker-image-budget.py
+WHAT THE SWEEP FOUND, AND WHAT IT DID NOT. The honest headline first: this
+suite is in good shape. Across 51 files there was exactly **one** assertion
+in tests/ that could not fail, no empty test bodies, and every one of the 94
+tests without an assertion turned out to be a deliberate smoke test -- they
+are named `..._no_crash` and `..._does_not_crash`, and they fail if the call
+raises, which is the whole point of them. Those are not defects and this
+guard does not touch them.
 
-and then this one. If you have already run it and the file is missing, stop
-and say so -- that is a different problem from the one this script fixes.
-"""
+THE ONE. tests/test_app_event_handlers.py held
 
-GUARD_SOURCE = r'''"""RNV-IMAGE-BUDGET-GUARD -- the resources stay the size they were reduced to.
+    result = FileUtils.detect_palette_format(ext)
+    assert result is not None or True   # Some impls return None
 
-Installed 2026-09-08, scope corrected 2026-09-09. This repository shipped a
-window background of 16000x9038 (or 8000x4500) and a settings gear of
-3334x3334 for a button that renders at 50x50. Across the five applications
-that was 537 MB of pixels reproducing, for the most part, flat geometric
-shapes.
+`x or True` is true whatever x is. The assertion could not fail. Worse, it
+never ran: `FileUtils.detect_palette_format` does not exist and never has,
+so the call raised AttributeError, which the test caught and turned into
+`pytest.skip("detect_palette_format not in this version")`. A permanent
+skip, a wrong reason, and an assertion that was inert anyway. Its `expected`
+column was never compared with anything either.
 
-The backgrounds are now 3840 on the long edge -- a full 4K width, so a
-maximised window on a 4K display still scales DOWN rather than up -- and the
-oversized square assets are 512.
+TWO MORE OF THE SAME FAMILY went with it. `get_palette_format_filter` names
+a function that exists nowhere in the codebase, and
+`safe_execute(default=)` a parameter that has never existed -- and whose
+test claimed in its docstring that "some callers pass `default=`" when none
+do. Both skipped themselves permanently. A specification reported as a skip
+reads, in a summary line, exactly like coverage.
 
-WHAT THIS GUARD IS FOR. Nothing about a resize sticks. The next export from a
-design tool lands at whatever that tool defaults to, the file is committed
-because it looks right, and the repository quietly grows back. A dimension is
-checkable, so it is checked.
+WHAT THIS GUARD ENFORCES, over tests/ only:
 
-WHAT IT DELIBERATELY DOES NOT COVER. The action buttons and the screenshots.
-The action buttons are already 0.2-0.4 MB and sized for the widgets they
-fill -- a rule that squeezed their long edge would crush their short one,
-which is how a 1250x146 button becomes 512x60 and looks wrong on a HiDPI
-screen. The screenshots are 1920x1080 documentation. Neither is a problem, so
-neither is governed here.
+  * no assertion that is true regardless of the code under test;
+  * no test whose body is only `pass`;
+  * no test that can never fail -- no assertion of any kind AND every
+    statement wrapped in a `try` whose handler is a bare `pass`.
+
+WHAT IT DELIBERATELY DOES NOT ENFORCE. A test with no assertion is fine on
+its own: `def test_set_theme_does_not_crash` asserts by not raising. Ninety
+of those are legitimate here and a rule against them would be noise that
+gets suppressed, which is worse than no rule.
+
+THIS GUARD IS FLEET-PORTABLE, AND THAT COST TWO REPO-SPECIFIC MISTAKES.
+The first version swept `tests/` only and asserted at least 500 test
+functions. Ported unchanged it would have landed RED in the palette
+manager, which has 443 under tests/, and BLIND in the same repo, whose
+snapshots/ directory holds six more tests the sweep would never have read.
+Both were numbers and paths taken from the repository it was written in.
+
+It now discovers what to read: every `test_*.py` anywhere in the checkout
+except the repository ROOT, where each application keeps its one locked
+suite. The floor is structural rather than magic -- at least twenty files,
+and at least as many test functions as files, since a test file with no
+tests in it means the walk has gone blind.
+
+THE LOCKED SUITE IS EXCLUDED, AND IN THE MIXER IT IS WHERE THE PROBLEM
+ACTUALLY IS. test_rnv_color_mixer.py holds all 13 `except Exception: pass`
+handlers in that repository and all 3 tests that can never fail:
+
+    test_handle_exception_no_crash          (line 1177)
+    test_set_autosave_interval_no_crash     (line 1482)
+    test_load_settings_no_crash             (line 1545)
+
+Each has no assertion and swallows everything it calls. Two others in that
+file call `FileUtils.auto_detect_and_import_palette` on the class with one
+argument, so both raise TypeError before reaching the function and both
+swallow it -- documented in tests/test_palette_import.py.
+
+That file is locked by convention, so this round reports rather than edits.
+The exclusion is a statement about ownership, not about quality: those
+tests are the ones worth fixing.
 """
 from __future__ import annotations
 
+import ast
 from pathlib import Path
-
-import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 
-#: RNV-IMAGE-BUDGET-SCOPE, 2026-09-09. The first version of this file was
-#: written once and installed in all five applications, and it carried an
-#: entry for resources/icons/special_slot.png. Only two applications have
-#: that file: the palette manager, where it is the 99-or-more overflow tile
-#: in PreviewGrid, and the mixer, where it is an unused duplicate of the app
-#: icon. In the other three the entry was a rule with no subject, and
-#: test_the_budget_still_matches_real_files -- which exists for exactly that
-#: failure -- caught it on the first run. The entry is gone rather than
-#: exempted. A budget belongs to the repository it governs.
-#:
-#: glob -> the largest edge this asset may have, and why that number.
-BUDGET = (
-    ('resources/background_images/*.png', 3840,
-     'a window background; 3840 is a full 4K width, so even a maximised '
-     'window on a 4K display scales it down rather than up'),
-    ('resources/button_images/settings_gear_*.png', 512,
-     'renders inside a 50x50 button; 512 leaves headroom for 3x HiDPI '
-     'several times over'),
-    ('resources/icons/icon.png', 512,
-     'the window and dock icon; 512 is the largest size any desktop asks for'),
-)
+#: Each application keeps its one locked suite as a `test_*.py` at the
+#: repository root. Discovered rather than named, so this file is identical
+#: in all five checkouts -- two copies of a guard that differ by a filename
+#: are two copies that drift.
+def _locked_suites():
+    return sorted(p.name for p in ROOT.glob("test_*.py"))
 
-#: A file over this, in a directory the budget governs, is the thing that
-#: went wrong. Stated separately from the dimensions because a file can be
-#: the right dimensions and still be enormous if it was saved badly.
-MAX_BYTES = 16 * 1024 * 1024
+#: Names that promise the test asserts by not raising. Used only to explain
+#: a NO-ASSERT test in a message, never to excuse one from a real rule.
+SMOKE_MARKERS = ("no_crash", "does_not_crash", "no_error", "survives")
 
 
-def _governed():
-    for pattern, limit, why in BUDGET:
-        for path in sorted(ROOT.glob(pattern)):
-            yield path, limit, why
+def _test_files():
+    """Every test file this guard governs, wherever it lives.
 
-
-def test_every_governed_asset_is_within_its_budget():
-    """The one that matters.
-
-    A dimension is the cheapest possible check and the whole reason the
-    reduction holds: the next re-export from a design tool will be whatever
-    that tool defaults to, and nobody looks at a file size in a diff.
+    Anything at the repository root is a locked suite and is skipped; so is
+    a delivery script. Everything else is swept, which is how the palette
+    manager's snapshots/ directory gets read at all.
     """
-    pytest.importorskip('PIL', reason='Pillow is a declared dependency')
-    from PIL import Image
-    Image.MAX_IMAGE_PIXELS = None
-
-    over = []
-    for path, limit, why in _governed():
-        with Image.open(path) as image:
-            longest = max(image.width, image.height)
-        if longest > limit:
-            over.append(
-                f'{path.relative_to(ROOT).as_posix()}  {image.width}x{image.height}'
-                f'  (limit {limit} on the long edge — {why})')
-    assert not over, (
-        'these assets are larger than the size anything renders them at:\n  '
-        + '\n  '.join(over)
-        + '\n\nResize in place; the path must not move.')
+    for path in sorted(ROOT.rglob("test_*.py")):
+        if ".git" in path.parts:
+            continue
+        if path.parent == ROOT:
+            continue
+        if path.name.startswith("up"):
+            continue
+        yield path
 
 
-def test_no_governed_asset_is_absurdly_heavy():
-    """Dimensions and bytes are different failures.
+def _read(path: Path) -> str:
+    """BOM-aware, because six files in this fleet carry one.
 
-    A 3840px PNG saved without optimisation, or as 16-bit, is the right shape
-    and still ten times the weight. This catches that without pretending to
-    know what a good size is.
+    `read_text("utf-8")` leaves a U+FEFF at the start of the string and
+    ast.parse rejects it, so a BOM'd test file would turn this guard into a
+    collection error rather than a result. Python's own import machinery
+    strips it; tests/test_brand_mirror.py already decodes this way.
     """
-    heavy = [f'{p.relative_to(ROOT).as_posix()}  {p.stat().st_size / 1e6:.1f} MB'
-             for p, _limit, _why in _governed() if p.stat().st_size > MAX_BYTES]
-    assert not heavy, (
-        'these are within their dimensions but very heavy:\n  '
-        + '\n  '.join(heavy)
-        + f'\n\nThe ceiling is {MAX_BYTES / 1e6:.0f} MB. Check the save '
-          f'settings rather than the dimensions.')
+    raw = path.read_bytes()
+    return raw.decode("utf-8-sig" if raw.startswith(b"\xef\xbb\xbf") else "utf-8")
 
 
-def test_the_budget_still_matches_real_files():
-    """Guard the guard, both ways.
+def _tests(path: Path):
+    src = _read(path)
+    try:
+        tree = ast.parse(src, str(path))
+    except SyntaxError as exc:                      # pragma: no cover
+        raise AssertionError(f"{path} does not parse: {exc}")
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name.startswith("test"):
+            yield src, node
 
-    A glob that matches nothing passes every assertion above, which looks
-    exactly like a repository in good order. And an entry that has stopped
-    matching is a rule with no subject -- worth deleting deliberately rather
-    than leaving to pass over silence.
 
-    This is the test that caught the scope error described at BUDGET. It was
-    written on the argument that a budget can go stale silently; the first
-    thing it found was a budget that had never been true here at all.
+def _body(fn: ast.FunctionDef) -> list:
+    body = list(fn.body)
+    if (body and isinstance(body[0], ast.Expr)
+            and isinstance(body[0].value, ast.Constant)
+            and isinstance(body[0].value.value, str)):
+        body = body[1:]
+    return body
+
+
+def _always_true(node: ast.expr) -> str | None:
+    """Why this expression is true whatever the code does, or None."""
+    if isinstance(node, ast.Constant):
+        if node.value is True:
+            return "the literal True"
+        if isinstance(node.value, (int, float, str)) and node.value:
+            return f"the truthy literal {node.value!r}"
+    if isinstance(node, ast.BoolOp) and isinstance(node.op, ast.Or):
+        for value in node.values:
+            why = _always_true(value)
+            if why:
+                return f"an `or` against {why}"
+    if isinstance(node, ast.Compare) and len(node.ops) == 1:
+        # Both sides must be side-effect-free. `list(g) == list(g)` is NOT a
+        # tautology: if g is lazy the first call exhausts it and the second
+        # returns []. tests/test_pil_compat.py uses exactly that to prove a
+        # result is not a generator, and the first draft of this rule called
+        # that clever test a defect.
+        pure = (ast.Name, ast.Attribute, ast.Constant)
+        left, op, right = node.left, node.ops[0], node.comparators[0]
+        if (isinstance(op, (ast.Eq, ast.Is))
+                and isinstance(left, pure) and isinstance(right, pure)
+                and ast.dump(left) == ast.dump(right)):
+            return "a comparison of a value with itself"
+    if (isinstance(node, ast.Call) and getattr(node.func, "id", "") == "isinstance"
+            and len(node.args) == 2 and getattr(node.args[1], "id", "") == "object"):
+        return "isinstance(..., object), which holds for everything"
+    return None
+
+
+def _has_assertion(fn: ast.FunctionDef) -> bool:
+    for n in ast.walk(fn):
+        if isinstance(n, ast.Assert):
+            return True
+        if isinstance(n, ast.Call) and getattr(n.func, "attr", "").startswith("assert"):
+            return True
+    rendered = ast.unparse(fn)
+    return "raises" in rendered or "warns" in rendered
+
+
+def test_no_assertion_is_true_no_matter_what_the_code_does():
+    """The rule that caught the one.
+
+    An assertion whose truth does not depend on the subject is worse than no
+    assertion: it reports as coverage, it survives every refactor, and it
+    reads at a glance like a real check.
     """
-    empty = [pattern for pattern, _l, _w in BUDGET
-             if not list(ROOT.glob(pattern))]
-    assert not empty, (
-        'these budget entries match no file in this repository:\n  '
-        + '\n  '.join(empty)
-        + '\n\nIf the asset was retired, remove its entry in the same commit.')
+    bad = []
+    for path, fn in ((p, f) for p in _test_files() for _, f in _tests(p)):
+        for node in ast.walk(fn):
+            if isinstance(node, ast.Assert):
+                why = _always_true(node.test)
+                if why:
+                    rel = path.relative_to(ROOT).as_posix()
+                    bad.append(f"{rel}:{node.lineno}  {fn.name}\n"
+                               f"      {ast.unparse(node)[:96]}\n"
+                               f"      -- always true, because of {why}")
+    assert not bad, (
+        "these assertions cannot fail:\n  " + "\n  ".join(bad)
+        + "\n\nAssert the thing the test is named after, or delete the line. "
+          "A check that cannot fail is worse than none: it looks like one.")
 
 
-def test_the_budget_does_not_govern_a_file_this_repository_lacks():
-    """The same failure stated from the other side, and pinned to a name.
+def test_no_test_body_is_only_pass():
+    """A skipped `pass` was how the palette-import hang stayed hidden.
 
-    The scope error was one glob that named a file only two of the five
-    applications ship. A pattern with no wildcard is a claim that a specific
-    path exists, so it is worth checking as one -- an assertion that reads
-    the filename is easier to act on than one that reads a glob.
+    It reported as a skip for a year and covered nothing; the reason
+    attached to it was the only thing it ever contributed, and the reason
+    was wrong.
     """
-    missing = [pattern for pattern, _l, _w in BUDGET
-               if '*' not in pattern and not (ROOT / pattern).exists()]
-    assert not missing, (
-        'the budget names files that are not in this repository:\n  '
-        + '\n  '.join(missing)
-        + '\n\nA budget belongs to the repository it governs. If an asset '
-          'exists in a sibling application but not this one, it does not '
-          'belong in this file.')
+    bad = []
+    for path, fn in ((p, f) for p in _test_files() for _, f in _tests(p)):
+        body = _body(fn)
+        if body and all(isinstance(s, ast.Pass) for s in body):
+            rel = path.relative_to(ROOT).as_posix()
+            bad.append(f"{rel}:{fn.lineno}  {fn.name}")
+    assert not bad, (
+        "these tests have no body:\n  " + "\n  ".join(bad)
+        + "\n\nIf the note attached to it is the point, put the note in the "
+          "module docstring and delete the function.")
 
 
-def test_the_assets_are_where_they_were():
-    """No path moved.
+def test_no_test_can_never_fail():
+    """No assertion AND everything swallowed. The complete case.
 
-    The reduction was done in place on purpose: this project's standing
-    instruction is that the image directories are correct and are not to be
-    rearranged. A resize that also relocated a file would be a much larger
-    change wearing a smaller one's clothes.
+    Either half alone is defensible -- a smoke test asserts by not raising,
+    and a `try/except` can be the assertion when something else checks the
+    result. Together they are a function that runs and reports success
+    unconditionally.
     """
-    for directory in ('resources/background_images', 'resources/button_images',
-                      'resources/icons'):
-        assert (ROOT / directory).is_dir(), (
-            f'{directory} is missing. The image resize was done in place and '
-            f'must not have moved anything.')
+    bad = []
+    for path, fn in ((p, f) for p in _test_files() for _, f in _tests(p)):
+        body = _body(fn)
+        if not body or _has_assertion(fn):
+            continue
+        tries = [s for s in body if isinstance(s, ast.Try)]
+        if len(tries) != len(body) or not tries:
+            continue
+        if all(all(len(h.body) == 1 and isinstance(h.body[0], ast.Pass)
+                   for h in t.handlers) for t in tries):
+            rel = path.relative_to(ROOT).as_posix()
+            bad.append(f"{rel}:{fn.lineno}  {fn.name}")
+    assert not bad, (
+        "these tests cannot fail -- no assertion, and every call swallowed:\n  "
+        + "\n  ".join(bad)
+        + "\n\nAssert something, or narrow the except to the exception the "
+          "test is about, or delete it.")
+
+
+def test_no_test_skips_itself_over_a_name_that_does_not_exist():
+    """The permanent skip.
+
+    `except AttributeError: pytest.skip("not in this version")` is how three
+    tests here reported as skipped for a year while naming functions that
+    had never existed. A skip whose condition can never change is a deleted
+    test that still shows up in the summary line.
+    """
+    bad = []
+    for path, fn in ((p, f) for p in _test_files() for _, f in _tests(p)):
+        for handler in [n for n in ast.walk(fn) if isinstance(n, ast.ExceptHandler)]:
+            catches = ast.unparse(handler.type) if handler.type else ""
+            if "AttributeError" not in catches:
+                continue
+            if any(isinstance(n, ast.Call)
+                   and getattr(n.func, "attr", "") == "skip"
+                   for n in ast.walk(handler)):
+                rel = path.relative_to(ROOT).as_posix()
+                bad.append(f"{rel}:{handler.lineno}  {fn.name}")
+    assert not bad, (
+        "these tests skip themselves when an attribute is missing:\n  "
+        + "\n  ".join(bad)
+        + "\n\nThat skip is permanent if the name never existed, and it "
+          "reads as coverage. Call the function that does exist, or delete "
+          "the test and say why.")
+
+
+def test_this_guard_can_see_the_files_it_judges():
+    """A sweep that finds nothing passes every assertion above.
+
+    Not hypothetical here: the image-budget guard shipped with a rule whose
+    glob matched no file in three of five repositories, and every other test
+    in it was green.
+    """
+    files = list(_test_files())
+    assert len(files) >= 20, (
+        f"only {len(files)} test files found under {ROOT}; the sweep is "
+        f"looking in the wrong place")
+
+    counted = sum(1 for p in files for _ in _tests(p))
+    assert counted >= len(files), (
+        f"{counted} test functions parsed out of {len(files)} files. At "
+        f"least one file yielded none, which means the walk has gone blind "
+        f"rather than that the repository is small -- a structural floor, "
+        f"not a number copied from whichever repository this was written in. "
+        f"The first version asserted 500 and would have landed red in the "
+        f"palette manager, which has 443.")
+
+    locked = _locked_suites()
+    assert locked, (
+        "no locked suite found at the repository root. Either this is not "
+        "one of the five applications, or the suite moved -- in which case "
+        "the exclusion in _test_files is now hiding it from the sweep.")
 '''
 
-
-def _budget_of(text: str, where: str):
-    """Read the BUDGET tuple out of a guard's SOURCE, without importing it.
-
-    The guard imports pytest and resolves paths from __file__, so executing
-    it to inspect it would be answering a question about a file by running
-    it somewhere it does not live. ast.literal_eval reads the literal and
-    refuses anything that is not one.
-    """
-    tree = ast.parse(text, where)
-    for node in tree.body:
-        if isinstance(node, ast.Assign) and any(
-                isinstance(t, ast.Name) and t.id == "BUDGET" for t in node.targets):
-            return list(ast.literal_eval(node.value))
-    raise SystemExit(f"{where}: no BUDGET assignment found")
+EDITS = [('tests/conftest.py', '"""\nShared pytest fixtures and bootstrap for RNV Color Picker tests.\n', '# RNV-NO-VACUOUS-TESTS, 2026-09-10 -- tests/test_no_vacuous_tests.py\n# sweeps this repository for tests that cannot fail: assertions true\n# whatever the code does, bodies that are only `pass`, tests with no\n# assertion that swallow everything they call, and self-skips on a\n# name that never existed. It deliberately permits a test with no\n# assertion at all -- those assert by not raising.\n"""\nShared pytest fixtures and bootstrap for RNV Color Picker tests.\n', 1), ('tests/test_ladder_and_plate.py', "    looked, found = 0, []\n    for dict_name in PALETTES:\n        node = _dict_node(dict_name)\n        for k, v in zip(node.keys, node.values):\n            if not (isinstance(v, ast.Constant) and isinstance(v.value, str)):\n                continue\n            if len(v.value) == 9 and v.value.startswith('#'):\n                looked += 1\n                if '#' + v.value[3:].lower() in registered:\n                    found.append(f'{dict_name}[{k.value!r}] = {v.value}')\n    assert looked or True  # image mode may legitimately hold none", '    # RNV-NO-VACUOUS-TESTS, 2026-09-10. `assert looked or True` stood below\n    # this loop, with the note "image mode may legitimately hold none". It\n    # was reaching for the right idea -- that `found` being empty proves\n    # nothing if the sweep read nothing -- and stated it in a form that is\n    # true whatever happens. Zero translucent literals IS a legitimate\n    # result, so `looked` is the wrong thing to assert on. What must never\n    # be zero is the number of values the sweep actually read.\n    scanned, looked, found = 0, 0, []\n    for dict_name in PALETTES:\n        node = _dict_node(dict_name)\n        for k, v in zip(node.keys, node.values):\n            if not (isinstance(v, ast.Constant) and isinstance(v.value, str)):\n                continue\n            scanned += 1\n            if len(v.value) == 9 and v.value.startswith(\'#\'):\n                looked += 1\n                if \'#\' + v.value[3:].lower() in registered:\n                    found.append(f\'{dict_name}[{k.value!r}] = {v.value}\')\n\n    assert scanned, (\n        \'the sweep read no palette values at all, so `found` being empty \'\n        \'proves nothing. PALETTES or _dict_node has stopped seeing them.\')', 1)]
 
 
 def edits(tree) -> None:
-    """Validate what is on disk before replacing it.
+    for rel, old, new, times in EDITS:
+        tree.sub(rel, old, new, times)
+    by_file: dict = {}
+    for rel, *_ in EDITS:
+        by_file[rel] = by_file.get(rel, 0) + 1
+    print("  " + ", ".join(f"{n} in {rel}" for rel, n in sorted(by_file.items())))
 
-    The harness writes GUARD_SOURCE over GUARD immediately after this
-    returns, so the only job here is to refuse when the file on disk is not
-    the thing this script was written to correct.
-    """
-    installed = tree.read(SENTINEL_FILE)
-    if "RNV-IMAGE-BUDGET-GUARD" not in installed:
-        raise SystemExit(
-            f"{SENTINEL_FILE} exists but is not the image-budget guard. "
-            f"Refusing to overwrite a file this script did not install.")
 
-    before = _budget_of(installed, SENTINEL_FILE)
-    dead = [pattern for pattern, *_ in before
-            if not list(Path.cwd().glob(pattern))]
-    if not dead:
-        raise SystemExit(
-            "every entry in the installed budget matches a real file here, "
-            "so there is nothing to correct. If a suite is red, it is red "
-            "for some other reason.")
+def _read(path: Path) -> str:
+    raw = path.read_bytes()
+    return raw.decode("utf-8-sig" if raw.startswith(b"\xef\xbb\xbf") else "utf-8")
 
-    print(f"  installed budget: {len(before)} entries, "
-          f"{len(dead)} matching nothing")
-    for pattern in dead:
-        print(f"    - {pattern}")
+
+def _always_true(node):
+    if isinstance(node, ast.Constant):
+        if node.value is True:
+            return "the literal True"
+        if isinstance(node.value, (int, float, str)) and node.value:
+            return f"the truthy literal {node.value!r}"
+    if isinstance(node, ast.BoolOp) and isinstance(node.op, ast.Or):
+        for value in node.values:
+            why = _always_true(value)
+            if why:
+                return f"an `or` against {why}"
+    if isinstance(node, ast.Compare) and len(node.ops) == 1:
+        pure = (ast.Name, ast.Attribute, ast.Constant)
+        left, op, right = node.left, node.ops[0], node.comparators[0]
+        if (isinstance(op, (ast.Eq, ast.Is))
+                and isinstance(left, pure) and isinstance(right, pure)
+                and ast.dump(left) == ast.dump(right)):
+            return "a comparison of a value with itself"
+    return None
 
 
 def checks(tree) -> None:
     root = Path.cwd()
-    new = tree.files[GUARD]
 
-    # 1. it parses. A guard that does not import is a guard that does not run,
-    #    and pytest reports that as a collection error rather than a failure.
-    try:
-        ast.parse(new, GUARD)
-    except SyntaxError as exc:
-        raise SystemExit(f"the replacement guard does not parse: {exc}")
+    # 1. no assertion under sweep can be true regardless of the code.
+    #    Checked here as well as in the installed guard, so a bad tree is
+    #    refused before anything is written to it.
+    files = [p for p in sorted(root.rglob("test_*.py"))
+             if ".git" not in p.parts and p.parent != root
+             and not p.name.startswith("up")]
+    bad = []
+    for path in files:
+        rel = path.relative_to(root).as_posix()
+        text = tree.files.get(rel) or _read(path)
+        try:
+            parsed = ast.parse(text, rel)
+        except SyntaxError as e:
+            raise SystemExit(f"{rel} does not parse: {e}")
+        for n in ast.walk(parsed):
+            if isinstance(n, ast.Assert):
+                why = _always_true(n.test)
+                if why:
+                    bad.append(f"{rel}:{n.lineno} {ast.unparse(n)[:56]} ({why})")
+    if bad:
+        raise SystemExit("assertions that cannot fail survive: " + "; ".join(bad))
 
-    after = _budget_of(new, GUARD)
+    # 2. the sweep can see something. A guard that reads no file passes
+    #    every rule above; the image-budget round shipped exactly that.
+    if len(files) < 20:
+        raise SystemExit(f"only {len(files)} test files found; the sweep is "
+                         f"looking in the wrong place")
+    counted = sum(1 for p in files
+                  for n in ast.walk(ast.parse(tree.files.get(
+                      p.relative_to(root).as_posix()) or _read(p)))
+                  if isinstance(n, ast.FunctionDef) and n.name.startswith("test"))
+    if counted < len(files):
+        raise SystemExit(f"{counted} test functions across {len(files)} files; "
+                         f"at least one file yielded none")
 
-    # 2. every entry names something real. This is the assertion that failed;
-    #    check it here, against the in-memory file, so --check is a true
-    #    rehearsal rather than a promise.
-    dead = [pattern for pattern, *_ in after if not list(root.glob(pattern))]
-    if dead:
-        raise SystemExit("the replacement budget still names nothing: "
-                         + ", ".join(dead))
+    # 3. the locked suite is at the root, where the sweep skips it. If it
+    #    moved under tests/, the exclusion would now be hiding it.
+    locked = sorted(p.name for p in root.glob("test_*.py"))
+    if not locked:
+        raise SystemExit("no locked suite at the repository root; either this "
+                         "is the wrong checkout or the suite moved")
 
-    # 3. and nothing real was dropped along with it. Removing the whole
-    #    budget would satisfy check 2 perfectly.
-    for pattern in ("resources/background_images/*.png",
-                    "resources/button_images/settings_gear_*.png",
-                    "resources/icons/icon.png"):
-        if not any(p == pattern for p, *_ in after):
-            raise SystemExit(f"the replacement budget lost {pattern}; that is "
-                             f"a real asset and must stay governed")
+    # 4. the sentinel is in the file the re-run check reads. Shipped broken
+    #    once in this programme; never again without a check.
+    if SENTINEL not in tree.files[SENTINEL_FILE]:
+        raise SystemExit(f"'{SENTINEL}' is not in {SENTINEL_FILE}, so the "
+                         f"already-applied check can never fire")
 
-    # 4. the previous round's resize is on disk. This script does not touch
-    #    an asset, so if one is over budget the guard will be red for a
-    #    reason this script cannot fix, and saying so now beats a test
-    #    failure five minutes into a Qt suite.
-    try:
-        from PIL import Image
-    except ImportError:
-        print("  guards: Pillow not importable; skipped the on-disk size check")
-    else:
-        Image.MAX_IMAGE_PIXELS = None
-        over = []
-        for pattern, limit, _why in after:
-            for path in sorted(root.glob(pattern)):
-                with Image.open(path) as image:
-                    if max(image.width, image.height) > limit:
-                        over.append(f"{path.relative_to(root).as_posix()} "
-                                    f"{image.width}x{image.height} > {limit}")
-        if over:
-            raise SystemExit(
-                "these assets are still over budget, which this script does "
-                "not fix -- run the image-budget script first:\n  "
-                + "\n  ".join(over))
-
-    # 5. the marker landed, or --verify has nothing to recognise later.
-    if SENTINEL not in new:
-        raise SystemExit("the scope note did not land")
-
-    print(f"  guards: {len(after)} budget entries, all matching real files; "
-          f"every governed asset within budget on disk")
+    print(f"  guards: 0 tautologies across {len(files)} test files, "
+          f"{counted} test functions, locked suite {locked[0]} left alone")
 
 
 # ------------------------------------------------------------------ plumbing
@@ -354,6 +482,7 @@ class Tree:
     def __init__(self, root: Path) -> None:
         self.root = root
         self.files: dict[str, str] = {}
+        self.deleted: set[str] = set()
 
     def read(self, rel: str) -> str:
         if rel not in self.files:
@@ -365,6 +494,20 @@ class Tree:
 
     def write(self, rel: str, text: str) -> None:
         self.files[rel] = text
+
+    def delete(self, rel: str) -> None:
+        """Mark a file for removal. Nothing leaves disk until flush().
+
+        Added for the round that retired the last CI deselect: with no
+        deselects left, tests/test_ci_deselects.py swept an empty set and
+        would have passed over nothing. Its own failure message said to
+        delete it in the commit that removed the last one, so the harness
+        needed to be able to.
+        """
+        if not (self.root / rel).exists() and rel not in self.files:
+            raise SystemExit(f"cannot delete {rel}: it is not in this checkout")
+        self.files.pop(rel, None)
+        self.deleted.add(rel)
 
     def sub(self, rel: str, old: str, new: str, times: int = 1) -> None:
         src = self.read(rel)
@@ -383,6 +526,11 @@ class Tree:
         which is precisely the file some scripts exist to fix. Bytes compare
         identically for everything else and cannot refuse to look."""
         touched = []
+        for rel in sorted(self.deleted):
+            p = self.root / rel
+            if p.exists():
+                p.unlink()
+                touched.append(f"{rel} (deleted)")
         for rel, text in self.files.items():
             p = self.root / rel
             p.parent.mkdir(parents=True, exist_ok=True)
