@@ -1282,13 +1282,17 @@ class SettingsPanel(QDialog):
         result = ColorAccessibility.check_contrast(fg, bg)
         
         # Update ratio display
-        rating_color = ColorAccessibility.get_contrast_rating_color(result.ratio)
+        # RNV-RATING-SCALE: the tier is logic and the colour is the palette's.
+        # Read from the ACTIVE theme, because this label failed the 4.5 text
+        # floor in light mode for as long as the colour was a constant.
+        rating_color = self._get_theme()[
+            ColorAccessibility.get_contrast_rating_key(result.ratio)]
         self.contrast_ratio_label.setText(f"Contrast Ratio: {result.ratio:.2f}:1  ({result.rating_text})")
         self.contrast_ratio_label.setStyleSheet(f"""
             font-size: 16px;
             font-weight: bold;
             padding: 10px;
-            color: rgb({rating_color[0]}, {rating_color[1]}, {rating_color[2]});
+            color: {rating_color};
         """)
         
         # Update WCAG levels
@@ -2004,13 +2008,20 @@ class SettingsPanel(QDialog):
     def update_theme(self) -> None:
         """Update/apply theme styling to the dialog. Can be called externally."""
         from PyQt6.QtGui import QPalette
-        
+
         # Get active theme dict (fallback to dark)
-        if self.parent_app and hasattr(self.parent_app, 'theme_manager'):
-            theme = self.parent_app.theme_manager.get_current_theme()
-        else:
-            from utils.config import DARK_THEME_COLORS
-            theme = DARK_THEME_COLORS
+        # RNV-RATING-SCALE 2026-09-12: this was an inline copy of _get_theme,
+        # byte for byte, forty lines further up the same class. Collapsed onto
+        # it because the contrast-rating label now asks the same question and a
+        # THIRD copy is how two parts of one dialog end up painting for
+        # different modes -- the failure this fleet already collapsed ten
+        # implementations of in the ink rule.
+        #
+        # The three OTHER `hasattr(self.parent_app, 'theme_manager')` sites in
+        # this file are deliberately left alone: they read `current_theme`, the
+        # mode NAME, to pick a gold or compare against a combo box. Same guard,
+        # different question.
+        theme = self._get_theme()
         
         # Override Qt system highlight palette to match brand selection colors
         palette = self.palette()
@@ -2032,6 +2043,22 @@ class SettingsPanel(QDialog):
         
         # Build the entire dialog stylesheet from theme keys
         self.setStyleSheet(self._build_dialog_stylesheet(theme))
+
+        # RNV-RATING-SCALE 2026-09-12: repaint the contrast-rating label.
+        # It reads a PER-MODE palette key now, and this method is the only
+        # thing that runs on a theme switch -- so without this the label kept
+        # the previous mode's colour until the user happened to move a spin
+        # box. While the colour was mode-blind a stale value was still the
+        # right value, which is why nothing needed this before and why the
+        # need arrives in the same change that makes it per-mode.
+        #
+        # GUARDED because _apply_theme() runs at line 146, BEFORE the tab
+        # widget is built at 158 and the accessibility tab at 168. On
+        # construction these widgets do not exist yet; the tab builds itself
+        # with a call to _update_contrast_check() at the end, so nothing is
+        # missed.
+        if hasattr(self, "contrast_ratio_label"):
+            self._update_contrast_check()
     
     @staticmethod
     def _build_dialog_stylesheet(theme: dict) -> str:

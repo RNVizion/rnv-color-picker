@@ -32,7 +32,11 @@ pytest-timeout>=2.4,<3.0
 # written statement of which revision of the brand this app mirrors.
 # A branch ref would let the register move without a commit here.
 # Bumping it is an edit, and an edit is a diff someone can read.
-rnv-brand @ git+https://github.com/RNVizion/rnv-brand@b4fa970babbcb4141d1ea354c77e4d8d78248e82
+# Bumped 2026-09-12 to rev 32, which registers BRAND_BLUE
+# #6f94bc and BRAND_DARK_BLUE #456c91 -- the Good tier of this
+# app's contrast-rating scale, and the first permanent colour in
+# the register that is not gold, black or white.
+rnv-brand @ git+https://github.com/RNVizion/rnv-brand@54286212992a0013bdc3d860357c4261452b014a
 
 # ── Test tooling (RNV-TEST-TOOLING, 2026-09-07) ────────────────────
 # The five RNV applications share one interpreter on a development

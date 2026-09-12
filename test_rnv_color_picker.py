@@ -989,9 +989,39 @@ class TestAccessibility(unittest.TestCase):
         self.assertGreater(new_ratio, old_ratio)
 
     # ── Rating helpers ──
-    def test_rating_color_excellent(self):
-        c = ColorAccessibility.get_contrast_rating_color(7.5)
-        self.assertEqual(len(c), 3)
+    def test_rating_color_is_the_theme_value_for_each_tier(self):
+        """RNV-RATING-SCALE, 2026-09-12. This replaces
+        test_rating_color_excellent, whose whole body was
+
+            self.assertEqual(len(c), 3)
+
+        -- true of every tuple the function could ever return, including the
+        four Material values it returned for thirty days while a guard in
+        tests/ asserted they were gone. It could not have failed.
+
+        What is asserted now: the colour is the ACTIVE THEME's value for the
+        tier, and the two modes disagree. The second half is the one that
+        matters -- the defect was one set of colours for three grounds.
+        """
+        from utils.config import DARK_THEME_COLORS, LIGHT_THEME_COLORS
+
+        def _rgb(value):
+            h = value.lstrip('#')
+            return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+
+        for ratio, key in ((7.5, 'rating_excellent'), (5.0, 'rating_good'),
+                           (3.5, 'rating_fair'), (1.5, 'rating_poor')):
+            self.assertEqual(
+                ColorAccessibility.get_contrast_rating_key(ratio), key)
+            self.assertEqual(
+                ColorAccessibility.get_contrast_rating_color(ratio),
+                _rgb(DARK_THEME_COLORS[key]))
+            self.assertEqual(
+                ColorAccessibility.get_contrast_rating_color(
+                    ratio, LIGHT_THEME_COLORS),
+                _rgb(LIGHT_THEME_COLORS[key]))
+            self.assertNotEqual(DARK_THEME_COLORS[key],
+                                LIGHT_THEME_COLORS[key])
 
     def test_format_contrast_ratio(self):
         s = ColorAccessibility.format_contrast_ratio(4.512)

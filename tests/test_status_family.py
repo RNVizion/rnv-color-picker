@@ -1,5 +1,15 @@
 """RNV-STATUS-GUARD -- the family cannot drift back, and cannot lose its names.
 
+RNV-GOLD-GUARD-FILE-NAMES-RETIRED-VALUES-BY-DESIGN
+
+That second marker was added 2026-09-12 and it is not decoration. This file's
+RETIRED table names five dead values in order to forbid them, and on the day
+test_one_status_family_only was widened to sweep the whole repository in both
+notations, this file was the single thing it found. The marker is how a sweep
+is told the difference between a value being USED and a value being NAMED --
+the same distinction _code_only() below draws inside a file, drawn one level
+up between files.
+
 A guard rather than a test: this pins the SHAPE of the change, so a later edit
 that reintroduces a Bootstrap value, writes a status colour as a literal
 again, or points a fill at a text job, fails here with a message saying which
@@ -34,6 +44,11 @@ REGISTERED = {
     "STATUS_ERROR": "#c75b64",
     "STATUS_SUCCESS_TEXT": "#ad85a3",
     "STATUS_SUCCESS_TEXT_LIGHT": "#825d79",
+    # RNV-RATING-SCALE (2026-09-12). The warning text pair, which the family
+    # had been missing since it was chosen: success and error each carried a
+    # dark text value and a light sibling, warning carried neither.
+    "STATUS_WARNING_TEXT": "#bc8752",
+    "STATUS_WARNING_TEXT_LIGHT": "#8e5e2b",
     "STATUS_ERROR_TEXT": "#dd6f77",
     "STATUS_ERROR_TEXT_LIGHT": "#ae4650",
 }
@@ -114,9 +129,17 @@ PALETTES = {
 
 
 @pytest.mark.parametrize("name,value", sorted(REGISTERED.items()))
-def test_the_five_values_are_the_registered_ones(name, value):
+def test_every_value_is_the_registered_one(name, value):
     """Pinned by value, not by relationship. A test asserting only that these
-    differ from each other would pass on five wrong colours."""
+    differ from each other would pass on wrong colours.
+
+    RENAMED 2026-09-12 from test_the_five_values_are_the_registered_ones. It
+    was parametrised over REGISTERED and had been running over SEVEN since
+    2026-09-03, so the name had been wrong for nine days -- a count written in
+    prose beside the thing it counts, which nothing compares. The register hit
+    the identical defect in the same week: its PERMANENT comment said "six"
+    while the dict held seven. The fix in both places is to stop writing the
+    number down."""
     assert getattr(C, name) == value
 
 

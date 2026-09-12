@@ -113,6 +113,48 @@ Carries white text at 4.5429 and black at 4.6226. Black stays the ruled
 pairing and the better number.
 """
 
+BRAND_BLUE: Final[str] = "#6f94bc"
+"""Brand blue -- dark-mode TEXT. Registered 2026-09-12 (rnv-brand rev 32).
+
+The register's second hue and the first value in it that is not gold, black
+or white. Mixed in `paint` mode from the web violet, a steel blue, brand gold
+and STATUS["success"]; see rnv-brand's BRAND_COLORS.md for the derivation.
+
+    on #000000 ............. 6.6380
+    on #0a0a0a ............. 6.2581
+    on #1a1a1a ............. 5.5014   <- the job
+    on #2a2a2a ............. 4.5370   <- the floor, and it is close
+    on #3a3a3a ............. 3.5954   FAILS. Do not carry text on panel-hover.
+
+Black on it reads 6.6380 and white 3.1635, so text on a blue FILL is black
+here. That is the same way round as the golds -- but the LIGHT blue inverts,
+which the golds do not. See BRAND_DARK_BLUE.
+"""
+
+BRAND_DARK_BLUE: Final[str] = "#456c91"
+"""Brand dark blue -- light-mode TEXT. Registered 2026-09-12.
+
+Darker BECAUSE the ground is lighter, exactly as BRAND_DARK_GOLD is. The pair
+is ONE colour at two lightnesses: same hue to within 0.9 degrees, L* 15.78
+apart, which is the step the STATUS text family already uses between its own
+pairs. rnv-brand asserts both at import.
+
+    on #ffffff ............. 5.5162
+    on #f5f5f5 ............. 5.0597   <- the job
+    on #eeeeee ............. 4.7544
+    on #e8e8e8 ............. 4.5020   <- clears by 0.0020; NOT a permission
+    on #e0e0e0 ............. 4.1787   FAILS.
+
+WHITE on it reads 5.5162 and black 3.8069. That is the OPPOSITE of every gold
+in this file, where black wins on both. A blue fill takes black text in dark
+mode and white text in light; do not carry the gold rule across.
+
+WHY A PAIR AT ALL, and it is arithmetic rather than taste: 4.5:1 on #1a1a1a
+needs relative luminance >= 0.221484 and on #f5f5f5 needs <= 0.164022. The
+intervals do not meet. The best any single colour manages on both at once is
+3.9954:1, so no one value could have served both grounds.
+"""
+
 BRAND_DARK_GOLD_DEEP: Final[str] = lighten(BRAND_DARK_GOLD, -14)  # -> #7e6529
 """Derived. The one light-mode derivative, serving two roles.
 
@@ -485,6 +527,27 @@ RNV-STATUS-LIGHT-FLOOR closed at rev 31: re-walked against #e8e8e8, where
 it now reads 4.52. See STATUS_ERROR_TEXT_LIGHT below for why that ground
 and not #e0e0e0."""
 
+STATUS_WARNING_TEXT: Final[str] = "#bc8752"
+"""Registered. Warning TEXT on a dark panel: 5.57 on #1a1a1a, 4.59 on #2a2a2a.
+
+ADDED 2026-09-12, AND THE REASON IS WRITTEN FOUR DOCSTRINGS ABOVE. Success and
+error each carried a dark text value and a light sibling; warning carried
+neither, so the family was two-thirds of a family. STATUS_SUCCESS_TEXT_LIGHT's
+own docstring says it is "carried so the light sibling exists before it is
+needed ... adding it later is how an asymmetry gets built in". The warning pair
+is the asymmetry that got built in anyway, in the same change that argued
+against it.
+
+STATUS_WARNING is a FILL and cannot do this job: it reads 4.07 on #1a1a1a,
+below the 4.5 text floor. That is the fill/text band split the family header
+above describes, and it is why there are separate values rather than one."""
+
+STATUS_WARNING_TEXT_LIGHT: Final[str] = "#8e5e2b"
+"""Registered. The same text on a light panel: 5.08 on #f5f5f5, 4.52 on
+#e8e8e8.
+
+Carried with its dark sibling rather than after it, for the reason above."""
+
 STATUS_ERROR: Final[str] = "#c75b64"
 """Registered. Fills, borders, and the ground that black is drawn on.
 
@@ -558,6 +621,36 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
     # retired #dc3545. Named now, so this palette and image mode
     # cannot drift apart. See the STATUS FAMILY block above.
     'status_error_text': STATUS_ERROR_TEXT,
+
+    # ── The contrast-rating scale, RNV-RATING-SCALE 2026-09-12 ──
+    # Four tiers, theme-aware for the same reason status_error_text is:
+    # no value clears both grounds, so the tier has to be a KEY and the
+    # colour has to come from the palette.
+    #
+    # WHAT THEY REPLACE. core/accessibility.py returned four hard-coded
+    # Material tuples -- (76,175,80), (139,195,74), (255,193,7),
+    # (244,67,54) -- painted as `color:` on the contrast-ratio label. They
+    # were mode-blind, one set for three grounds, and chosen against a dark
+    # one, so in LIGHT mode all four sat under the 4.5 text floor: 2.55,
+    # 1.93, 1.50 and 3.38. The panel that grades the user's colours against
+    # WCAG was painting its own verdict at 1.50:1.
+    #
+    # WHY test_one_status_family_only NEVER SAW THEM. It reads this file
+    # only, and searches for the retired values as HEX. They lived in
+    # another module as INT TUPLES. Two independent reasons the guard could
+    # not fire, and it has asserted "Material's values must be gone" since
+    # 2026-08-13 while four of them rendered. The guard now parses every
+    # source file and reads both notations.
+    #
+    # `good` IS THE ONLY NEW COLOUR. Excellent, fair and poor take the
+    # status text family this file already holds. Good could not: it needed
+    # to sit between success-text and warning-text without collapsing into
+    # either, and no registered value did. BRAND_BLUE was made for it and
+    # registered on the same day.
+    'rating_excellent':   STATUS_SUCCESS_TEXT,    # 5.52 on #1a1a1a
+    'rating_good':        BRAND_BLUE,             # 5.50
+    'rating_fair':        STATUS_WARNING_TEXT,    # 5.57
+    'rating_poor':        STATUS_ERROR_TEXT,      # 5.48
     'name': 'Dark',
     
     # ── Base surfaces ──
@@ -690,6 +783,15 @@ LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
     # STATUS_ERROR_LIGHT, and no longer computed -- the old formula
     # against the new base gives #b44753, a third answer.
     'status_error_text': STATUS_ERROR_TEXT_LIGHT,
+
+    # ── The contrast-rating scale, RNV-RATING-SCALE 2026-09-12 ──
+    # The light siblings. This is the mode the Material values failed in --
+    # all four under 4.5 on #f5f5f5, the amber at 1.50 -- and the mode that
+    # made the scale a palette key rather than a function's return value.
+    'rating_excellent':   STATUS_SUCCESS_TEXT_LIGHT,    # 5.08 on #f5f5f5
+    'rating_good':        BRAND_DARK_BLUE,              # 5.05
+    'rating_fair':        STATUS_WARNING_TEXT_LIGHT,    # 5.08
+    'rating_poor':        STATUS_ERROR_TEXT_LIGHT,      # 5.08
     'name': 'Light',
     
     # ── Base surfaces ──

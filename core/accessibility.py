@@ -312,25 +312,75 @@ class ColorAccessibility:
         
         return best_color
     
+    #: The four rating tiers, as PALETTE KEYS rather than colours.
+    #:
+    #: A constant names a colour and a key names a role -- ruled 2026-09-02.
+    #: "The colour of the Good tier" is a role, and it is a role whose answer
+    #: differs per mode, which is why it cannot live in this module at all.
+    #: This module owns WHICH TIER a ratio falls in; utils/config.py owns what
+    #: each tier looks like on the ground it is drawn on.
+    RATING_KEYS: tuple[str, ...] = ("rating_excellent", "rating_good",
+                                    "rating_fair", "rating_poor")
+
     @staticmethod
-    def get_contrast_rating_color(ratio: float) -> tuple[int, int, int]:
-        """
-        Get a color representing the contrast rating for UI display.
-        
+    def get_contrast_rating_key(ratio: float) -> str:
+        """Which rating tier a ratio falls in, as a palette key.
+
+        The thresholds are WCAG's and are unchanged: 7.0 AAA, 4.5 AA, 3.0 AA
+        for large text only, below that a failure. What changed on 2026-09-12
+        is that this returns the NAME of the tier instead of a colour.
+
         Args:
             ratio: Contrast ratio
-            
+
         Returns:
-            RGB color (green = good, yellow = fair, red = poor)
+            One of RATING_KEYS -- look it up in the active theme.
         """
         if ratio >= 7.0:
-            return (76, 175, 80)    # Green - AAA
+            return "rating_excellent"
         elif ratio >= 4.5:
-            return (139, 195, 74)   # Light Green - AA
+            return "rating_good"
         elif ratio >= 3.0:
-            return (255, 193, 7)    # Yellow/Amber - AA Large only
+            return "rating_fair"
         else:
-            return (244, 67, 54)    # Red - Fail
+            return "rating_poor"
+
+    @staticmethod
+    def get_contrast_rating_color(
+            ratio: float,
+            theme: dict | None = None) -> tuple[int, int, int]:
+        """
+        Get a color representing the contrast rating for UI display.
+
+        RNV-RATING-SCALE, 2026-09-12. This used to return one of four
+        hard-coded Material Design tuples -- (76,175,80), (139,195,74),
+        (255,193,7), (244,67,54) -- the same four whatever mode the app was
+        in. Against the light panel #f5f5f5 they read 2.55, 1.93, 1.50 and
+        3.38 against a 4.5 text floor, so the panel that grades a user's
+        colours against WCAG painted its own verdict below the floor in
+        every light-mode tier. The amber read 1.50:1.
+
+        `theme` is OPTIONAL so that the old one-argument call still works;
+        omitted, it answers for the dark palette, which is what the four
+        Material values were tuned against anyway. Callers that can see the
+        active theme should pass it, or better, use get_contrast_rating_key
+        and read the palette directly -- an RGB triple cannot carry the
+        alpha some palettes use.
+
+        Args:
+            ratio: Contrast ratio
+            theme: A theme dict from utils.config; defaults to dark
+
+        Returns:
+            RGB color for the tier, on the ground `theme` describes
+        """
+        palette = theme if theme is not None else config.DARK_THEME_COLORS
+        value = str(palette[ColorAccessibility.get_contrast_rating_key(ratio)])
+        digits = value.lstrip("#")
+        if len(digits) == 8:                 # #AARRGGBB, Qt's own spelling
+            digits = digits[2:]
+        return (int(digits[0:2], 16), int(digits[2:4], 16),
+                int(digits[4:6], 16))
     
     @staticmethod
     def format_contrast_ratio(ratio: float) -> str:

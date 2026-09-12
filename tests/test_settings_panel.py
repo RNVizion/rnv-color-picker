@@ -1450,6 +1450,47 @@ class TestAccessibilityTabWiring:
             spin = getattr(panel, name, None)
             assert isinstance(spin, QSpinBox), f"{name} missing or not QSpinBox"
 
+    def test_the_rating_label_follows_a_theme_switch(self, panel):
+        """RNV-RATING-SCALE. The rating colour is a per-mode palette key, so
+        update_theme has to repaint the label; before this round it painted
+        one colour for three grounds and could not go stale.
+
+        Asserted through the STYLESHEET rather than the return of a helper:
+        what was wrong was the pixels, and the stylesheet is the last thing
+        this code owns before Qt draws them.
+        """
+        panel._update_contrast_check()
+        dark = panel.contrast_ratio_label.styleSheet()
+        assert config.DARK_THEME_COLORS['rating_excellent'] in dark, dark
+
+        panel.parent_app.theme_manager.get_current_theme.return_value = (
+            config.LIGHT_THEME_COLORS)
+        panel.update_theme()
+        light = panel.contrast_ratio_label.styleSheet()
+        assert config.LIGHT_THEME_COLORS['rating_excellent'] in light, light
+        assert config.DARK_THEME_COLORS['rating_excellent'] not in light
+
+    def test_every_rating_tier_is_reachable_from_the_spin_boxes(self, panel):
+        """Each tier must be something the widget can actually show. A scale
+        whose middle tiers no input can produce is four colours and two
+        outcomes."""
+        from core.accessibility import ColorAccessibility
+        seen = set()
+        for grey in range(0, 256, 5):
+            for spin, v in zip((panel.access_fg_r, panel.access_fg_g,
+                                panel.access_fg_b, panel.access_bg_r,
+                                panel.access_bg_g, panel.access_bg_b),
+                               (grey, grey, grey, 255, 255, 255)):
+                spin.setValue(v)
+            panel._update_contrast_check()
+            style = panel.contrast_ratio_label.styleSheet()
+            for key in ColorAccessibility.RATING_KEYS:
+                if config.DARK_THEME_COLORS[key] in style:
+                    seen.add(key)
+        assert seen == set(ColorAccessibility.RATING_KEYS), (
+            f"tiers never reached from the widget: "
+            f"{sorted(set(ColorAccessibility.RATING_KEYS) - seen)}")
+
     def test_contrast_preview_labels_exist(self, panel):
         # fg preview, bg preview, and sample-text preview
         assert isinstance(panel.access_fg_preview, QLabel)

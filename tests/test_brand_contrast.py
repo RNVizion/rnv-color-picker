@@ -534,12 +534,122 @@ def test_tab_hover_ground_is_light_enough_for_gold_text() -> None:
 # STATUS
 # ══════════════════════════════════════════════════════════════════════════
 
+#: The retired platform values, in BOTH notations this repository has ever
+#: spelled a colour in. The hex form is what the palettes use; the int triple
+#: is what core/accessibility.py used, and is half the reason the guard below
+#: passed for thirty days over four live values.
+_RETIRED_PLATFORM: dict[str, str] = {
+    "#4caf50": "Material success",
+    "#8bc34a": "Material success, light",
+    "#ffc107": "Material and Bootstrap warning",
+    "#f44336": "Material error",
+}
+
+
+def _app_sources():
+    """Every .py this application ships, minus the files that NAME retired
+    values on purpose and minus any delivery script.
+
+    Scoped to the REPOSITORY rather than to utils/config.py. The old version
+    of the guard below read one file, and the values it was looking for were
+    in another.
+    """
+    for path in sorted(PROJECT_ROOT.rglob("*.py")):
+        if any(part.startswith(".") for part in path.parts):
+            continue
+        text = path.read_text(encoding="utf-8-sig", errors="replace")
+        if "RNV-GOLD-GUARD-FILE-NAMES-RETIRED" in text:
+            continue
+        if "RNV-DELIVERY-SCRIPT-DO-NOT-SWEEP" in text:
+            continue
+        yield path, text
+
+
+def _colour_triples(tree):
+    """Every (r, g, b) literal of ints in 0-255, as a hex string.
+
+    A two-element tuple is a size and anything with a float is a ratio; the
+    range test is what keeps setContentsMargins-shaped calls out. Yields the
+    node too, so the failure can name a line.
+    """
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Tuple) or len(node.elts) != 3:
+            continue
+        if not all(isinstance(e, ast.Constant) and isinstance(e.value, int)
+                   and not isinstance(e.value, bool) and 0 <= e.value <= 255
+                   for e in node.elts):
+            continue
+        yield node, "#%02x%02x%02x" % tuple(e.value for e in node.elts)
+
+
 def test_one_status_family_only() -> None:
     """Both Bootstrap and Material sets lived here at once. The ruling of
-    2026-08-13 chose Bootstrap; Material's values must be gone."""
-    src = _config_source()
-    stale = [v for v in ("#4caf50", "#f44336") if v in src.lower()]
-    assert not stale, f"retired Material status colours still present: {stale}"
+    2026-08-13 chose Bootstrap; Material's values must be gone.
+
+    THIS TEST PASSED FOR THIRTY DAYS WHILE FOUR OF THEM RENDERED, and the two
+    reasons are worth keeping written down because either alone was enough:
+
+      1. IT READ ONE FILE. `_config_source()` is utils/config.py. The
+         survivors were in core/accessibility.py.
+      2. IT SEARCHED FOR HEX. The survivors were int triples --
+         `return (76, 175, 80)` -- so a text search for "#4caf50" could not
+         have found them even in the right file.
+
+    They were `get_contrast_rating_color`'s four return values, painted as
+    `color:` on the contrast-ratio label in the accessibility panel. Retired
+    2026-09-12 by RNV-RATING-SCALE.
+
+    A guard scoped narrower than the thing it guards reports a clean sweep of
+    the corner it swept.
+    """
+    found = []
+    for path, text in _app_sources():
+        try:
+            tree = ast.parse(text)
+        except SyntaxError:
+            continue
+        rel = path.relative_to(PROJECT_ROOT)
+        for node in ast.walk(tree):
+            if (isinstance(node, ast.Constant) and isinstance(node.value, str)
+                    and node.value.lower() in _RETIRED_PLATFORM):
+                found.append(f"  {rel}:{node.lineno}: {node.value} "
+                             f"({_RETIRED_PLATFORM[node.value.lower()]})")
+        for node, hexv in _colour_triples(tree):
+            if hexv in _RETIRED_PLATFORM:
+                found.append(f"  {rel}:{node.lineno}: {hexv} as an int triple "
+                             f"({_RETIRED_PLATFORM[hexv]})")
+    assert not found, ("retired platform status colours are still live:\n"
+                       + "\n".join(sorted(found)))
+
+
+def test_the_rating_scale_is_a_palette_key_in_every_mode() -> None:
+    """RNV-RATING-SCALE. The four tiers must exist in all three palettes and
+    must clear the text floor on the ground each one is drawn on.
+
+    The Material values this replaced were one set for three grounds. In
+    light mode they read 2.55, 1.93, 1.50 and 3.38 -- the panel that grades
+    a user's colours against WCAG painting its own verdict below the floor.
+    """
+    from core.accessibility import ColorAccessibility
+    for name, palette in PALETTES.items():
+        ground = palette.get("panel_bg") or palette["window_bg"]
+        for key in ColorAccessibility.RATING_KEYS:
+            assert key in palette, f"{name} has no {key}"
+            ratio = contrast_ratio(palette[key], ground)
+            assert ratio >= TEXT_FLOOR, (
+                f"{name}[{key}] reads {ratio:.4f} on {ground}, below "
+                f"the {TEXT_FLOOR} floor")
+
+
+def test_the_rating_scale_is_not_one_set_for_three_grounds() -> None:
+    """The defect was mode-blindness, not the particular colours. If dark and
+    light ever agree on a tier again, the thing that broke has come back."""
+    for key in ("rating_excellent", "rating_good", "rating_fair",
+                "rating_poor"):
+        assert C.DARK_THEME_COLORS[key] != C.LIGHT_THEME_COLORS[key], (
+            f"{key} is the same value in dark and light; no colour clears "
+            f"4.5:1 on both #1a1a1a and #f5f5f5 -- the best possible is "
+            f"3.9954:1, so one of the two grounds is being failed")
 
 
 @pytest.mark.parametrize("bg,fg", [
@@ -573,6 +683,8 @@ RETIRED = {
     "#b7a480": "the hand-written dark pressed",
     "#d0d0d0": "the tab hover ground no gold cleared",
     "#4caf50": "Material success",
+    "#8bc34a": "Material success, light",
+    "#ffc107": "Material and Bootstrap warning",
     "#f44336": "Material error",
 }
 
@@ -891,6 +1003,13 @@ def test_every_gold_is_the_accent_or_derived_from_it() -> None:
     # clears the register's own 8.40 threshold. Named rather than
     # written as a hex so it moves with the constant.
     allowed.add(C.STATUS_WARNING.lower())
+    # RNV-RATING-SCALE (2026-09-12): the warning TEXT pair reads as gold for
+    # exactly the same reason and by the same construction -- they are the
+    # text siblings of the fill above and hold its hue, so the shape test
+    # below cannot tell them from a hand-written gold. Registered values, and
+    # named rather than written as hexes so they move with the constants.
+    allowed.add(C.STATUS_WARNING_TEXT.lower())
+    allowed.add(C.STATUS_WARNING_TEXT_LIGHT.lower())
     stray = []
     for name, palette in PALETTES.items():
         for key, value in palette.items():

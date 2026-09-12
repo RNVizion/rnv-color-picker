@@ -1,3 +1,9 @@
+# RNV-RATING-SCALE, 2026-09-12 -- the contrast-rating label takes the
+# STATUS text family plus BRAND_BLUE, per mode, instead of four
+# hard-coded Material tuples that read 2.55, 1.93, 1.50 and 3.38 against
+# a 4.5 floor in light mode. The guard that was meant to forbid them read
+# one file and searched for hex; they lived in another file as int
+# triples.
 # RNV-GOLD-HOVER, 2026-09-12 -- every hover on the main surface takes the
 # mode's gold: BRAND_GOLD in dark and image, BRAND_DARK_GOLD in light. The
 # extras were always allowed it; this extends the same treatment to the
