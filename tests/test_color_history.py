@@ -380,9 +380,59 @@ class TestAddColorMaxSizeInvariant:
     """The MAX_HISTORY_SIZE invariant is exactly the kind of bound a property
     test catches that example tests can't."""
 
-    @given(colors=st.lists(rgb, min_size=1, max_size=400, unique=True))
+    @given(colors=st.lists(rgb, min_size=334, max_size=400, unique=True))
     @settings(max_examples=20, suppress_health_check=[HealthCheck.function_scoped_fixture])
     def test_history_never_exceeds_max_size(self, manager, colors):
+        # RNV-DEADLINE 2026-09-12, AND min_size IS THE HALF THAT MATTERS.
+        #
+        # THIS TEST NEVER ONCE REACHED THE BOUND IT WAS WRITTEN FOR. With
+        # min_size=1, max_size=400 is a ceiling Hypothesis does not approach:
+        # it biases toward small examples, and twenty draws measured as
+        #
+        #     1 1 1 1 2 2 2 2 3 3 3 4 4 5 5 7 8 8 10 14
+        #
+        # -- largest fourteen, ZERO above 333. A trim cannot happen below 334
+        # colours, so no example could exercise the invariant. Proved by
+        # deleting the trim from add_color entirely: this test stayed GREEN
+        # while test_exactly_max_size_after_overfilling caught it. The class
+        # docstring says a property test catches this bound "that example
+        # tests can't"; it was the example test doing the work.
+        #
+        # min_size=334 makes every draw cross the bound -- 20/20, measured --
+        # for about 1.1 s of generation, which is what uniqueness filtering
+        # over 334-400 triples costs. Small lists are TestAddColor's job.
+        #
+        # AND IT FAILED INTERMITTENTLY -- roughly
+        # one run in eight -- and not on its assertion. It raised
+        # hypothesis DeadlineExceeded, because add_color() calls
+        # save_history() on EVERY call and save_history() rewrites the whole
+        # JSON file. 400 colours is 400 whole-file writes of a list growing
+        # to 333 entries:
+        #
+        #     50 colours    41 ms
+        #    100 colours    95 ms
+        #    200 colours   248 ms   <- already over the deadline
+        #    400 colours   743 ms
+        #
+        # Hypothesis's default deadline is 200 ms PER EXAMPLE and @settings
+        # above does not override it, so any draw above about 170 colours is
+        # over. It re-runs an over-deadline example before reporting, so
+        # whether it reports depends on machine load -- which is why it passed
+        # alone and under eight fixed seeds, and failed inside a combined
+        # `pytest tests/ test_rnv_color_picker.py` run. When it did fire,
+        # shrinking re-ran the writes and took six minutes before giving up.
+        #
+        # THE PROPERTY IS THE TRIM, AND THE TRIM IS IN MEMORY. Persistence is
+        # TestSaveHistory's job; this test needs add_color's list arithmetic
+        # and nothing else. Stubbing the save takes the same 400 colours from
+        # 721 ms to 1.0 ms and leaves the invariant exactly as strong.
+        #
+        # NOT deadline=None, which is the other obvious fix. That would stop
+        # the failure and keep the cost -- 20 examples of real disk churn, and
+        # a shrink that is still pathological the day this assertion breaks
+        # for a real reason. The deadline is a useful signal; what was wrong
+        # was the work, not the limit.
+        manager.save_history = lambda: True
         # Add an arbitrary number of distinct colors
         manager.history = []
         for c in colors:
@@ -390,7 +440,27 @@ class TestAddColorMaxSizeInvariant:
         # Even after adding 400 distinct colors, history <= MAX_HISTORY_SIZE
         assert len(manager.history) <= ColorHistoryManager.MAX_HISTORY_SIZE
 
+    def test_the_trim_still_happens_when_the_save_is_real(self, manager):
+        """Guard the stub above.
+
+        Replacing save_history with a no-op is only safe if the trim does not
+        depend on it. Asserted once, at full size, against the real save --
+        so if a future add_color ever moves the trim behind the write, the
+        stub stops hiding it. One example rather than twenty: this costs
+        about 700 ms and buys the licence for the fast path above.
+        """
+        for i in range(ColorHistoryManager.MAX_HISTORY_SIZE + 50):
+            manager.add_color(((i // 65536) % 256, (i // 256) % 256, i % 256))
+        assert len(manager.history) == ColorHistoryManager.MAX_HISTORY_SIZE
+        assert manager.history_file.exists(), (
+            "the real save never ran, so this guard is not guarding anything")
+
     def test_exactly_max_size_after_overfilling(self, manager):
+        # RNV-DEADLINE 2026-09-12: same stub, same reason. 383 adds is 383
+        # whole-file writes and about 690 ms for an assertion about list
+        # length. No Hypothesis deadline applies here, so this was never
+        # flaky -- it was just slow for nothing.
+        manager.save_history = lambda: True
         # Add MAX_HISTORY_SIZE + 50 distinct colors — history should be
         # trimmed exactly to MAX_HISTORY_SIZE
         N = ColorHistoryManager.MAX_HISTORY_SIZE + 50

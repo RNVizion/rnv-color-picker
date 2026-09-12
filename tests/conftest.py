@@ -1,3 +1,10 @@
+# RNV-DEADLINE-AND-PIN, 2026-09-12 -- the MAX_HISTORY_SIZE property test
+# stops doing 400 whole-file writes per example (it was blowing
+# hypothesis's 200 ms deadline about one run in eight) and starts drawing
+# lists big enough to reach the bound at all: min_size was 1, and twenty
+# draws never exceeded fourteen. And the register-pin test stops skipping
+# -- pip's direct_url.json names the installed commit, which is the
+# comparison it wanted and could not make.
 # RNV-RATING-SCALE, 2026-09-12 -- the contrast-rating label takes the
 # STATUS text family plus BRAND_BLUE, per mode, instead of four
 # hard-coded Material tuples that read 2.55, 1.93, 1.50 and 3.38 against
