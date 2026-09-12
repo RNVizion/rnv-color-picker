@@ -1,61 +1,75 @@
 #!/usr/bin/env python3
-"""RNV-RATING-SCALE — the accessibility panel stops failing its own standard.
+"""RNV-DEADLINE-AND-PIN — a flake, a vacuous property test, and a dead skip.
 
-    python up.py             # apply, then install the pin and run both suites
+    python up.py             # apply, then run both suites
     python up.py --check     # rehearse every edit in memory, write nothing
 
 For rnv-color-picker, derived against a fresh clone at the live head.
 
 RNV-DELIVERY-SCRIPT-DO-NOT-SWEEP. This script is a delivery tool, not
-application source, and it names the values it retires. That marker is what
-tells this fleet's scanners to skip it.
+application source. That marker is what tells this fleet's scanners to skip it.
 
-RUN THE rnv-brand SCRIPT FIRST. This one bumps the register pin to rev 32 and
-reads BRAND_BLUE from it. If rnv-brand is still at b4fa970 the install below
-succeeds and the palettes then hold a colour the register does not publish.
+TWO FILES, THREE FINDINGS.
 
-WHAT WAS WRONG. `core/accessibility.py::get_contrast_rating_color` returned
-four hard-coded Material Design tuples -- (76,175,80), (139,195,74),
-(255,193,7), (244,67,54) -- painted as `color:` on the contrast-ratio label in
-Settings > Accessibility. One set for three grounds, tuned against a dark one.
-Measured on the real widget, against the ground sampled from its own pixels:
+1. THE FLAKE WAS A DEADLINE, NOT AN ASSERTION.
+   `test_history_never_exceeds_max_size` failed about one run in eight with
+   hypothesis `DeadlineExceeded`. `add_color()` calls `save_history()` on
+   EVERY call, and that rewrites the whole JSON file, so one example of 400
+   colours is 400 whole-file writes of a list growing to 333 entries:
 
-    tier                      today            after
-    Excellent   #4caf50  light 2.55      #825d79  5.08
-    Good        #8bc34a  light 1.93      #456c91  5.06
-    Fair        #ffc107  light 1.50      #8e5e2b  5.09
-    Poor        #f44336  light 3.38      #ae4650  5.08
+       50 colours    41 ms
+      100 colours    95 ms
+      200 colours   248 ms   <- already over
+      400 colours   743 ms
 
-Dark and image already cleared the floor; light failed in all four tiers. The
-panel that grades a user's colours against WCAG was painting its own verdict
-at 1.50:1.
+   The default deadline is 200 ms per example and `@settings` never overrode
+   it. Hypothesis re-runs an over-deadline example before reporting, so
+   whether it reported depended on machine load -- it passed alone, passed
+   under eight fixed seeds, and failed inside a combined
+   `pytest tests/ test_rnv_color_picker.py`. When it did fire, shrinking
+   re-ran the writes and took six minutes before giving up.
 
-WHY NOTHING CAUGHT IT. tests/test_brand_contrast.py::test_one_status_family_only
-has asserted since 2026-08-13 that Material's values must be gone. It read
-utils/config.py only, and it searched for them as HEX. The survivors were in
-core/accessibility.py as INT TRIPLES -- two independent reasons the guard
-could not fire, either one of them sufficient. It is widened here to parse
-every source file this application ships and to read both notations.
+   FIX: stub the save in that test. The property is the TRIM, which is in
+   memory; persistence is TestSaveHistory's job. 400 colours goes from 721 ms
+   to 1.0 ms. Not `deadline=None`, which would have silenced the signal and
+   kept the cost.
 
-THE SHAPE. The tier becomes a palette KEY resolved per mode; the colour comes
-from the active theme. That is the move `status_error_text` made on
-2026-09-03, whose own test records why: "no registered red clears #f5f5f5 and
-#1a1a1a alike." It is the same arithmetic here, and it is general -- 4.5:1 on
-#1a1a1a needs relative luminance >= 0.221484 and on #f5f5f5 <= 0.164022, so no
-single colour serves both grounds. The best any value manages on both at once
-is 3.9954:1.
+2. AND THE TEST HAD NEVER REACHED ITS OWN BOUND.
+   Found while tampering to check the fix: with the trim DELETED from
+   add_color, this test stayed GREEN. `min_size=1` with `max_size=400` is a
+   ceiling hypothesis does not approach -- twenty measured draws came out
 
-ONE NEW COLOUR AND ONE MISSING PAIR. `good` takes BRAND_BLUE / BRAND_DARK_BLUE
-(rnv-brand rev 32) because no registered value sat between success-text and
-warning-text without collapsing into one of them. And STATUS_WARNING_TEXT and
-STATUS_WARNING_TEXT_LIGHT are added: success and error each carried a dark
-text value and a light sibling, warning carried neither.
+       1 1 1 1 2 2 2 2 3 3 3 4 4 5 5 7 8 8 10 14
 
-VERIFIED BY RENDERING, not by reading. The real SettingsPanel was built
-offscreen on the edited tree, its Accessibility tab made current, the spin
-boxes driven to land mid-tier, and the label's pixels sampled. Twelve frames,
-three modes by four tiers: every one paints the declared value and every one
-clears 4.5.
+   largest fourteen, none above 333. A trim cannot happen below 334 colours,
+   so no example could exercise the invariant. The class docstring says a
+   property test catches this bound "that example tests can't"; the example
+   test beside it was the one catching it.
+
+   FIX: `min_size=334`, so every draw crosses the bound -- 20/20, measured.
+   With the save stubbed this costs about 1.2 s, and the test now FAILS when
+   the trim is deleted, which it did not before.
+
+3. THE REGISTER-PIN TEST HAD SKIPPED SINCE THE DAY IT WAS WRITTEN.
+   "engine.brand declares no __version__", in all five applications, inside a
+   file whose own docstring says "a skipped test and a passing test look
+   identical in a summary line. That is the whole failure mode this guards."
+
+   It was looking in the wrong place. pip records the exact commit: PEP 610
+   writes `direct_url.json` into the installed distribution's metadata with
+   the `commit_id` it resolved. That is the other half of the comparison and
+   it was there all along. Adding `__version__` to engine/brand.py would have
+   been wrong twice over -- a second place the revision can disagree with
+   pyproject.toml, and it still would not name a commit.
+
+   The skips that remain are distinguishable: each says what it could not
+   determine rather than that something is missing.
+
+WHAT IS DELIBERATELY NOT HERE. `add_color`'s one-write-per-colour reaches
+`add_colors_batch`, so a palette import does a whole-file rewrite per colour
+-- about 0.5 s of disk churn at the 333 bound, 2.35 s for a thousand. Changing
+it means changing WHEN history becomes durable, on a path that today cannot
+lose data. That is a ruling, not a fix.
 """
 from __future__ import annotations
 
@@ -70,47 +84,41 @@ from pathlib import Path
 
 REPO = "rnv-color-picker"
 SENTINEL_FILE = "tests/conftest.py"
-SENTINEL = "RNV-RATING-SCALE"
-GUARD = "tests/test_brand_contrast.py"
-DESCRIPTION = "give the contrast-rating label a per-mode, registered scale"
+SENTINEL = "RNV-DEADLINE-AND-PIN"
+GUARD = "tests/test_color_history.py"
+DESCRIPTION = "fix the deadline flake, the vacuous bound, and the dead skip"
 
 SHADOWS = {"colors.py", "config.py", "conftest.py", "run_tests.py",
-           "accessibility.py"}
-
-PIN = ("rnv-brand @ git+https://github.com/RNVizion/rnv-brand"
-       "@54286212992a0013bdc3d860357c4261452b014a")
+           "accessibility.py", "color_history.py"}
 
 
 def post_write() -> None:
-    """Install what the new pin DECLARES, because declaring is not installing.
+    """Install the dev requirements so the pin test RUNS rather than skips.
 
-    This round edits tests/requirements-dev.txt and then runs suites that
-    import engine.brand and compare this app's mirror against it. Without
-    this step those suites run against whatever register is already on the
-    machine -- rev 31, which does not publish BRAND_BLUE -- and the failure
-    reads like the edits are wrong.
+    The whole point of finding 3 is that a skip and a pass look alike. If this
+    round applied and then the test skipped because the register is not
+    installed, nobody would learn whether the fix works.
+
+    NON-FATAL on purpose: a machine with no network should still get its
+    suites run. The test then skips with an accurate reason, which is the
+    designed behaviour, and this prints why.
     """
     for extra in ([], ["--break-system-packages"]):
-        code, out = run("installing the register at the new pin",
-                        [sys.executable, "-m", "pip", "install", "-q",
-                         "--disable-pip-version-check", *extra, PIN])
+        code, _out = run("installing the dev requirements",
+                         [sys.executable, "-m", "pip", "install", "-q",
+                          "--disable-pip-version-check", *extra,
+                          "-r", "tests/requirements-dev.txt"])
         if code == 0:
-            print("  the register is at rev 32")
+            print("  dev requirements installed; the pin test will compare "
+                  "rather than skip")
             return
-    print(out[-1500:])
-    raise SystemExit(
-        "\nCOULD NOT INSTALL THE REGISTER. Nothing was verified and nothing "
-        "was reverted -- the edits are on disk and `git diff` shows them.\n\n"
-        "The suites below import engine.brand and compare this app's mirror "
-        "against it, so running them now would test against the OLD register "
-        "and fail in a way that looks like the edits are wrong.\n\n"
-        "Install it by hand, then re-check:\n\n"
-        "    pip install -r tests/requirements-dev.txt\n"
-        "    python up.py --verify\n")
+    print("  COULD NOT INSTALL the dev requirements. Not fatal -- the suites "
+          "still run below, and test_the_installed_register_is_the_pinned_one "
+          "will SKIP with the reason it could not determine the commit. That "
+          "skip is correct; it is not this round failing.")
 
 
 def _timeout_flag() -> list:
-    """--timeout only when the plugin can actually be imported."""
     return ["--timeout=120"] if find_spec("pytest_timeout") else []
 
 
@@ -121,13 +129,7 @@ SUITES = [("\"pytest tests/\"",
            [sys.executable, "-m", "pytest", "test_rnv_color_picker.py", "-q",
             "-p", "no:cacheprovider"] + _timeout_flag())]
 
-EDITS = [('tests/conftest.py', "# RNV-GOLD-HOVER, 2026-09-12 -- every hover on the main surface takes the\n# mode's gold: BRAND_GOLD in dark and image, BRAND_DARK_GOLD in light. The\n", "# RNV-RATING-SCALE, 2026-09-12 -- the contrast-rating label takes the\n# STATUS text family plus BRAND_BLUE, per mode, instead of four\n# hard-coded Material tuples that read 2.55, 1.93, 1.50 and 3.38 against\n# a 4.5 floor in light mode. The guard that was meant to forbid them read\n# one file and searched for hex; they lived in another file as int\n# triples.\n# RNV-GOLD-HOVER, 2026-09-12 -- every hover on the main surface takes the\n# mode's gold: BRAND_GOLD in dark and image, BRAND_DARK_GOLD in light. The\n", 1), ('utils/config.py', 'Carries white text at 4.5429 and black at 4.6226. Black stays the ruled\npairing and the better number.\n"""\n\nBRAND_DARK_GOLD_DEEP', 'Carries white text at 4.5429 and black at 4.6226. Black stays the ruled\npairing and the better number.\n"""\n\nBRAND_BLUE: Final[str] = "#6f94bc"\n"""Brand blue -- dark-mode TEXT. Registered 2026-09-12 (rnv-brand rev 32).\n\nThe register\'s second hue and the first value in it that is not gold, black\nor white. Mixed in `paint` mode from the web violet, a steel blue, brand gold\nand STATUS["success"]; see rnv-brand\'s BRAND_COLORS.md for the derivation.\n\n    on #000000 ............. 6.6380\n    on #0a0a0a ............. 6.2581\n    on #1a1a1a ............. 5.5014   <- the job\n    on #2a2a2a ............. 4.5370   <- the floor, and it is close\n    on #3a3a3a ............. 3.5954   FAILS. Do not carry text on panel-hover.\n\nBlack on it reads 6.6380 and white 3.1635, so text on a blue FILL is black\nhere. That is the same way round as the golds -- but the LIGHT blue inverts,\nwhich the golds do not. See BRAND_DARK_BLUE.\n"""\n\nBRAND_DARK_BLUE: Final[str] = "#456c91"\n"""Brand dark blue -- light-mode TEXT. Registered 2026-09-12.\n\nDarker BECAUSE the ground is lighter, exactly as BRAND_DARK_GOLD is. The pair\nis ONE colour at two lightnesses: same hue to within 0.9 degrees, L* 15.78\napart, which is the step the STATUS text family already uses between its own\npairs. rnv-brand asserts both at import.\n\n    on #ffffff ............. 5.5162\n    on #f5f5f5 ............. 5.0597   <- the job\n    on #eeeeee ............. 4.7544\n    on #e8e8e8 ............. 4.5020   <- clears by 0.0020; NOT a permission\n    on #e0e0e0 ............. 4.1787   FAILS.\n\nWHITE on it reads 5.5162 and black 3.8069. That is the OPPOSITE of every gold\nin this file, where black wins on both. A blue fill takes black text in dark\nmode and white text in light; do not carry the gold rule across.\n\nWHY A PAIR AT ALL, and it is arithmetic rather than taste: 4.5:1 on #1a1a1a\nneeds relative luminance >= 0.221484 and on #f5f5f5 needs <= 0.164022. The\nintervals do not meet. The best any single colour manages on both at once is\n3.9954:1, so no one value could have served both grounds.\n"""\n\nBRAND_DARK_GOLD_DEEP', 1), ('utils/config.py', 'RNV-STATUS-LIGHT-FLOOR closed at rev 31: re-walked against #e8e8e8, where\nit now reads 4.52. See STATUS_ERROR_TEXT_LIGHT below for why that ground\nand not #e0e0e0."""\n\nSTATUS_ERROR: Final[str] = "#c75b64"', 'RNV-STATUS-LIGHT-FLOOR closed at rev 31: re-walked against #e8e8e8, where\nit now reads 4.52. See STATUS_ERROR_TEXT_LIGHT below for why that ground\nand not #e0e0e0."""\n\nSTATUS_WARNING_TEXT: Final[str] = "#bc8752"\n"""Registered. Warning TEXT on a dark panel: 5.57 on #1a1a1a, 4.59 on #2a2a2a.\n\nADDED 2026-09-12, AND THE REASON IS WRITTEN FOUR DOCSTRINGS ABOVE. Success and\nerror each carried a dark text value and a light sibling; warning carried\nneither, so the family was two-thirds of a family. STATUS_SUCCESS_TEXT_LIGHT\'s\nown docstring says it is "carried so the light sibling exists before it is\nneeded ... adding it later is how an asymmetry gets built in". The warning pair\nis the asymmetry that got built in anyway, in the same change that argued\nagainst it.\n\nSTATUS_WARNING is a FILL and cannot do this job: it reads 4.07 on #1a1a1a,\nbelow the 4.5 text floor. That is the fill/text band split the family header\nabove describes, and it is why there are separate values rather than one."""\n\nSTATUS_WARNING_TEXT_LIGHT: Final[str] = "#8e5e2b"\n"""Registered. The same text on a light panel: 5.08 on #f5f5f5, 4.52 on\n#e8e8e8.\n\nCarried with its dark sibling rather than after it, for the reason above."""\n\nSTATUS_ERROR: Final[str] = "#c75b64"', 1), ('utils/config.py', "    'status_error_text': STATUS_ERROR_TEXT,\n    'name': 'Dark',", '    \'status_error_text\': STATUS_ERROR_TEXT,\n\n    # ── The contrast-rating scale, RNV-RATING-SCALE 2026-09-12 ──\n    # Four tiers, theme-aware for the same reason status_error_text is:\n    # no value clears both grounds, so the tier has to be a KEY and the\n    # colour has to come from the palette.\n    #\n    # WHAT THEY REPLACE. core/accessibility.py returned four hard-coded\n    # Material tuples -- (76,175,80), (139,195,74), (255,193,7),\n    # (244,67,54) -- painted as `color:` on the contrast-ratio label. They\n    # were mode-blind, one set for three grounds, and chosen against a dark\n    # one, so in LIGHT mode all four sat under the 4.5 text floor: 2.55,\n    # 1.93, 1.50 and 3.38. The panel that grades the user\'s colours against\n    # WCAG was painting its own verdict at 1.50:1.\n    #\n    # WHY test_one_status_family_only NEVER SAW THEM. It reads this file\n    # only, and searches for the retired values as HEX. They lived in\n    # another module as INT TUPLES. Two independent reasons the guard could\n    # not fire, and it has asserted "Material\'s values must be gone" since\n    # 2026-08-13 while four of them rendered. The guard now parses every\n    # source file and reads both notations.\n    #\n    # `good` IS THE ONLY NEW COLOUR. Excellent, fair and poor take the\n    # status text family this file already holds. Good could not: it needed\n    # to sit between success-text and warning-text without collapsing into\n    # either, and no registered value did. BRAND_BLUE was made for it and\n    # registered on the same day.\n    \'rating_excellent\':   STATUS_SUCCESS_TEXT,    # 5.52 on #1a1a1a\n    \'rating_good\':        BRAND_BLUE,             # 5.50\n    \'rating_fair\':        STATUS_WARNING_TEXT,    # 5.57\n    \'rating_poor\':        STATUS_ERROR_TEXT,      # 5.48\n    \'name\': \'Dark\',', 1), ('utils/config.py', "    'status_error_text': STATUS_ERROR_TEXT_LIGHT,\n    'name': 'Light',", "    'status_error_text': STATUS_ERROR_TEXT_LIGHT,\n\n    # ── The contrast-rating scale, RNV-RATING-SCALE 2026-09-12 ──\n    # The light siblings. This is the mode the Material values failed in --\n    # all four under 4.5 on #f5f5f5, the amber at 1.50 -- and the mode that\n    # made the scale a palette key rather than a function's return value.\n    'rating_excellent':   STATUS_SUCCESS_TEXT_LIGHT,    # 5.08 on #f5f5f5\n    'rating_good':        BRAND_DARK_BLUE,              # 5.05\n    'rating_fair':        STATUS_WARNING_TEXT_LIGHT,    # 5.08\n    'rating_poor':        STATUS_ERROR_TEXT_LIGHT,      # 5.08\n    'name': 'Light',", 1), ('core/accessibility.py', '    @staticmethod\n    def get_contrast_rating_color(ratio: float) -> tuple[int, int, int]:\n        """\n        Get a color representing the contrast rating for UI display.\n        \n        Args:\n            ratio: Contrast ratio\n            \n        Returns:\n            RGB color (green = good, yellow = fair, red = poor)\n        """\n        if ratio >= 7.0:\n            return (76, 175, 80)    # Green - AAA\n        elif ratio >= 4.5:\n            return (139, 195, 74)   # Light Green - AA\n        elif ratio >= 3.0:\n            return (255, 193, 7)    # Yellow/Amber - AA Large only\n        else:\n            return (244, 67, 54)    # Red - Fail\n', '    #: The four rating tiers, as PALETTE KEYS rather than colours.\n    #:\n    #: A constant names a colour and a key names a role -- ruled 2026-09-02.\n    #: "The colour of the Good tier" is a role, and it is a role whose answer\n    #: differs per mode, which is why it cannot live in this module at all.\n    #: This module owns WHICH TIER a ratio falls in; utils/config.py owns what\n    #: each tier looks like on the ground it is drawn on.\n    RATING_KEYS: tuple[str, ...] = ("rating_excellent", "rating_good",\n                                    "rating_fair", "rating_poor")\n\n    @staticmethod\n    def get_contrast_rating_key(ratio: float) -> str:\n        """Which rating tier a ratio falls in, as a palette key.\n\n        The thresholds are WCAG\'s and are unchanged: 7.0 AAA, 4.5 AA, 3.0 AA\n        for large text only, below that a failure. What changed on 2026-09-12\n        is that this returns the NAME of the tier instead of a colour.\n\n        Args:\n            ratio: Contrast ratio\n\n        Returns:\n            One of RATING_KEYS -- look it up in the active theme.\n        """\n        if ratio >= 7.0:\n            return "rating_excellent"\n        elif ratio >= 4.5:\n            return "rating_good"\n        elif ratio >= 3.0:\n            return "rating_fair"\n        else:\n            return "rating_poor"\n\n    @staticmethod\n    def get_contrast_rating_color(\n            ratio: float,\n            theme: dict | None = None) -> tuple[int, int, int]:\n        """\n        Get a color representing the contrast rating for UI display.\n\n        RNV-RATING-SCALE, 2026-09-12. This used to return one of four\n        hard-coded Material Design tuples -- (76,175,80), (139,195,74),\n        (255,193,7), (244,67,54) -- the same four whatever mode the app was\n        in. Against the light panel #f5f5f5 they read 2.55, 1.93, 1.50 and\n        3.38 against a 4.5 text floor, so the panel that grades a user\'s\n        colours against WCAG painted its own verdict below the floor in\n        every light-mode tier. The amber read 1.50:1.\n\n        `theme` is OPTIONAL so that the old one-argument call still works;\n        omitted, it answers for the dark palette, which is what the four\n        Material values were tuned against anyway. Callers that can see the\n        active theme should pass it, or better, use get_contrast_rating_key\n        and read the palette directly -- an RGB triple cannot carry the\n        alpha some palettes use.\n\n        Args:\n            ratio: Contrast ratio\n            theme: A theme dict from utils.config; defaults to dark\n\n        Returns:\n            RGB color for the tier, on the ground `theme` describes\n        """\n        palette = theme if theme is not None else config.DARK_THEME_COLORS\n        value = str(palette[ColorAccessibility.get_contrast_rating_key(ratio)])\n        digits = value.lstrip("#")\n        if len(digits) == 8:                 # #AARRGGBB, Qt\'s own spelling\n            digits = digits[2:]\n        return (int(digits[0:2], 16), int(digits[2:4], 16),\n                int(digits[4:6], 16))\n', 1), ('ui/settings_panel.py', '    def update_theme(self) -> None:\n        """Update/apply theme styling to the dialog. Can be called externally."""\n        from PyQt6.QtGui import QPalette\n        \n        # Get active theme dict (fallback to dark)\n        if self.parent_app and hasattr(self.parent_app, \'theme_manager\'):\n            theme = self.parent_app.theme_manager.get_current_theme()\n        else:\n            from utils.config import DARK_THEME_COLORS\n            theme = DARK_THEME_COLORS\n        ', '    def update_theme(self) -> None:\n        """Update/apply theme styling to the dialog. Can be called externally."""\n        from PyQt6.QtGui import QPalette\n\n        # Get active theme dict (fallback to dark)\n        # RNV-RATING-SCALE 2026-09-12: this was an inline copy of _get_theme,\n        # byte for byte, forty lines further up the same class. Collapsed onto\n        # it because the contrast-rating label now asks the same question and a\n        # THIRD copy is how two parts of one dialog end up painting for\n        # different modes -- the failure this fleet already collapsed ten\n        # implementations of in the ink rule.\n        #\n        # The three OTHER `hasattr(self.parent_app, \'theme_manager\')` sites in\n        # this file are deliberately left alone: they read `current_theme`, the\n        # mode NAME, to pick a gold or compare against a combo box. Same guard,\n        # different question.\n        theme = self._get_theme()\n        ', 1), ('ui/settings_panel.py', '        # Update ratio display\n        rating_color = ColorAccessibility.get_contrast_rating_color(result.ratio)\n        self.contrast_ratio_label.setText(f"Contrast Ratio: {result.ratio:.2f}:1  ({result.rating_text})")\n        self.contrast_ratio_label.setStyleSheet(f"""\n            font-size: 16px;\n            font-weight: bold;\n            padding: 10px;\n            color: rgb({rating_color[0]}, {rating_color[1]}, {rating_color[2]});\n        """)', '        # Update ratio display\n        # RNV-RATING-SCALE: the tier is logic and the colour is the palette\'s.\n        # Read from the ACTIVE theme, because this label failed the 4.5 text\n        # floor in light mode for as long as the colour was a constant.\n        rating_color = self._get_theme()[\n            ColorAccessibility.get_contrast_rating_key(result.ratio)]\n        self.contrast_ratio_label.setText(f"Contrast Ratio: {result.ratio:.2f}:1  ({result.rating_text})")\n        self.contrast_ratio_label.setStyleSheet(f"""\n            font-size: 16px;\n            font-weight: bold;\n            padding: 10px;\n            color: {rating_color};\n        """)', 1), ('tests/test_brand_contrast.py', 'def test_one_status_family_only() -> None:\n    """Both Bootstrap and Material sets lived here at once. The ruling of\n    2026-08-13 chose Bootstrap; Material\'s values must be gone."""\n    src = _config_source()\n    stale = [v for v in ("#4caf50", "#f44336") if v in src.lower()]\n    assert not stale, f"retired Material status colours still present: {stale}"\n', '#: The retired platform values, in BOTH notations this repository has ever\n#: spelled a colour in. The hex form is what the palettes use; the int triple\n#: is what core/accessibility.py used, and is half the reason the guard below\n#: passed for thirty days over four live values.\n_RETIRED_PLATFORM: dict[str, str] = {\n    "#4caf50": "Material success",\n    "#8bc34a": "Material success, light",\n    "#ffc107": "Material and Bootstrap warning",\n    "#f44336": "Material error",\n}\n\n\ndef _app_sources():\n    """Every .py this application ships, minus the files that NAME retired\n    values on purpose and minus any delivery script.\n\n    Scoped to the REPOSITORY rather than to utils/config.py. The old version\n    of the guard below read one file, and the values it was looking for were\n    in another.\n    """\n    for path in sorted(PROJECT_ROOT.rglob("*.py")):\n        if any(part.startswith(".") for part in path.parts):\n            continue\n        text = path.read_text(encoding="utf-8-sig", errors="replace")\n        if "RNV-GOLD-GUARD-FILE-NAMES-RETIRED" in text:\n            continue\n        if "RNV-DELIVERY-SCRIPT-DO-NOT-SWEEP" in text:\n            continue\n        yield path, text\n\n\ndef _colour_triples(tree):\n    """Every (r, g, b) literal of ints in 0-255, as a hex string.\n\n    A two-element tuple is a size and anything with a float is a ratio; the\n    range test is what keeps setContentsMargins-shaped calls out. Yields the\n    node too, so the failure can name a line.\n    """\n    for node in ast.walk(tree):\n        if not isinstance(node, ast.Tuple) or len(node.elts) != 3:\n            continue\n        if not all(isinstance(e, ast.Constant) and isinstance(e.value, int)\n                   and not isinstance(e.value, bool) and 0 <= e.value <= 255\n                   for e in node.elts):\n            continue\n        yield node, "#%02x%02x%02x" % tuple(e.value for e in node.elts)\n\n\ndef test_one_status_family_only() -> None:\n    """Both Bootstrap and Material sets lived here at once. The ruling of\n    2026-08-13 chose Bootstrap; Material\'s values must be gone.\n\n    THIS TEST PASSED FOR THIRTY DAYS WHILE FOUR OF THEM RENDERED, and the two\n    reasons are worth keeping written down because either alone was enough:\n\n      1. IT READ ONE FILE. `_config_source()` is utils/config.py. The\n         survivors were in core/accessibility.py.\n      2. IT SEARCHED FOR HEX. The survivors were int triples --\n         `return (76, 175, 80)` -- so a text search for "#4caf50" could not\n         have found them even in the right file.\n\n    They were `get_contrast_rating_color`\'s four return values, painted as\n    `color:` on the contrast-ratio label in the accessibility panel. Retired\n    2026-09-12 by RNV-RATING-SCALE.\n\n    A guard scoped narrower than the thing it guards reports a clean sweep of\n    the corner it swept.\n    """\n    found = []\n    for path, text in _app_sources():\n        try:\n            tree = ast.parse(text)\n        except SyntaxError:\n            continue\n        rel = path.relative_to(PROJECT_ROOT)\n        for node in ast.walk(tree):\n            if (isinstance(node, ast.Constant) and isinstance(node.value, str)\n                    and node.value.lower() in _RETIRED_PLATFORM):\n                found.append(f"  {rel}:{node.lineno}: {node.value} "\n                             f"({_RETIRED_PLATFORM[node.value.lower()]})")\n        for node, hexv in _colour_triples(tree):\n            if hexv in _RETIRED_PLATFORM:\n                found.append(f"  {rel}:{node.lineno}: {hexv} as an int triple "\n                             f"({_RETIRED_PLATFORM[hexv]})")\n    assert not found, ("retired platform status colours are still live:\\n"\n                       + "\\n".join(sorted(found)))\n\n\ndef test_the_rating_scale_is_a_palette_key_in_every_mode() -> None:\n    """RNV-RATING-SCALE. The four tiers must exist in all three palettes and\n    must clear the text floor on the ground each one is drawn on.\n\n    The Material values this replaced were one set for three grounds. In\n    light mode they read 2.55, 1.93, 1.50 and 3.38 -- the panel that grades\n    a user\'s colours against WCAG painting its own verdict below the floor.\n    """\n    from core.accessibility import ColorAccessibility\n    for name, palette in PALETTES.items():\n        ground = palette.get("panel_bg") or palette["window_bg"]\n        for key in ColorAccessibility.RATING_KEYS:\n            assert key in palette, f"{name} has no {key}"\n            ratio = contrast_ratio(palette[key], ground)\n            assert ratio >= TEXT_FLOOR, (\n                f"{name}[{key}] reads {ratio:.4f} on {ground}, below "\n                f"the {TEXT_FLOOR} floor")\n\n\ndef test_the_rating_scale_is_not_one_set_for_three_grounds() -> None:\n    """The defect was mode-blindness, not the particular colours. If dark and\n    light ever agree on a tier again, the thing that broke has come back."""\n    for key in ("rating_excellent", "rating_good", "rating_fair",\n                "rating_poor"):\n        assert C.DARK_THEME_COLORS[key] != C.LIGHT_THEME_COLORS[key], (\n            f"{key} is the same value in dark and light; no colour clears "\n            f"4.5:1 on both #1a1a1a and #f5f5f5 -- the best possible is "\n            f"3.9954:1, so one of the two grounds is being failed")\n', 1), ('tests/test_brand_contrast.py', '    "#4caf50": "Material success",\n    "#f44336": "Material error",\n}', '    "#4caf50": "Material success",\n    "#8bc34a": "Material success, light",\n    "#ffc107": "Material and Bootstrap warning",\n    "#f44336": "Material error",\n}', 1), ('test_rnv_color_picker.py', '    def test_rating_color_excellent(self):\n        c = ColorAccessibility.get_contrast_rating_color(7.5)\n        self.assertEqual(len(c), 3)', '    def test_rating_color_is_the_theme_value_for_each_tier(self):\n        """RNV-RATING-SCALE, 2026-09-12. This replaces\n        test_rating_color_excellent, whose whole body was\n\n            self.assertEqual(len(c), 3)\n\n        -- true of every tuple the function could ever return, including the\n        four Material values it returned for thirty days while a guard in\n        tests/ asserted they were gone. It could not have failed.\n\n        What is asserted now: the colour is the ACTIVE THEME\'s value for the\n        tier, and the two modes disagree. The second half is the one that\n        matters -- the defect was one set of colours for three grounds.\n        """\n        from utils.config import DARK_THEME_COLORS, LIGHT_THEME_COLORS\n\n        def _rgb(value):\n            h = value.lstrip(\'#\')\n            return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))\n\n        for ratio, key in ((7.5, \'rating_excellent\'), (5.0, \'rating_good\'),\n                           (3.5, \'rating_fair\'), (1.5, \'rating_poor\')):\n            self.assertEqual(\n                ColorAccessibility.get_contrast_rating_key(ratio), key)\n            self.assertEqual(\n                ColorAccessibility.get_contrast_rating_color(ratio),\n                _rgb(DARK_THEME_COLORS[key]))\n            self.assertEqual(\n                ColorAccessibility.get_contrast_rating_color(\n                    ratio, LIGHT_THEME_COLORS),\n                _rgb(LIGHT_THEME_COLORS[key]))\n            self.assertNotEqual(DARK_THEME_COLORS[key],\n                                LIGHT_THEME_COLORS[key])', 1), ('tests/test_brand_contrast.py', '    allowed.add(C.STATUS_WARNING.lower())\n    stray = []', '    allowed.add(C.STATUS_WARNING.lower())\n    # RNV-RATING-SCALE (2026-09-12): the warning TEXT pair reads as gold for\n    # exactly the same reason and by the same construction -- they are the\n    # text siblings of the fill above and hold its hue, so the shape test\n    # below cannot tell them from a hand-written gold. Registered values, and\n    # named rather than written as hexes so they move with the constants.\n    allowed.add(C.STATUS_WARNING_TEXT.lower())\n    allowed.add(C.STATUS_WARNING_TEXT_LIGHT.lower())\n    stray = []', 1), ('tests/test_status_family.py', '"""RNV-STATUS-GUARD -- the family cannot drift back, and cannot lose its names.\n\nA guard rather than a test: this pins the SHAPE of the change, so a later edit\nthat reintroduces a Bootstrap value, writes a status colour as a literal\nagain, or points a fill at a text job, fails here with a message saying which\nof those happened and why it matters.\n"""', '"""RNV-STATUS-GUARD -- the family cannot drift back, and cannot lose its names.\n\nRNV-GOLD-GUARD-FILE-NAMES-RETIRED-VALUES-BY-DESIGN\n\nThat second marker was added 2026-09-12 and it is not decoration. This file\'s\nRETIRED table names five dead values in order to forbid them, and on the day\ntest_one_status_family_only was widened to sweep the whole repository in both\nnotations, this file was the single thing it found. The marker is how a sweep\nis told the difference between a value being USED and a value being NAMED --\nthe same distinction _code_only() below draws inside a file, drawn one level\nup between files.\n\nA guard rather than a test: this pins the SHAPE of the change, so a later edit\nthat reintroduces a Bootstrap value, writes a status colour as a literal\nagain, or points a fill at a text job, fails here with a message saying which\nof those happened and why it matters.\n"""', 1), ('tests/test_status_family.py', '    "STATUS_SUCCESS_TEXT_LIGHT": "#825d79",\n    "STATUS_ERROR_TEXT": "#dd6f77",\n    "STATUS_ERROR_TEXT_LIGHT": "#ae4650",\n}', '    "STATUS_SUCCESS_TEXT_LIGHT": "#825d79",\n    # RNV-RATING-SCALE (2026-09-12). The warning text pair, which the family\n    # had been missing since it was chosen: success and error each carried a\n    # dark text value and a light sibling, warning carried neither.\n    "STATUS_WARNING_TEXT": "#bc8752",\n    "STATUS_WARNING_TEXT_LIGHT": "#8e5e2b",\n    "STATUS_ERROR_TEXT": "#dd6f77",\n    "STATUS_ERROR_TEXT_LIGHT": "#ae4650",\n}', 1), ('tests/test_status_family.py', 'def test_the_five_values_are_the_registered_ones(name, value):\n    """Pinned by value, not by relationship. A test asserting only that these\n    differ from each other would pass on five wrong colours."""', 'def test_every_value_is_the_registered_one(name, value):\n    """Pinned by value, not by relationship. A test asserting only that these\n    differ from each other would pass on wrong colours.\n\n    RENAMED 2026-09-12 from test_the_five_values_are_the_registered_ones. It\n    was parametrised over REGISTERED and had been running over SEVEN since\n    2026-09-03, so the name had been wrong for nine days -- a count written in\n    prose beside the thing it counts, which nothing compares. The register hit\n    the identical defect in the same week: its PERMANENT comment said "six"\n    while the dict held seven. The fix in both places is to stop writing the\n    number down."""', 1), ('ui/settings_panel.py', '        # Build the entire dialog stylesheet from theme keys\n        self.setStyleSheet(self._build_dialog_stylesheet(theme))', '        # Build the entire dialog stylesheet from theme keys\n        self.setStyleSheet(self._build_dialog_stylesheet(theme))\n\n        # RNV-RATING-SCALE 2026-09-12: repaint the contrast-rating label.\n        # It reads a PER-MODE palette key now, and this method is the only\n        # thing that runs on a theme switch -- so without this the label kept\n        # the previous mode\'s colour until the user happened to move a spin\n        # box. While the colour was mode-blind a stale value was still the\n        # right value, which is why nothing needed this before and why the\n        # need arrives in the same change that makes it per-mode.\n        #\n        # GUARDED because _apply_theme() runs at line 146, BEFORE the tab\n        # widget is built at 158 and the accessibility tab at 168. On\n        # construction these widgets do not exist yet; the tab builds itself\n        # with a call to _update_contrast_check() at the end, so nothing is\n        # missed.\n        if hasattr(self, "contrast_ratio_label"):\n            self._update_contrast_check()', 1), ('tests/test_settings_panel.py', '    def test_contrast_preview_labels_exist(self, panel):', '    def test_the_rating_label_follows_a_theme_switch(self, panel):\n        """RNV-RATING-SCALE. The rating colour is a per-mode palette key, so\n        update_theme has to repaint the label; before this round it painted\n        one colour for three grounds and could not go stale.\n\n        Asserted through the STYLESHEET rather than the return of a helper:\n        what was wrong was the pixels, and the stylesheet is the last thing\n        this code owns before Qt draws them.\n        """\n        panel._update_contrast_check()\n        dark = panel.contrast_ratio_label.styleSheet()\n        assert config.DARK_THEME_COLORS[\'rating_excellent\'] in dark, dark\n\n        panel.parent_app.theme_manager.get_current_theme.return_value = (\n            config.LIGHT_THEME_COLORS)\n        panel.update_theme()\n        light = panel.contrast_ratio_label.styleSheet()\n        assert config.LIGHT_THEME_COLORS[\'rating_excellent\'] in light, light\n        assert config.DARK_THEME_COLORS[\'rating_excellent\'] not in light\n\n    def test_every_rating_tier_is_reachable_from_the_spin_boxes(self, panel):\n        """Each tier must be something the widget can actually show. A scale\n        whose middle tiers no input can produce is four colours and two\n        outcomes."""\n        from core.accessibility import ColorAccessibility\n        seen = set()\n        for grey in range(0, 256, 5):\n            for spin, v in zip((panel.access_fg_r, panel.access_fg_g,\n                                panel.access_fg_b, panel.access_bg_r,\n                                panel.access_bg_g, panel.access_bg_b),\n                               (grey, grey, grey, 255, 255, 255)):\n                spin.setValue(v)\n            panel._update_contrast_check()\n            style = panel.contrast_ratio_label.styleSheet()\n            for key in ColorAccessibility.RATING_KEYS:\n                if config.DARK_THEME_COLORS[key] in style:\n                    seen.add(key)\n        assert seen == set(ColorAccessibility.RATING_KEYS), (\n            f"tiers never reached from the widget: "\n            f"{sorted(set(ColorAccessibility.RATING_KEYS) - seen)}")\n\n    def test_contrast_preview_labels_exist(self, panel):', 1), ('tests/requirements-dev.txt', 'rnv-brand @ git+https://github.com/RNVizion/rnv-brand@b4fa970babbcb4141d1ea354c77e4d8d78248e82', "# Bumped 2026-09-12 to rev 32, which registers BRAND_BLUE\n# #6f94bc and BRAND_DARK_BLUE #456c91 -- the Good tier of this\n# app's contrast-rating scale, and the first permanent colour in\n# the register that is not gold, black or white.\nrnv-brand @ git+https://github.com/RNVizion/rnv-brand@54286212992a0013bdc3d860357c4261452b014a", 1)]
-
-#: Values whose last consumer this round removes.
-GONE = {"#4caf50": "Material success",
-        "#8bc34a": "Material success, light",
-        "#ffc107": "Material and Bootstrap warning",
-        "#f44336": "Material error"}
+EDITS = [('tests/conftest.py', '# RNV-RATING-SCALE, 2026-09-12 -- the contrast-rating label takes the\n# STATUS text family plus BRAND_BLUE, per mode, instead of four\n', "# RNV-DEADLINE-AND-PIN, 2026-09-12 -- the MAX_HISTORY_SIZE property test\n# stops doing 400 whole-file writes per example (it was blowing\n# hypothesis's 200 ms deadline about one run in eight) and starts drawing\n# lists big enough to reach the bound at all: min_size was 1, and twenty\n# draws never exceeded fourteen. And the register-pin test stops skipping\n# -- pip's direct_url.json names the installed commit, which is the\n# comparison it wanted and could not make.\n# RNV-RATING-SCALE, 2026-09-12 -- the contrast-rating label takes the\n# STATUS text family plus BRAND_BLUE, per mode, instead of four\n", 1), ('tests/test_color_history.py', '    @given(colors=st.lists(rgb, min_size=1, max_size=400, unique=True))\n    @settings(max_examples=20, suppress_health_check=[HealthCheck.function_scoped_fixture])\n    def test_history_never_exceeds_max_size(self, manager, colors):\n        # Add an arbitrary number of distinct colors\n        manager.history = []\n        for c in colors:\n            manager.add_color(c)\n        # Even after adding 400 distinct colors, history <= MAX_HISTORY_SIZE\n        assert len(manager.history) <= ColorHistoryManager.MAX_HISTORY_SIZE\n\n    def test_exactly_max_size_after_overfilling(self, manager):\n        # Add MAX_HISTORY_SIZE + 50 distinct colors — history should be\n        # trimmed exactly to MAX_HISTORY_SIZE\n        N = ColorHistoryManager.MAX_HISTORY_SIZE + 50\n        for i in range(N):\n            # Generate distinct colors via the int-to-RGB encoding\n            r = (i // (256 * 256)) % 256\n            g = (i // 256) % 256\n            b = i % 256\n            manager.add_color((r, g, b))\n        assert len(manager.history) == ColorHistoryManager.MAX_HISTORY_SIZE', '    @given(colors=st.lists(rgb, min_size=334, max_size=400, unique=True))\n    @settings(max_examples=20, suppress_health_check=[HealthCheck.function_scoped_fixture])\n    def test_history_never_exceeds_max_size(self, manager, colors):\n        # RNV-DEADLINE 2026-09-12, AND min_size IS THE HALF THAT MATTERS.\n        #\n        # THIS TEST NEVER ONCE REACHED THE BOUND IT WAS WRITTEN FOR. With\n        # min_size=1, max_size=400 is a ceiling Hypothesis does not approach:\n        # it biases toward small examples, and twenty draws measured as\n        #\n        #     1 1 1 1 2 2 2 2 3 3 3 4 4 5 5 7 8 8 10 14\n        #\n        # -- largest fourteen, ZERO above 333. A trim cannot happen below 334\n        # colours, so no example could exercise the invariant. Proved by\n        # deleting the trim from add_color entirely: this test stayed GREEN\n        # while test_exactly_max_size_after_overfilling caught it. The class\n        # docstring says a property test catches this bound "that example\n        # tests can\'t"; it was the example test doing the work.\n        #\n        # min_size=334 makes every draw cross the bound -- 20/20, measured --\n        # for about 1.1 s of generation, which is what uniqueness filtering\n        # over 334-400 triples costs. Small lists are TestAddColor\'s job.\n        #\n        # AND IT FAILED INTERMITTENTLY -- roughly\n        # one run in eight -- and not on its assertion. It raised\n        # hypothesis DeadlineExceeded, because add_color() calls\n        # save_history() on EVERY call and save_history() rewrites the whole\n        # JSON file. 400 colours is 400 whole-file writes of a list growing\n        # to 333 entries:\n        #\n        #     50 colours    41 ms\n        #    100 colours    95 ms\n        #    200 colours   248 ms   <- already over the deadline\n        #    400 colours   743 ms\n        #\n        # Hypothesis\'s default deadline is 200 ms PER EXAMPLE and @settings\n        # above does not override it, so any draw above about 170 colours is\n        # over. It re-runs an over-deadline example before reporting, so\n        # whether it reports depends on machine load -- which is why it passed\n        # alone and under eight fixed seeds, and failed inside a combined\n        # `pytest tests/ test_rnv_color_picker.py` run. When it did fire,\n        # shrinking re-ran the writes and took six minutes before giving up.\n        #\n        # THE PROPERTY IS THE TRIM, AND THE TRIM IS IN MEMORY. Persistence is\n        # TestSaveHistory\'s job; this test needs add_color\'s list arithmetic\n        # and nothing else. Stubbing the save takes the same 400 colours from\n        # 721 ms to 1.0 ms and leaves the invariant exactly as strong.\n        #\n        # NOT deadline=None, which is the other obvious fix. That would stop\n        # the failure and keep the cost -- 20 examples of real disk churn, and\n        # a shrink that is still pathological the day this assertion breaks\n        # for a real reason. The deadline is a useful signal; what was wrong\n        # was the work, not the limit.\n        manager.save_history = lambda: True\n        # Add an arbitrary number of distinct colors\n        manager.history = []\n        for c in colors:\n            manager.add_color(c)\n        # Even after adding 400 distinct colors, history <= MAX_HISTORY_SIZE\n        assert len(manager.history) <= ColorHistoryManager.MAX_HISTORY_SIZE\n\n    def test_the_trim_still_happens_when_the_save_is_real(self, manager):\n        """Guard the stub above.\n\n        Replacing save_history with a no-op is only safe if the trim does not\n        depend on it. Asserted once, at full size, against the real save --\n        so if a future add_color ever moves the trim behind the write, the\n        stub stops hiding it. One example rather than twenty: this costs\n        about 700 ms and buys the licence for the fast path above.\n        """\n        for i in range(ColorHistoryManager.MAX_HISTORY_SIZE + 50):\n            manager.add_color(((i // 65536) % 256, (i // 256) % 256, i % 256))\n        assert len(manager.history) == ColorHistoryManager.MAX_HISTORY_SIZE\n        assert manager.history_file.exists(), (\n            "the real save never ran, so this guard is not guarding anything")\n\n    def test_exactly_max_size_after_overfilling(self, manager):\n        # RNV-DEADLINE 2026-09-12: same stub, same reason. 383 adds is 383\n        # whole-file writes and about 690 ms for an assertion about list\n        # length. No Hypothesis deadline applies here, so this was never\n        # flaky -- it was just slow for nothing.\n        manager.save_history = lambda: True\n        # Add MAX_HISTORY_SIZE + 50 distinct colors — history should be\n        # trimmed exactly to MAX_HISTORY_SIZE\n        N = ColorHistoryManager.MAX_HISTORY_SIZE + 50\n        for i in range(N):\n            # Generate distinct colors via the int-to-RGB encoding\n            r = (i // (256 * 256)) % 256\n            g = (i // 256) % 256\n            b = i % 256\n            manager.add_color((r, g, b))\n        assert len(manager.history) == ColorHistoryManager.MAX_HISTORY_SIZE', 1), ('tests/test_register_pin.py', 'def test_the_installed_register_is_the_pinned_one():\n    """The pin says which revision; this asks whether that is what is\n    actually installed. They come apart the moment someone bumps the pin and\n    does not reinstall -- and then the suite is checking the app against a\n    register nobody declared."""\n    import engine.brand as brand\n    version = getattr(brand, \'__version__\', None)\n    if version is None:\n        pytest.skip(\'engine.brand declares no __version__; the pin is the \'\n                    \'only statement of which revision this is\')\n    assert version, \'engine.brand.__version__ is empty\'', 'def test_the_installed_register_is_the_pinned_one():\n    """The pin says which revision; this asks whether that is what is\n    actually installed. They come apart the moment someone bumps the pin and\n    does not reinstall -- and then the suite is checking the app against a\n    register nobody declared.\n\n    RNV-DEADLINE-AND-PIN, 2026-09-12: THIS TEST SKIPPED FROM THE DAY IT WAS\n    WRITTEN, in all five applications, for five days, with the reason\n    "engine.brand declares no __version__". That is the failure this file\'s\n    own docstring names four paragraphs up -- "a skipped test and a passing\n    test look identical in a summary line" -- committed by the file that\n    names it.\n\n    It was also looking in the wrong place. `__version__` would only have\n    answered "which release", and the question here is "which COMMIT", which\n    pip already records: PEP 610 writes direct_url.json into the installed\n    distribution\'s metadata with the exact `commit_id` it resolved. That is\n    the other half of the comparison, and it was there the whole time.\n\n    Adding __version__ to engine/brand.py would have been the wrong fix\n    twice over: it puts the revision in a second place that can disagree with\n    pyproject.toml, and it still would not name the commit.\n\n    THE SKIPS THAT REMAIN ARE DISTINGUISHABLE, which is the point. Each says\n    what it could not determine rather than that something is absent.\n    """\n    import json\n    import importlib.metadata as metadata\n\n    import engine.brand  # noqa: F401 -- the register must at least import\n\n    try:\n        raw = metadata.distribution(\'rnv-brand\').read_text(\'direct_url.json\')\n    except metadata.PackageNotFoundError:\n        pytest.skip(\'engine.brand imports but no rnv-brand DISTRIBUTION is \'\n                    \'installed -- it is being resolved from sys.path, so pip \'\n                    \'has no metadata to compare the pin against\')\n    if not raw:\n        pytest.skip(\'rnv-brand is installed without direct_url.json, so it \'\n                    \'did not come from a VCS URL and records no commit\')\n\n    installed = (json.loads(raw).get(\'vcs_info\') or {}).get(\'commit_id\')\n    if not installed:\n        pytest.skip(\'rnv-brand was installed from a path or an index rather \'\n                    \'than a git ref, so its metadata names no commit\')\n\n    match = PIN_RE.search(DEV_REQS.read_text(encoding=\'utf-8\'))\n    assert match, \'no rnv-brand pin found\'\n    pinned = match.group(\'ref\')\n    assert installed == pinned, (\n        f\'tests/requirements-dev.txt pins rnv-brand@{pinned[:12]} but the \'\n        f\'INSTALLED register is {installed[:12]}. Every mirror test in this \'\n        f\'repository is comparing this app against a revision nobody \'\n        f\'declared. Run:\\n\\n\'\n        f\'    pip install -r tests/requirements-dev.txt\\n\')', 1)]
 
 
 def edits(tree) -> None:
@@ -135,116 +137,106 @@ def edits(tree) -> None:
         tree.sub(rel, old, new, times)
 
 
-def _is_source(path: Path, text: str) -> bool:
-    """Application source and its guards -- not this script, and not a file
-    whose job is to NAME retired values."""
-    if MARKER in text:
-        return False
-    if "RNV-GOLD-GUARD-FILE-NAMES-RETIRED" in text:
-        return False
-    return not any(part.startswith(".") for part in path.parts)
-
-
 def checks(tree) -> None:
     """Run against the in-memory tree, before anything reaches disk."""
-    config = tree.read("utils/config.py")
-    acc = tree.read("core/accessibility.py")
-    panel = tree.read("ui/settings_panel.py")
-    req = tree.read("tests/requirements-dev.txt")
+    hist = tree.read("tests/test_color_history.py")
+    pin = tree.read("tests/test_register_pin.py")
 
-    for name, value in (("BRAND_BLUE", "#6f94bc"),
-                        ("BRAND_DARK_BLUE", "#456c91"),
-                        ("STATUS_WARNING_TEXT", "#bc8752"),
-                        ("STATUS_WARNING_TEXT_LIGHT", "#8e5e2b")):
-        if f'{name}: Final[str] = "{value}"' not in config:
-            raise SystemExit(f"utils/config.py: {name} = {value} did not land")
+    # THE BOUND. min_size is the half that makes the test mean anything, and
+    # it is checked as a NUMBER against the constant it has to exceed, not as
+    # a string -- so raising MAX_HISTORY_SIZE without raising this is visible.
+    src = tree.read("core/color_history.py").lstrip("﻿")
+    cap = next((n.value.value for n in ast.walk(ast.parse(src))
+                if isinstance(n, ast.Assign) and len(n.targets) == 1
+                and isinstance(n.targets[0], ast.Name)
+                and n.targets[0].id == "MAX_HISTORY_SIZE"
+                and isinstance(n.value, ast.Constant)), None)
+    if cap is None:
+        raise SystemExit("core/color_history.py: MAX_HISTORY_SIZE not found")
+    # READ THE DECORATOR, NOT THE FILE. The first version of this check was
+    # `"min_size=1, max_size=400" not in hist`, and it landed red on the
+    # comment this round adds to EXPLAIN that min_size used to be 1. Use and
+    # mention, seventeenth time in this programme and the third inside a
+    # checker written to catch the previous one. The use is a keyword argument
+    # in the @given decorator; a mention is prose. Only one of them is a node.
+    tree_hist = ast.parse(hist)
+    fn = next((n for n in ast.walk(tree_hist)
+               if isinstance(n, ast.FunctionDef)
+               and n.name == "test_history_never_exceeds_max_size"), None)
+    if fn is None:
+        raise SystemExit("test_history_never_exceeds_max_size is gone")
+    drawn = None
+    for deco in fn.decorator_list:
+        if not isinstance(deco, ast.Call):
+            continue
+        for kw in deco.keywords:
+            if kw.arg != "colors" or not isinstance(kw.value, ast.Call):
+                continue
+            for inner in kw.value.keywords:
+                if inner.arg == "min_size" and isinstance(inner.value,
+                                                          ast.Constant):
+                    drawn = inner.value.value
+    if drawn is None:
+        raise SystemExit("the @given decorator declares no min_size for colors")
+    if drawn <= cap:
+        raise SystemExit(
+            f"@given draws lists from min_size={drawn}, but no trim happens "
+            f"below {cap + 1} colours (MAX_HISTORY_SIZE={cap}) -- so an "
+            f"example can pass without ever reaching the bound. That is how "
+            f"this test stayed green with the trim deleted.")
 
-    # THE RETIRED VALUES ARE GONE AS VALUES, not merely as text. Read the
-    # tree: a hex inside a docstring is the provenance doing its job, and a
-    # sweep that cannot tell that forces the fix to be silence about what
-    # changed. Both notations, because the notation is how they survived.
-    live = []
-    for rel in ("core/accessibility.py", "utils/config.py",
-                "ui/settings_panel.py"):
-        # lstrip the BOM. utils/config.py carries one, Tree.read keeps it as a
-        # character because flush() writes bytes back unchanged, and ast.parse
-        # rejects the whole file over it. tests/test_brand_contrast.py's own
-        # _config_source() documents the same trap; this is the third time it
-        # has been paid for in this programme.
-        text = tree.read(rel).lstrip("﻿")
-        parsed = ast.parse(text)
-        docs = {n.value.lineno for n in ast.walk(parsed)
-                if isinstance(n, ast.Expr) and isinstance(n.value, ast.Constant)
-                and isinstance(n.value.value, str)}
-        for node in ast.walk(parsed):
-            if (isinstance(node, ast.Constant) and isinstance(node.value, str)
-                    and node.value.lower() in GONE
-                    and node.lineno not in docs):
-                live.append(f"{rel}:{node.lineno} {node.value}")
-            if (isinstance(node, ast.Tuple) and len(node.elts) == 3
-                    and all(isinstance(e, ast.Constant)
-                            and isinstance(e.value, int)
-                            and not isinstance(e.value, bool)
-                            and 0 <= e.value <= 255 for e in node.elts)):
-                hexv = "#%02x%02x%02x" % tuple(e.value for e in node.elts)
-                if hexv in GONE:
-                    live.append(f"{rel}:{node.lineno} {hexv} as an int triple")
+    # THE STUB, in both places that add hundreds of colours.
+    if hist.count("manager.save_history = lambda: True") != 2:
+        raise SystemExit(
+            f"expected the save stubbed in 2 tests, found "
+            f"{hist.count('manager.save_history = lambda: True')}")
+    if "def test_the_trim_still_happens_when_the_save_is_real" not in hist:
+        raise SystemExit(
+            "the stub has no guard. Replacing save_history with a no-op is "
+            "only safe while the trim does not depend on it, and nothing "
+            "would say so once it did.")
+
+    # THE SKIP. Gone as a CODE PATH -- the docstring of the replacement quotes
+    # the old reason, and must be allowed to. Same trap as min_size above, hit
+    # twice in one round: a string check cannot tell a skip from a sentence
+    # about a skip. So read the pytest.skip CALLS, which is what a skip is.
+    pin_fn = next((n for n in ast.walk(ast.parse(pin))
+                   if isinstance(n, ast.FunctionDef)
+                   and n.name == "test_the_installed_register_is_the_pinned_one"),
+                  None)
+    if pin_fn is None:
+        raise SystemExit("test_the_installed_register_is_the_pinned_one is gone")
+
+    skips, compares = [], []
+    for node in ast.walk(pin_fn):
+        if isinstance(node, ast.Call) and getattr(node.func, "attr", "") in (
+                "skip", "fail"):
+            for arg in node.args:
+                if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                    skips.append(arg.value)
+                elif isinstance(arg, ast.JoinedStr):
+                    skips.append(ast.unparse(arg))
+                elif isinstance(arg, ast.BinOp):
+                    skips.append(ast.unparse(arg))
+        if isinstance(node, ast.Compare):
+            compares.append(ast.unparse(node))
+
+    live = [s for s in skips if "__version__" in s]
     if live:
-        raise SystemExit("retired Material values are still live:\n  "
-                         + "\n  ".join(live))
-
-    # The four tiers, in all three palettes, resolved rather than grepped.
-    for dict_name in ("DARK_THEME_COLORS", "LIGHT_THEME_COLORS"):
-        block = config[config.index(f"{dict_name}: Final"):]
-        for key in ("rating_excellent", "rating_good", "rating_fair",
-                    "rating_poor"):
-            if f"'{key}':" not in block[:4000]:
-                raise SystemExit(f"{dict_name} has no {key}")
-
-    if "def get_contrast_rating_key" not in acc:
-        raise SystemExit("core/accessibility.py: the key function did not land")
-    if "RATING_KEYS" not in acc:
-        raise SystemExit("core/accessibility.py: RATING_KEYS did not land")
-    # ONE PLACE ASKS FOR THE THEME DICT, and it is the helper that was already
-    # there. The first version of this round added a second _current_theme,
-    # byte-identical to _get_theme forty lines above it, and this check --
-    # written to forbid exactly that -- is what found it, by firing for the
-    # wrong reason: it asserted ONE `hasattr(parent_app, 'theme_manager')` in
-    # the file and there are five. Three of the five read `current_theme`, the
-    # mode NAME, to pick a gold; that is a different question and stays.
-    # What must be unique is the DICT form.
-    if "def _get_theme" not in panel:
-        raise SystemExit("ui/settings_panel.py: _get_theme is gone")
-    dict_form = panel.count("self.parent_app.theme_manager.get_current_theme()")
-    if dict_form != 1:
         raise SystemExit(
-            f"ui/settings_panel.py asks for the theme DICT in {dict_form} "
-            f"places, not 1. _get_theme is the only copy there should be; a "
-            f"second is how two parts of one dialog paint for different modes.")
-    if panel.count("self._get_theme()") < 3:
+            "tests/test_register_pin.py still SKIPS over __version__: "
+            + "; ".join(live))
+    if not any("installed" in c and "pinned" in c for c in compares):
         raise SystemExit(
-            "ui/settings_panel.py: fewer than three callers reach _get_theme, "
-            "so update_theme or the rating label is not using it")
-
-    if "54286212992a0013bdc3d860357c4261452b014a" not in req:
-        raise SystemExit("tests/requirements-dev.txt: the pin did not move")
-    if "b4fa970babbcb4141d1ea354c77e4d8d78248e82" in req:
-        raise SystemExit("tests/requirements-dev.txt: the old pin survives")
-
-    # The guard file must still be able to SEE what it judges. A sweep that
-    # skips every file reports clean.
-    guard = tree.read("tests/test_brand_contrast.py")
-    if "_app_sources" not in guard or "_colour_triples" not in guard:
-        raise SystemExit("the widened guard did not land")
-    if "RNV-GOLD-GUARD-FILE-NAMES-RETIRED-VALUES-BY-DESIGN" not in tree.read(
-            "tests/test_status_family.py"):
+            "the test does not compare the installed commit against the pin, "
+            "which is the assertion the __version__ skip was standing in for")
+    if "direct_url.json" not in ast.unparse(pin_fn):
         raise SystemExit(
-            "tests/test_status_family.py names five retired values and has "
-            "not been marked as doing so on purpose -- the widened sweep will "
-            "land red on its RETIRED table")
+            "tests/test_register_pin.py does not read direct_url.json -- "
+            "pip's record of which commit is installed")
 
-    print("checks: 4 constants, 8 palette entries, 0 Material values live, "
-          "pin at rev 32")
+    print(f"checks: min_size={cap + 1} crosses MAX_HISTORY_SIZE={cap}, "
+          f"2 stubs + 1 guard, the __version__ skip is gone")
 
 
 # ------------------------------------------------------------------ plumbing
