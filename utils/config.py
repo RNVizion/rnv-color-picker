@@ -629,7 +629,7 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
     # onto the card rung. Image mode inherits this through the splat.
     'scrollbar_bg':            APP_CARD,
     'scrollbar_handle':        GREY_44,
-    'scrollbar_handle_hover':  GREY_66,
+    'scrollbar_handle_hover':  BRAND_GOLD,
     'scrollbar_border':        APP_BORDER,
     
     # ── List / Table ──
@@ -756,7 +756,7 @@ LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
     # ── Scrollbars ──
     'scrollbar_bg':            GREY_E0,
     'scrollbar_handle':        APP_TEXT_DIM,
-    'scrollbar_handle_hover':  GREY_88,
+    'scrollbar_handle_hover':  BRAND_DARK_GOLD,
     'scrollbar_border':        GREY_CC,
     
     # ── List / Table ──
@@ -830,7 +830,7 @@ IMAGE_MODE_COLORS: Final[dict[str, str | int]] = {
     # ── Scrollbar overrides — translucent grays (no brand gold) ──
     'scrollbar_bg':            'rgba(51, 51, 51, 100)',
     'scrollbar_handle':        'rgba(80, 80, 80, 150)',
-    'scrollbar_handle_hover':  'rgba(100, 100, 100, 200)',
+    'scrollbar_handle_hover':  BRAND_GOLD,
     'scrollbar_border':        'transparent',
 }
 
