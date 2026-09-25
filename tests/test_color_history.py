@@ -381,7 +381,16 @@ class TestAddColorMaxSizeInvariant:
     test catches that example tests can't."""
 
     @given(colors=st.lists(rgb, min_size=334, max_size=400, unique=True))
-    @settings(max_examples=20, suppress_health_check=[HealthCheck.function_scoped_fixture])
+    # RNV-TOO-SLOW 2026-09-25. min_size=334 is the half of RNV-DEADLINE
+    # that matters, and it costs generation time: 334 to 400 unique colours
+    # take about 0.6 s per ten examples on an idle machine. Hypothesis fails a
+    # test with FailedHealthCheck (too_slow) when its first ten examples take
+    # more than 1.0 s to generate, so a loaded machine failed this one before
+    # the body ran: three runs in three with the CPU shared four ways. That
+    # health check is suppressed HERE ONLY. The 200 ms deadline still applies
+    # to the body, which the stubbed save keeps near 1 ms.
+    @settings(max_examples=20, suppress_health_check=[
+        HealthCheck.function_scoped_fixture, HealthCheck.too_slow])
     def test_history_never_exceeds_max_size(self, manager, colors):
         # RNV-DEADLINE 2026-09-12, AND min_size IS THE HALF THAT MATTERS.
         #
