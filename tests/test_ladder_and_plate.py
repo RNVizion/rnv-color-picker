@@ -226,15 +226,16 @@ def test_the_canvas_is_not_the_web_ground():
 # ---------------------------------------------------------------- the overlays
 
 def test_every_overlay_is_its_base_at_the_declared_alpha():
-    """The overlays are written out because Qt wants eight digits and composing
-    them would make the palette resolve to an expression. This is the
-    relationship that composition would have given, asserted instead -- so a
-    register move fails here rather than diverging silently."""
+    """The overlays are COMPOSED now -- translucent(BASE, IMAGE_OVERLAY_ALPHA),
+    ruled 2026-09-24 -- and this still takes each one apart rather than
+    building it again, so a bug in the composing function fails here. Until
+    that date they were written out, and this was the only thing relating
+    them to their bases."""
     for name, (base_name, _key) in OVERLAYS.items():
         overlay = getattr(colors, name)
         base = getattr(colors, base_name)
         assert len(overlay) == 9, f'{name} is {overlay}, not #AARRGGBB'
-        assert overlay[1:3].upper() == colors.IMAGE_OVERLAY_ALPHA.upper(), (
+        assert int(overlay[1:3], 16) == colors.IMAGE_OVERLAY_ALPHA, (
             f'{name} composites at {overlay[1:3]}, not IMAGE_OVERLAY_ALPHA')
         assert overlay[3:].lower() == base[1:].lower(), (
             f'{name} is {overlay}, whose colour half is not {base_name} '

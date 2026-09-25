@@ -24,6 +24,7 @@ from utils.config import (
     TRUE_BLACK, WHITE,
     swatch_edge, contrast_ink_rgb,
     STATUS_ERROR_BG,
+    IMAGE_MENU_BG, IMAGE_BUTTON_FRAME_BG,
 )
 
 logger = Logger("Cache")
@@ -252,7 +253,7 @@ class StylesheetCache:
             if is_image_mode:
                 cls._cache[key] = f"""
                     QMenu {{
-                        background-color: rgba(0, 0, 0, 200);
+                        background-color: {IMAGE_MENU_BG};
                         color: {theme['text_primary']};
                         border: none;
                         padding: 2px;
@@ -391,11 +392,11 @@ class StylesheetCache:
         
         if key not in cls._cache:
             if is_image_mode:
-                cls._cache[key] = """
-                    QFrame {
-                        background-color: rgba(0, 0, 0, 100);
+                cls._cache[key] = f"""
+                    QFrame {{
+                        background-color: {IMAGE_BUTTON_FRAME_BG};
                         border-radius: 8px;
-                    }
+                    }}
                 """
             else:
                 cls._cache[key] = f"""

@@ -24,7 +24,7 @@ from PyQt6.QtGui import (
 from utils.logger import Logger
 from utils.cache import QColorCache, StylesheetCache
 from utils.signal_manager import SignalConnectionManager
-from utils.config import BRAND_GOLD
+from utils.config import BRAND_GOLD, IMAGE_MENU_BG
 
 logger = Logger("ImageViewer")
 CACHE_AVAILABLE = True
@@ -115,7 +115,7 @@ class ImageViewer(QGraphicsView):
                     if is_image_mode:
                         menu_style = f"""
                             QMenu {{
-                                background-color: rgba(0, 0, 0, 200);
+                                background-color: {IMAGE_MENU_BG};
                                 color: {theme['text_primary']};
                                 border: none;
                                 padding: 2px;

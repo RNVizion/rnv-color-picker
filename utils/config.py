@@ -95,6 +95,48 @@ def lighten(hex_color: str, step: int) -> str:
     )
 
 
+def _hex6(hex_color: str) -> str:
+    """The six hex digits of a colour, or ValueError."""
+    h = hex_color.lstrip('#')
+    if len(h) != 6 or any(c not in '0123456789abcdefABCDEF' for c in h):
+        raise ValueError(f"{hex_color!r} is not a six-digit hex colour")
+    return h
+
+
+def _alpha_byte(alpha: int) -> int:
+    """An alpha as the 0-255 byte, or an error. A fraction is refused, not
+    scaled: Qt TRUNCATES a fractional alpha (0.3 is 76, not 77), and a helper
+    that rounded would move a pixel inside a respelling."""
+    if isinstance(alpha, bool) or not isinstance(alpha, int):
+        raise TypeError(f"alpha {alpha!r} is not an int byte")
+    if not 0 <= alpha <= 255:
+        raise ValueError(f"alpha {alpha} is outside 0-255")
+    return alpha
+
+
+def translucent(hex_color: str, alpha: int) -> str:
+    """A colour at an alpha, as Qt's eight-digit #AARRGGBB -- ALPHA FIRST.
+
+    WHY A FUNCTION RATHER THAN A WRITTEN-OUT VALUE. A value computed from
+    another value must be computed in code; a written-down derivative is
+    orphaned the moment its source moves, and nothing says so. Here the
+    image-mode scrollbar kept #505050 for three weeks after RNV-COLLAPSE-505050
+    ruled it onto GREY_44, because the alpha form was written out as rgba()
+    and every sweep in the fleet compared six-digit hex.
+
+    WHY #AARRGGBB. It is the one spelling valid both in a stylesheet and in
+    QColor(). QColor() cannot parse rgba(): it returns an INVALID colour, and
+    Qt paints that as opaque black.
+
+    WHY UPPER CASE. The three overlays this replaced were written that way
+    (#ED000000, #ED0A0A0A, #ED1A1A1A), and upper case keeps them
+    byte-identical. rnv-icon-builder's helper of the same name writes lower;
+    Qt reads either, and whether eight-digit hex falls under the register's
+    lower-case rule is a question rnv-brand has not ruled on.
+    """
+    return '#%02X%s' % (_alpha_byte(alpha), _hex6(hex_color).upper())
+
+
 BRAND_GOLD: Final[str] = "#d2bc93"
 """Primary brand gold -- dark-mode accents, highlights, tooltips.
 
@@ -412,17 +454,31 @@ coincidence in both directions so that neither the sharing nor the separation
 can rot silently.
 """
 
-IMAGE_OVERLAY_ALPHA: Final[str] = "ED"
-"""The alpha byte image mode composites its chrome at -- 0xED, about 93%.
+# ==================== Composite alphas ====================
+# A composite is a named colour AT AN ALPHA: translucent(BASE, ALPHA). The
+# colour half is a name, so a register move reaches it; the alpha half is one
+# of these, so the same move carries every alpha form of the colour with it.
+# Each byte is the one the literal it replaced already held.
+#
+# THREE ARE 100, UNDER THREE NAMES, ON PURPOSE: the checkbox ground, the
+# scrollbar groove and the button frame. Identical numbers doing unrelated
+# jobs stay separate, or retuning one silently retunes the others.
 
-WHY THE OVERLAYS BELOW ARE WRITTEN OUT RATHER THAN COMPOSED. Qt wants the
-eight-digit #AARRGGBB form, and building it from the six-digit constant would
-make the palette entries resolve to an expression rather than a value, which
-this app's own before/after comparison cannot check. The relationship is
-enforced by tests/test_ladder_and_plate.py instead: it asserts that each
-overlay's last six digits ARE the register value it claims, and that its alpha
-byte is this one. If the register moves a base, those tests fail and these move
-with it.
+IMAGE_OVERLAY_ALPHA: Final[int] = 0xED
+"""237, about 93%. The alpha image mode composites its chrome at.
+
+WAS THE STRING "ED", AND THE OVERLAYS BELOW WERE WRITTEN OUT. The reason
+given was that composing them would make the palette entries resolve to an
+expression rather than a value, which this app's own before/after comparison
+could not check -- so tests/test_ladder_and_plate.py asserted the
+relationship instead, and a register move would have failed that test and
+waited for someone to edit three strings by hand.
+
+RULED 2026-09-24 by Chris: derived values are DERIVED, not asserted. The
+palettes still resolve to plain strings at import, so every comparison of
+values still compares values. What changed is that a register move now
+reaches the overlays on its own. The ladder test keeps its check, taking each
+overlay apart rather than trusting the call that built it.
 
 THEY WERE INVISIBLE BEFORE. The 2026-08-29 wiring pass claimed no registered
 value was left spelled as a literal in a dark palette. That was true of
@@ -431,13 +487,29 @@ matched #000000 and four of these sat in IMAGE_MODE_COLORS while the test
 reported clean. The sweep now normalises both lengths.
 """
 
-APP_WINDOW_OVERLAY: Final[str] = "#ED000000"
+IMAGE_CHECKBOX_ALPHA: Final[int] = 0x64
+"""100. The checkbox indicator's ground in image mode (TRUE_BLACK)."""
+
+SCROLLBAR_BG_ALPHA: Final[int] = 0x64
+"""100. The image-mode scrollbar groove (APP_BORDER)."""
+
+SCROLLBAR_HANDLE_ALPHA: Final[int] = 0x96
+"""150. The image-mode scrollbar handle (GREY_44) -- the byte all five
+applications use; its colour was #505050 until 2026-09-25."""
+
+IMAGE_MENU_ALPHA: Final[int] = 0xC8
+"""200. The context menu's ground in image mode (TRUE_BLACK)."""
+
+IMAGE_BUTTON_FRAME_ALPHA: Final[int] = 0x64
+"""100. The frame behind the main buttons in image mode (TRUE_BLACK)."""
+
+APP_WINDOW_OVERLAY: Final[str] = translucent(TRUE_BLACK, IMAGE_OVERLAY_ALPHA)
 """TRUE_BLACK, and APP["window"], at IMAGE_OVERLAY_ALPHA."""
 
-APP_CANVAS_OVERLAY: Final[str] = "#ED0A0A0A"
+APP_CANVAS_OVERLAY: Final[str] = translucent(APP_CANVAS, IMAGE_OVERLAY_ALPHA)
 """APP_CANVAS, and APP["canvas"], at IMAGE_OVERLAY_ALPHA."""
 
-APP_PANEL_OVERLAY: Final[str] = "#ED1A1A1A"
+APP_PANEL_OVERLAY: Final[str] = translucent(BRAND_BLACK, IMAGE_OVERLAY_ALPHA)
 """BRAND_BLACK, and APP["panel"], at IMAGE_OVERLAY_ALPHA."""
 APP_PROVENANCE: Final[dict[str, str]] = {
     "TRUE_BLACK": "register",
@@ -928,13 +1000,24 @@ IMAGE_MODE_COLORS: Final[dict[str, str | int]] = {
     'image_viewer_bg':    APP_CANVAS_OVERLAY,
     'scroll_area_bg':     APP_WINDOW_OVERLAY,
     'zoom_label_bg':      APP_PANEL_OVERLAY,
-    'checkbox_bg':        'rgba(0, 0, 0, 100)',
-    # ── Scrollbar overrides — translucent grays (no brand gold) ──
-    'scrollbar_bg':            'rgba(51, 51, 51, 100)',
-    'scrollbar_handle':        'rgba(80, 80, 80, 150)',
+    'checkbox_bg':        translucent(TRUE_BLACK, IMAGE_CHECKBOX_ALPHA),
+    # ── Scrollbar overrides — translucent greys, gold on hover ──
+    # Derived, and read by ThemeManager.SCROLLBAR_IMAGE below, which is
+    # what paints the main window's image scrollbar.
+    'scrollbar_bg':            translucent(APP_BORDER, SCROLLBAR_BG_ALPHA),
+    # RNV-COLLAPSE-505050, closed here 2026-09-25: this was
+    # rgba(80, 80, 80, 150), the value ruled onto GREY_44 on
+    # 2026-09-02 and left behind because nothing decoded rgba().
+    'scrollbar_handle':        translucent(GREY_44, SCROLLBAR_HANDLE_ALPHA),
     'scrollbar_handle_hover':  BRAND_GOLD,
     'scrollbar_border':        'transparent',
 }
+
+# Image-mode grounds painted by stylesheets that are not built from
+# IMAGE_MODE_COLORS -- the context menu, three copies of it, and the
+# frame behind the main buttons. Named here so they derive with the rest.
+IMAGE_MENU_BG: Final[str] = translucent(TRUE_BLACK, IMAGE_MENU_ALPHA)
+IMAGE_BUTTON_FRAME_BG: Final[str] = translucent(TRUE_BLACK, IMAGE_BUTTON_FRAME_ALPHA)
 
 
 # ============================================================================
@@ -1309,51 +1392,56 @@ class ThemeManager:
 ThemeManager.SCROLLBAR_DARK  = ThemeManager._build_scrollbar(DARK_THEME_COLORS)
 ThemeManager.SCROLLBAR_LIGHT = ThemeManager._build_scrollbar(LIGHT_THEME_COLORS)
 
-# Image mode scrollbar is special — uses custom transparent overlay look
-# (not built from theme dict because these rgba values are image-mode specific)
-ThemeManager.SCROLLBAR_IMAGE = """
-    QScrollBar:vertical {
-        background-color: rgba(51, 51, 51, 100);
+# Image mode scrollbar keeps its own GEOMETRY -- 15px, borderless, the
+# transparent overlay look -- and takes its COLOURS from IMAGE_MODE_COLORS.
+# RNV-DERIVE-ALPHA (2026-09-25): it used to spell its own rgba() values
+# here, "not built from theme dict", so two rulings that landed in the
+# palette never reached the main window: the handle stayed #505050
+# (RNV-COLLAPSE-505050) and the hover stayed grey (the 2026-09-12 gold
+# hover). Reading the palette is what carries both.
+ThemeManager.SCROLLBAR_IMAGE = f"""
+    QScrollBar:vertical {{
+        background-color: {IMAGE_MODE_COLORS['scrollbar_bg']};
         width: 15px;
         border: none;
-    }
-    QScrollBar::handle:vertical {
-        background-color: rgba(80, 80, 80, 150);
+    }}
+    QScrollBar::handle:vertical {{
+        background-color: {IMAGE_MODE_COLORS['scrollbar_handle']};
         min-height: 20px;
         border-radius: 5px;
-    }
-    QScrollBar::handle:vertical:hover {
-        background-color: rgba(100, 100, 100, 200);
-    }
-    QScrollBar::sub-page:vertical {
+    }}
+    QScrollBar::handle:vertical:hover {{
+        background-color: {IMAGE_MODE_COLORS['scrollbar_handle_hover']};
+    }}
+    QScrollBar::sub-page:vertical {{
         background-color: transparent;
-    }
-    QScrollBar::add-page:vertical {
+    }}
+    QScrollBar::add-page:vertical {{
         background-color: transparent;
-    }
-    QScrollBar:horizontal {
-        background-color: rgba(51, 51, 51, 100);
+    }}
+    QScrollBar:horizontal {{
+        background-color: {IMAGE_MODE_COLORS['scrollbar_bg']};
         height: 15px;
         border: none;
-    }
-    QScrollBar::handle:horizontal {
-        background-color: rgba(80, 80, 80, 150);
+    }}
+    QScrollBar::handle:horizontal {{
+        background-color: {IMAGE_MODE_COLORS['scrollbar_handle']};
         min-width: 20px;
         border-radius: 5px;
-    }
-    QScrollBar::handle:horizontal:hover {
-        background-color: rgba(100, 100, 100, 200);
-    }
-    QScrollBar::sub-page:horizontal {
+    }}
+    QScrollBar::handle:horizontal:hover {{
+        background-color: {IMAGE_MODE_COLORS['scrollbar_handle_hover']};
+    }}
+    QScrollBar::sub-page:horizontal {{
         background-color: transparent;
-    }
-    QScrollBar::add-page:horizontal {
+    }}
+    QScrollBar::add-page:horizontal {{
         background-color: transparent;
-    }
-    QScrollBar::add-line, QScrollBar::sub-line {
+    }}
+    QScrollBar::add-line, QScrollBar::sub-line {{
         border: none;
         background: none;
-    }
+    }}
 """
 
 
@@ -1386,12 +1474,15 @@ __all__: list[str] = [
     'contrast_ink_rgb',
     'prefers_dark_ink',
     'swatch_edge',
+    'translucent',
     'CONTRAST_DEMO_BLACK_BG',
     'CONTRAST_DEMO_WHITE_BG',
     'CONTRAST_DEMO_BLACK_FG',
     'CONTRAST_DEMO_WHITE_FG',
     'DEBUG_TEXT',
     'DEBUG_BG',
+    'IMAGE_MENU_BG',
+    'IMAGE_BUTTON_FRAME_BG',
     'STATUS_SUCCESS_BG',
     'STATUS_SUCCESS_FG',
     'STATUS_ERROR',
