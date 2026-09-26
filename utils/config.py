@@ -128,13 +128,13 @@ def translucent(hex_color: str, alpha: int) -> str:
     QColor(). QColor() cannot parse rgba(): it returns an INVALID colour, and
     Qt paints that as opaque black.
 
-    WHY UPPER CASE. The three overlays this replaced were written that way
-    (#ED000000, #ED0A0A0A, #ED1A1A1A), and upper case keeps them
-    byte-identical. rnv-icon-builder's helper of the same name writes lower;
-    Qt reads either, and whether eight-digit hex falls under the register's
-    lower-case rule is a question rnv-brand has not ruled on.
+    WHY LOWER CASE. The register writes hex in lower case (Notation, Brand
+    Book decision #19), and on 2026-09-25 that rule was extended to eight
+    digits (RNV-LOWER-EIGHT). This helper wrote upper case until then, to
+    keep the overlays it replaced byte-identical. Qt reads either case, so
+    no pixel moved.
     """
-    return '#%02X%s' % (_alpha_byte(alpha), _hex6(hex_color).upper())
+    return '#%02x%s' % (_alpha_byte(alpha), _hex6(hex_color).lower())
 
 
 BRAND_GOLD: Final[str] = "#d2bc93"
