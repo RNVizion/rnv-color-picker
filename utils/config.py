@@ -137,6 +137,21 @@ def translucent(hex_color: str, alpha: int) -> str:
     return '#%02x%s' % (_alpha_byte(alpha), _hex6(hex_color).lower())
 
 
+
+def translucent_tuple(hex_color: str, alpha: int) -> tuple[int, int, int, int]:
+    """The same derivation, as the (r, g, b, a) tuple QColor(*t) takes.
+
+    RNV-TUPLE-ROUND, 2026-09-26. The third spelling of one derived value:
+    translucent() writes #aarrggbb for stylesheets and QColor(); this is for
+    the callers that unpack a tuple into QColor or key a cache by one. A tuple
+    is the notation the fleet's string sweeps never read, so a constant written
+    as one could not follow its base. Same refusals as translucent(), same
+    bytes.
+    """
+    h = _hex6(hex_color)
+    return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16), _alpha_byte(alpha))
+
+
 BRAND_GOLD: Final[str] = "#d2bc93"
 """Primary brand gold -- dark-mode accents, highlights, tooltips.
 
@@ -502,6 +517,15 @@ IMAGE_MENU_ALPHA: Final[int] = 0xC8
 
 IMAGE_BUTTON_FRAME_ALPHA: Final[int] = 0x64
 """100. The frame behind the main buttons in image mode (TRUE_BLACK)."""
+
+OVERLAY_LIGHT_ALPHA: Final[int] = 0x32
+"""50. The screen picker's shading outside the magnifier (TRUE_BLACK)."""
+
+OVERLAY_MEDIUM_ALPHA: Final[int] = 0x4B
+"""75. The transparent scroll widget's ground (TRUE_BLACK)."""
+
+OVERLAY_HEAVY_ALPHA: Final[int] = 0xB4
+"""180. The screen picker's crosshair shadow (TRUE_BLACK)."""
 
 APP_WINDOW_OVERLAY: Final[str] = translucent(TRUE_BLACK, IMAGE_OVERLAY_ALPHA)
 """TRUE_BLACK, and APP["window"], at IMAGE_OVERLAY_ALPHA."""
@@ -1168,13 +1192,18 @@ STATUS_ACTIVE_COLOR: Final[str] = STATUS_SUCCESS_TEXT
 # consistent dim levels regardless of what's beneath them.
 # Stored as RGBA tuples so callers can do `QColor(*OVERLAY_BLACK_MEDIUM)`
 # or `QColorCache.get(OVERLAY_BLACK_MEDIUM)` without any string parsing.
-OVERLAY_BLACK_LIGHT:  Final[tuple[int, int, int, int]] = (0, 0, 0, 50)
+# DERIVED since 2026-09-26 (RNV-TUPLE-ROUND): TRUE_BLACK at a named alpha,
+# so the tuples follow their base like every other composite here.
+OVERLAY_BLACK_LIGHT:  Final[tuple[int, int, int, int]] = translucent_tuple(
+    TRUE_BLACK, OVERLAY_LIGHT_ALPHA)
 """Light dim overlay (alpha 50/255) — magnifier outer-area shading."""
 
-OVERLAY_BLACK_MEDIUM: Final[tuple[int, int, int, int]] = (0, 0, 0, 75)
+OVERLAY_BLACK_MEDIUM: Final[tuple[int, int, int, int]] = translucent_tuple(
+    TRUE_BLACK, OVERLAY_MEDIUM_ALPHA)
 """Medium dim overlay (alpha 75/255) — transparent scroll widget background."""
 
-OVERLAY_BLACK_HEAVY:  Final[tuple[int, int, int, int]] = (0, 0, 0, 180)
+OVERLAY_BLACK_HEAVY:  Final[tuple[int, int, int, int]] = translucent_tuple(
+    TRUE_BLACK, OVERLAY_HEAVY_ALPHA)
 """Heavy dim overlay (alpha 180/255) — magnifier crosshair shadow."""
 
 # ── SVG palette export (printable artifact) ──
@@ -1475,6 +1504,7 @@ __all__: list[str] = [
     'prefers_dark_ink',
     'swatch_edge',
     'translucent',
+    'translucent_tuple',
     'CONTRAST_DEMO_BLACK_BG',
     'CONTRAST_DEMO_WHITE_BG',
     'CONTRAST_DEMO_BLACK_FG',
