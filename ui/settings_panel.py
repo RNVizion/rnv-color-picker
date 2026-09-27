@@ -202,10 +202,11 @@ class SettingsPanel(QDialog):
         layout.addWidget(header)
         
         desc = QLabel("Click any color to load it into an empty slot")
+        desc.setObjectName("muted_text")
         if CACHE_AVAILABLE and StylesheetCache:
             desc.setStyleSheet(StylesheetCache.get_description_stylesheet())
         else:
-            desc.setStyleSheet("color: gray; font-size: 11px;")
+            desc.setStyleSheet("font-size: 11px;")
         layout.addWidget(desc)
         
         # History list
@@ -408,10 +409,11 @@ class SettingsPanel(QDialog):
         layout.addWidget(header)
         
         desc = QLabel("Save and restore your color palettes between sessions")
+        desc.setObjectName("muted_text")
         if CACHE_AVAILABLE and StylesheetCache:
             desc.setStyleSheet(StylesheetCache.get_description_stylesheet())
         else:
-            desc.setStyleSheet("color: gray; font-size: 11px;")
+            desc.setStyleSheet("font-size: 11px;")
         layout.addWidget(desc)
         
         # Session list
@@ -701,10 +703,11 @@ class SettingsPanel(QDialog):
         layout.addWidget(header)
         
         desc = QLabel("Generate harmonious color schemes from a base color")
+        desc.setObjectName("muted_text")
         if CACHE_AVAILABLE and StylesheetCache:
             desc.setStyleSheet(StylesheetCache.get_description_stylesheet())
         else:
-            desc.setStyleSheet("color: gray; font-size: 11px;")
+            desc.setStyleSheet("font-size: 11px;")
         layout.addWidget(desc)
         
         # Check if ColorHarmony is available
@@ -788,7 +791,8 @@ class SettingsPanel(QDialog):
         
         # Description
         self.harmony_desc_label = QLabel()
-        self.harmony_desc_label.setStyleSheet("color: gray; font-size: 11px; padding: 5px;")
+        self.harmony_desc_label.setObjectName("muted_text")
+        self.harmony_desc_label.setStyleSheet("font-size: 11px; padding: 5px;")
         self.harmony_desc_label.setWordWrap(True)
         type_layout.addWidget(self.harmony_desc_label)
         
@@ -929,7 +933,8 @@ class SettingsPanel(QDialog):
         
         # Label (only show "Base" for base color)
         label = QLabel("Base" if is_base else "")
-        label.setStyleSheet("font-size: 8px; color: gray;")  # Keep as inline - unique pattern
+        label.setObjectName("muted_text")
+        label.setStyleSheet("font-size: 8px;")  # Keep as inline - unique pattern
         label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(label)
         
@@ -992,10 +997,11 @@ class SettingsPanel(QDialog):
         layout.addWidget(header)
         
         desc = QLabel("Check WCAG contrast ratios and simulate color blindness")
+        desc.setObjectName("muted_text")
         if CACHE_AVAILABLE and StylesheetCache:
             desc.setStyleSheet(StylesheetCache.get_description_stylesheet())
         else:
-            desc.setStyleSheet("color: gray; font-size: 11px;")
+            desc.setStyleSheet("font-size: 11px;")
         layout.addWidget(desc)
         
         # Check if ColorAccessibility is available
@@ -1177,10 +1183,11 @@ class SettingsPanel(QDialog):
         blindness_layout = QVBoxLayout(blindness_group)
         
         blindness_desc = QLabel("See how your colors appear to people with color vision deficiencies")
+        blindness_desc.setObjectName("muted_text")
         if CACHE_AVAILABLE and StylesheetCache:
             blindness_desc.setStyleSheet(StylesheetCache.get_description_stylesheet())
         else:
-            blindness_desc.setStyleSheet("color: gray; font-size: 11px;")
+            blindness_desc.setStyleSheet("font-size: 11px;")
         blindness_layout.addWidget(blindness_desc)
         
         # Color to simulate
@@ -1507,10 +1514,11 @@ class SettingsPanel(QDialog):
         layout.addWidget(header)
         
         desc = QLabel("Quick reference for keyboard shortcuts")
+        desc.setObjectName("muted_text")
         if CACHE_AVAILABLE and StylesheetCache:
             desc.setStyleSheet(StylesheetCache.get_description_stylesheet())
         else:
-            desc.setStyleSheet("color: gray; font-size: 11px;")
+            desc.setStyleSheet("font-size: 11px;")
         layout.addWidget(desc)
         
         # Shortcuts list
@@ -2104,6 +2112,10 @@ class SettingsPanel(QDialog):
             }}
             QLabel {{
                 color: {theme['text_primary']};
+            }}
+            /* RNV-MUTED-DESCRIPTIONS, ruling 1: descriptions and captions */
+            QLabel#muted_text {{
+                color: {theme['text_muted']};
             }}
             QPushButton {{
                 background-color: {theme['dialog_btn_bg']};

@@ -539,11 +539,17 @@ class StylesheetCache:
     
     @classmethod
     def get_description_stylesheet(cls) -> str:
-        """Get cached description label stylesheet."""
+        """Get cached description label stylesheet: its size, not its colour.
+
+        RNV-MUTED-DESCRIPTIONS, 2026-09-27 (ruling 1). This carried
+        "color: gray" -- #808080 in every mode, under the text floor on the
+        dark panel and in light. The colour is the palette's text_muted now,
+        drawn by the settings panel's own stylesheet on every label named
+        "muted_text", which is rebuilt on each theme switch."""
         key = ('static', 'description')
         
         if key not in cls._cache:
-            cls._cache[key] = "color: gray; font-size: 11px;"
+            cls._cache[key] = "font-size: 11px;"
         
         return cls._cache[key]
     

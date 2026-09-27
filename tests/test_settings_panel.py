@@ -2187,3 +2187,95 @@ class TestApplySettings:
         monkeypatch.setattr(_DH, "show_info", lambda *a, **k: None)
         panel._apply_settings()
         assert captured == [True]
+
+
+# RNV-MUTED-DESCRIPTIONS
+# ═════════════════════════════════════════════════════════════════════════════
+# MUTED TEXT: the descriptions draw in the mode's text_muted (ruling 1)
+# ═════════════════════════════════════════════════════════════════════════════
+class TestMutedDescriptions:
+    """RNV-MUTED-DESCRIPTIONS, ruling 1 of 2026-09-27. The panel's tab
+    descriptions and the harmony captions were `color: gray` -- #808080 in
+    every mode, 4.40:1 on the dark panel and 3.62:1 in light, both under the
+    4.5 floor. They are named "muted_text" now, and the panel's own
+    stylesheet draws that name in text_muted: #888888 in dark and image,
+    #666666 in light, the muted text all five applications already paint.
+    That stylesheet is rebuilt by update_theme() on every switch, so the
+    descriptions follow the mode without anything tracking them."""
+
+    THEMES = {"dark": config.DARK_THEME_COLORS, "light": config.LIGHT_THEME_COLORS,
+              "image": config.IMAGE_MODE_COLORS}
+
+    @staticmethod
+    def _muted(panel):
+        return [w for w in panel.findChildren(QLabel) if w.objectName() == "muted_text"]
+
+    @staticmethod
+    def _ink(widget) -> str:
+        from PyQt6.QtGui import QPalette
+        widget.ensurePolished()
+        return widget.palette().color(QPalette.ColorRole.WindowText).name()
+
+    def test_every_description_is_named_and_carries_no_colour_of_its_own(self, panel):
+        labels = self._muted(panel)
+        texts = [w.text() for w in labels]
+        # the six tab descriptions, the colour-blindness one and the harmony one
+        for fragment in ("Click any color", "Save and restore", "Generate harmonious",
+                         "Check WCAG", "See how your colors", "Quick reference"):
+            assert any(fragment in t for t in texts), (fragment, texts)
+        assert panel.harmony_desc_label in labels
+        for w in labels:
+            assert "color" not in w.styleSheet(), (w.text(), w.styleSheet())
+
+    @pytest.mark.parametrize("mode", ["dark", "light", "image", "dark"])
+    def test_a_switch_redraws_them_in_the_modes_muted_text(self, panel, mode):
+        theme = self.THEMES[mode]
+        tm = panel._test_real_parent.theme_manager
+        tm.current_theme = mode
+        tm.get_current_theme.return_value = theme
+        tm.is_image_mode.return_value = (mode == "image")
+        panel.update_theme()
+        labels = self._muted(panel)
+        assert labels, "no description is named muted_text"
+        for w in labels:
+            assert self._ink(w) == theme["text_muted"].lower(), (mode, w.text()[:40])
+        # and nothing else in the panel took the muted colour by accident
+        primary = [w for w in panel.findChildren(QLabel)
+                   if w.objectName() != "muted_text" and not w.styleSheet()]
+        assert primary and all(self._ink(w) == theme["text_primary"].lower()
+                               for w in primary), mode
+
+    def test_the_two_values_are_the_ones_the_fleet_already_uses(self):
+        assert config.DARK_THEME_COLORS["text_muted"] == "#888888"
+        assert config.IMAGE_MODE_COLORS["text_muted"] == "#888888"
+        assert config.LIGHT_THEME_COLORS["text_muted"] == "#666666"
+
+    def test_no_label_is_written_in_a_css_grey(self):
+        """The literal the ruling retired, anywhere the application EVALUATES a
+        string. Docstrings and comments may still name it; code may not."""
+        import ast
+        import pathlib
+        import re
+        root = pathlib.Path(__file__).resolve().parents[1]
+        css_grey = re.compile(r"color\s*:\s*(gray|grey)\b", re.I)
+        found, files = [], 0
+        for path in sorted(root.rglob("*.py")):
+            rel = path.relative_to(root)
+            if any(p in {"tests", ".git", "__pycache__", "build", "dist", ".venv"}
+                   for p in rel.parts):
+                continue
+            if len(rel.parts) == 1 and rel.name.startswith(("test_", "up")):
+                continue
+            text = path.read_text(encoding="utf-8-sig", errors="replace")
+            if "RNV-DELIVERY-SCRIPT-DO-NOT-SWEEP" in text:
+                continue
+            files += 1
+            tree = ast.parse(text)
+            docs = {id(st.value) for node in ast.walk(tree)
+                    for st in (node.body if isinstance(getattr(node, "body", None), list) else [])
+                    if isinstance(st, ast.Expr) and isinstance(st.value, ast.Constant)}
+            found += [f"{rel}:{node.lineno}" for node in ast.walk(tree)
+                      if isinstance(node, ast.Constant) and isinstance(node.value, str)
+                      and id(node) not in docs and css_grey.search(node.value)]
+        assert files >= 20, f"only {files} files swept -- the walk has gone blind"
+        assert not found, "CSS grey still written as a colour:\n  " + "\n  ".join(found)
