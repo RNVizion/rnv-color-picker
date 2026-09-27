@@ -3,7 +3,7 @@ Settings Panel for RNV Color Picker Application
 Tabbed dialog with History, Sessions, Shortcuts, Settings, Harmony, and Accessibility tabs.
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QWidget,
     QPushButton, QLabel, QComboBox, QScrollArea, 
@@ -101,6 +101,12 @@ class SettingsPanel(QDialog):
         super().__init__(parent)
         
         self.parent_app = parent
+
+        # RNV-PANEL-SWITCH 2026-09-27: every stylesheet that reads the mode
+        # when it is built, as (widget, the function that builds it).
+        # update_theme() calls each function again on a switch. See
+        # _style_for_mode().
+        self._mode_styled: list[tuple[QWidget, Callable[[], str]]] = []
         
         # Initialize signal manager for proper cleanup
         if SIGNAL_MANAGER_AVAILABLE and SignalConnectionManager:
@@ -454,7 +460,8 @@ class SettingsPanel(QDialog):
         layout.addWidget(self._create_section_divider())
         
         auto_header = QLabel("Auto-Save Options")
-        auto_header.setStyleSheet(StylesheetCache.get_subheader_stylesheet(self._get_accent_text()))
+        self._style_for_mode(auto_header, lambda: StylesheetCache.get_subheader_stylesheet(
+            self._get_accent_text()))
         layout.addWidget(auto_header)
         
         self.session_autosave_check = QCheckBox("Auto-save session on exit")
@@ -713,7 +720,7 @@ class SettingsPanel(QDialog):
         # Check if ColorHarmony is available
         if not ColorHarmony:
             no_module = QLabel("Color Harmony module not available.\nPlace color_harmony.py in core/ folder.")
-            no_module.setStyleSheet(StylesheetCache.get_error_stylesheet(
+            self._style_for_mode(no_module, lambda: StylesheetCache.get_error_stylesheet(
                 self._get_theme()['status_error_text']))
             no_module.setAlignment(Qt.AlignmentFlag.AlignCenter)
             layout.addWidget(no_module)
@@ -817,8 +824,13 @@ class SettingsPanel(QDialog):
         
         layout.addStretch()
         
-        # Generate initial harmony
-        self._generate_harmony()
+        # Paint the base preview from its inputs, then generate the first
+        # harmony. RNV-PANEL-SWITCH (2), 2026-09-27: this called
+        # _generate_harmony() alone, so the preview kept the placeholder it
+        # was built with -- the mode's gold -- while the inputs said 191,
+        # 145, 69, until one of them moved. The colour-blindness preview is
+        # painted from its inputs the same way, at the end of its own tab.
+        self._update_harmony_base()
         
         return widget
     
@@ -1007,7 +1019,7 @@ class SettingsPanel(QDialog):
         # Check if ColorAccessibility is available
         if not ColorAccessibility:
             no_module = QLabel("Accessibility module not available.\nPlace accessibility.py in core/ folder.")
-            no_module.setStyleSheet(StylesheetCache.get_error_stylesheet(
+            self._style_for_mode(no_module, lambda: StylesheetCache.get_error_stylesheet(
                 self._get_theme()['status_error_text']))
             no_module.setAlignment(Qt.AlignmentFlag.AlignCenter)
             layout.addWidget(no_module)
@@ -1561,7 +1573,8 @@ class SettingsPanel(QDialog):
         for section_name, section_shortcuts in shortcuts:
             # Section header
             section_header = QLabel(section_name)
-            section_header.setStyleSheet(f"font-weight: bold; color: {self._get_accent_text()}; padding-top: 8px;")
+            self._style_for_mode(section_header, lambda: (
+                f"font-weight: bold; color: {self._get_accent_text()}; padding-top: 8px;"))
             shortcuts_layout.addWidget(section_header)
             
             # Shortcuts in section
@@ -1575,7 +1588,8 @@ class SettingsPanel(QDialog):
         
         # Tip
         tip = QLabel("Tip: Use keyboard shortcuts for fastest workflow!")
-        tip.setStyleSheet(f"color: {self._get_accent_text()}; font-style: italic; padding-top: 10px;")
+        self._style_for_mode(tip, lambda: (
+            f"color: {self._get_accent_text()}; font-style: italic; padding-top: 10px;"))
         tip.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(tip)
         
@@ -1590,15 +1604,17 @@ class SettingsPanel(QDialog):
         key_label = QLabel(key)
         key_label.setMinimumWidth(100)
         key_label.setMaximumWidth(140)
-        _t = self._get_theme()
-        key_label.setStyleSheet(f"""
+        def key_sheet() -> str:
+            _t = self._get_theme()
+            return f"""
             background-color: {_t['pressed_bg']};
             color: {_t['text_primary']};
             padding: 4px 8px;
             border-radius: 3px;
             font-family: 'Consolas', 'Courier New', monospace;
             font-weight: bold;
-        """)
+        """
+        self._style_for_mode(key_label, key_sheet)
         key_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         row.addWidget(key_label)
         
@@ -1798,14 +1814,27 @@ class SettingsPanel(QDialog):
         from utils.config import DARK_THEME_COLORS
         return DARK_THEME_COLORS
 
+    def _style_for_mode(self, widget: QWidget, sheet: Callable[[], str]) -> None:
+        """Style widget with sheet(), now and again after every theme switch.
+
+        RNV-PANEL-SWITCH, 2026-09-27. For a stylesheet that reads the mode --
+        _get_accent_text(), _get_theme() -- when it is built. Set once, it
+        kept the mode the panel was opened in: a switch made with the panel
+        open left the headers, the key plates and the tip in the old mode's
+        colours until the panel was opened again. update_theme() calls every
+        registered sheet() again, so each reads the mode the app is in.
+        For widgets that live as long as the panel.
+        """
+        widget.setStyleSheet(sheet())
+        self._mode_styled.append((widget, sheet))
+
     def _create_section_header(self, text: str) -> QLabel:
         """Create a section header label."""
         header = QLabel(text)
-        accent = self._get_accent_text()
-        header.setStyleSheet(f"""
+        self._style_for_mode(header, lambda: f"""
             font-weight: bold;
             font-size: 13px;
-            color: {accent};
+            color: {self._get_accent_text()};
             padding-top: 10px;
             padding-bottom: 5px;
         """)
@@ -1819,8 +1848,7 @@ class SettingsPanel(QDialog):
         # 'border_hover' is the divider key used across the app — the previous
         # 'border_light' key never existed in any theme dict, causing the
         # fallback hex to silently render in every theme.
-        divider_color = self._get_theme()['border_hover']
-        line.setStyleSheet(f"color: {divider_color};")
+        self._style_for_mode(line, lambda: f"color: {self._get_theme()['border_hover']};")
         return line
     
     # =========================================================================
@@ -2060,11 +2088,13 @@ class SettingsPanel(QDialog):
         # right value, which is why nothing needed this before and why the
         # need arrives in the same change that makes it per-mode.
         #
-        # GUARDED because _apply_theme() runs at line 146, BEFORE the tab
-        # widget is built at 158 and the accessibility tab at 168. On
-        # construction these widgets do not exist yet; the tab builds itself
-        # with a call to _update_contrast_check() at the end, so nothing is
-        # missed.
+        # GUARDED so a switch never depends on the order __init__ builds
+        # things in. Corrected 2026-09-27 (RNV-PANEL-SWITCH): this said
+        # _apply_theme() runs before the tabs are built. It does not --
+        # __init__ calls _build_ui() first, so every tab exists by the time
+        # the theme is first applied. The accessibility tab also paints the
+        # label itself, with a call to _update_contrast_check() at the end
+        # of its build.
         if hasattr(self, "contrast_ratio_label"):
             self._update_contrast_check()
 
@@ -2082,6 +2112,27 @@ class SettingsPanel(QDialog):
         # theme switch should have to know.
         if hasattr(self, "harmony_swatches_layout"):
             self._generate_harmony()
+
+        # RNV-PANEL-SWITCH 2026-09-27: restyle everything styled for a mode
+        # -- the section headers, the Sessions subheader, the shortcut key
+        # plates, the tip, the divider and the missing-module notes. Each
+        # sheet is built again, so each reads the mode the app is in now.
+        for widget, sheet in getattr(self, "_mode_styled", ()):
+            widget.setStyleSheet(sheet())
+
+        # RNV-PANEL-SWITCH (3): the Default Theme box shows the mode the app
+        # is in. Apply switches the app to whatever the box says when it
+        # differs from the current mode, and nothing saves the box -- so a
+        # box left on the mode the panel was opened with made Apply switch
+        # the app back. This runs on every switch made while the panel is
+        # open, and when a panel is built, after the saved mode is loaded.
+        # Reset to Defaults still puts the default mode in the box.
+        if (hasattr(self, "theme_combo") and self.parent_app
+                and hasattr(self.parent_app, "theme_manager")):
+            index = {"dark": 0, "light": 1, "image": 2}.get(
+                self.parent_app.theme_manager.current_theme)
+            if index is not None:
+                self.theme_combo.setCurrentIndex(index)
     
     @staticmethod
     def _build_dialog_stylesheet(theme: dict) -> str:

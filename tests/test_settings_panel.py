@@ -2393,3 +2393,181 @@ class TestHarmonyFollowsASwitch:
         del panel.harmony_swatches_layout
         self._switch(panel, "light")        # no AttributeError
         assert config.LIGHT_THEME_COLORS["text_muted"] in panel.styleSheet()
+
+
+# RNV-PANEL-SWITCH
+# ═════════════════════════════════════════════════════════════════════════════
+# A SWITCH WITH THE PANEL OPEN leaves it as a panel built in that mode
+# ═════════════════════════════════════════════════════════════════════════════
+class TestPanelFollowsASwitch:
+    """RNV-PANEL-SWITCH, 2026-09-27. A switch made with Settings open left
+    parts of the panel in the mode it was opened in: the gold headers on the
+    Sessions, Shortcuts and Settings tabs, the shortcut key plates, the tip,
+    and the Default Theme box -- which then made Apply switch the app back.
+    And a new panel painted the harmony base preview in the mode's gold while
+    its inputs said 191, 145, 69.
+
+    The first test is the general one. After any switch, every widget in the
+    panel carries the stylesheet a panel built in that mode gives it; a
+    stylesheet that reads the mode once, at build, fails it. The others read
+    what Qt resolves and draws."""
+
+    THEMES = {"dark": config.DARK_THEME_COLORS, "light": config.LIGHT_THEME_COLORS,
+              "image": config.IMAGE_MODE_COLORS}
+    GOLD_TEXT = {"dark": config.BRAND_GOLD, "image": config.BRAND_GOLD,
+                 "light": config.BRAND_DARK_GOLD_DEEP}
+    GOLD_LABELS = ("Auto-Save Options", "File Operations", "Color Operations",
+                   "View Controls", "Application", "General Preferences",
+                   "Color Settings", "Export Settings", "UI Preferences",
+                   "Tip: Use keyboard shortcuts for fastest workflow!")
+    KEYS = ("Ctrl+O", "Ctrl+S", "Ctrl+E", "Ctrl+G", "Ctrl+K", "Ctrl+Shift+C", "Ctrl+D",
+            "Ctrl+0", "Scroll Wheel", "Double-Click", "Click+Drag", "Ctrl+,", "Ctrl+P",
+            "Ctrl+/", "F11", "F12")
+    BOX = {"dark": "Dark Mode", "light": "Light Mode", "image": "Image Mode"}
+    #: from a panel built in dark, every ordered pair of different modes
+    WALK = ("light", "image", "dark", "light", "dark", "image", "light")
+
+    @staticmethod
+    def _build(qtbot, mode):
+        """A panel built in `mode`, the way the `panel` fixture builds one."""
+        real_parent = QWidget()
+        mock = _make_mock_parent_app(mode)
+        real_parent.theme_manager = mock.theme_manager
+        real_parent.tooltips_enabled = mock.tooltips_enabled
+        real_parent.debug_label = mock.debug_label
+        built = SettingsPanel(parent=real_parent)
+        qtbot.addWidget(built)
+        built._test_real_parent = real_parent
+        return built
+
+    @classmethod
+    def _switch(cls, panel, mode):
+        """What the app does on a switch with the panel open: the theme
+        manager moves, then the app calls update_theme()."""
+        tm = panel.parent_app.theme_manager
+        tm.current_theme = mode
+        tm.get_current_theme.return_value = cls.THEMES[mode]
+        tm.is_image_mode.return_value = (mode == "image")
+        panel.update_theme()
+
+    @staticmethod
+    def _styles(panel):
+        """The dialog's stylesheet, then every widget's class, name and
+        stylesheet in the order the panel made them -- once Qt has deleted
+        the swatches the harmony let go of."""
+        from PyQt6.QtCore import QCoreApplication, QEvent
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete.value)
+        return [panel.styleSheet()] + [(type(w).__name__, w.objectName(), w.styleSheet())
+                                       for w in panel.findChildren(QWidget)]
+
+    @staticmethod
+    def _label(panel, text):
+        found = [w for w in panel.findChildren(QLabel) if w.text() == text]
+        assert len(found) == 1, (text, len(found))
+        return found[0]
+
+    @staticmethod
+    def _ink(widget) -> str:
+        from PyQt6.QtGui import QPalette
+        widget.ensurePolished()
+        return widget.palette().color(QPalette.ColorRole.WindowText).name()
+
+    @staticmethod
+    def _quiet_apply(panel, monkeypatch):
+        monkeypatch.setattr(panel.settings_manager, "set", lambda k, v: None)
+        monkeypatch.setattr(panel.settings_manager, "save_settings", lambda: None)
+        monkeypatch.setattr(_DH, "show_info", lambda *a, **k: None)
+        asked = []
+        panel.theme_change_requested.connect(asked.append)
+        return asked
+
+    @pytest.mark.parametrize("built, to", [(a, b) for a in ("dark", "light", "image")
+                                           for b in ("dark", "light", "image") if a != b])
+    def test_a_switched_panel_is_styled_as_one_built_in_that_mode(self, qtbot, built, to):
+        switched = self._build(qtbot, built)
+        self._switch(switched, to)
+        fresh = self._build(qtbot, to)
+        a, b = self._styles(switched), self._styles(fresh)
+        assert len(a) == len(b), (len(a), len(b))
+        differ = [(i, x, y) for i, (x, y) in enumerate(zip(a, b)) if x != y]
+        assert not differ, differ[:3]
+
+    def test_the_gold_text_follows_every_switch(self, qtbot):
+        panel = self._build(qtbot, "dark")
+        for mode in self.WALK:
+            self._switch(panel, mode)
+            for text in self.GOLD_LABELS:
+                ink = self._ink(self._label(panel, text))
+                assert ink == self.GOLD_TEXT[mode].lower(), (mode, text, ink)
+
+    def test_the_key_plates_follow_every_switch(self, qtbot):
+        panel = self._build(qtbot, "dark")
+        for mode in self.WALK:
+            self._switch(panel, mode)
+            theme = self.THEMES[mode]
+            for key in self.KEYS:
+                plate = self._label(panel, key)
+                image = plate.grab().toImage()
+                ground = image.pixelColor(2, image.height() // 2).name()
+                assert ground == theme["pressed_bg"].lower(), (mode, key, ground)
+                assert self._ink(plate) == theme["text_primary"].lower(), (mode, key)
+
+    def test_the_missing_module_notes_follow_a_switch(self, qtbot, monkeypatch):
+        """Without its module the Harmony or the Accessibility tab shows a
+        note in the mode's error red -- and light has a red of its own."""
+        import ui.settings_panel as settings_panel
+        monkeypatch.setattr(settings_panel, "ColorHarmony", None)
+        monkeypatch.setattr(settings_panel, "ColorAccessibility", None)
+        panel = self._build(qtbot, "dark")
+        notes = [w for w in panel.findChildren(QLabel) if "module not available" in w.text()]
+        assert len(notes) == 2, [w.text() for w in notes]
+        assert self.THEMES["dark"]["status_error_text"] != self.THEMES["light"]["status_error_text"]
+        for mode in self.WALK:
+            self._switch(panel, mode)
+            for note in notes:
+                ink = self._ink(note)
+                assert ink == self.THEMES[mode]["status_error_text"].lower(), (mode, note.text(), ink)
+
+    @pytest.mark.parametrize("mode", ["dark", "light", "image"])
+    def test_a_new_panel_paints_the_harmony_preview_from_its_inputs(self, qtbot, mode):
+        panel = self._build(qtbot, mode)
+        rgb = (panel.harmony_r_spin.value(), panel.harmony_g_spin.value(),
+               panel.harmony_b_spin.value())
+        image = panel.harmony_base_preview.grab().toImage()
+        centre = image.pixelColor(image.width() // 2, image.height() // 2).name()
+        assert centre == QColor(*rgb).name(), (mode, rgb, centre)
+        assert panel.harmony_colors[0] == rgb
+
+    def test_apply_after_a_switch_keeps_the_mode(self, qtbot, monkeypatch):
+        panel = self._build(qtbot, "dark")
+        asked = self._quiet_apply(panel, monkeypatch)
+        for mode in self.WALK:
+            self._switch(panel, mode)
+            assert panel.theme_combo.currentText() == self.BOX[mode], mode
+            panel._apply_settings()
+            assert asked == [], (mode, asked)
+
+    def test_a_new_panel_shows_the_mode_the_app_is_in(self, qtbot, monkeypatch):
+        """Nothing saves a switch made with Apply. A panel opened after one
+        showed the saved mode, and its Apply switched the app back to it."""
+        from utils.settings_manager import get_settings_manager
+        monkeypatch.setitem(get_settings_manager().settings, "theme", "dark")
+        panel = self._build(qtbot, "light")
+        assert panel.theme_combo.currentText() == "Light Mode"
+        asked = self._quiet_apply(panel, monkeypatch)
+        panel._apply_settings()
+        assert asked == []
+
+    def test_the_box_still_switches_the_mode_when_it_is_changed(self, qtbot, monkeypatch):
+        panel = self._build(qtbot, "dark")
+        self._switch(panel, "light")
+        asked = self._quiet_apply(panel, monkeypatch)
+        panel.theme_combo.setCurrentText("Image Mode")
+        panel._apply_settings()
+        assert asked == ["image"]
+
+    def test_reset_still_loads_the_saved_default_into_the_box(self, qtbot, monkeypatch):
+        panel = self._build(qtbot, "light")
+        monkeypatch.setitem(panel.settings_manager.settings, "theme", "dark")
+        panel._load_settings_into_ui()
+        assert panel.theme_combo.currentText() == "Dark Mode"
