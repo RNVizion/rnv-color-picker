@@ -530,9 +530,6 @@ OVERLAY_HEAVY_ALPHA: Final[int] = 0xB4
 APP_WINDOW_OVERLAY: Final[str] = translucent(TRUE_BLACK, IMAGE_OVERLAY_ALPHA)
 """TRUE_BLACK, and APP["window"], at IMAGE_OVERLAY_ALPHA."""
 
-APP_CANVAS_OVERLAY: Final[str] = translucent(APP_CANVAS, IMAGE_OVERLAY_ALPHA)
-"""APP_CANVAS, and APP["canvas"], at IMAGE_OVERLAY_ALPHA."""
-
 APP_PANEL_OVERLAY: Final[str] = translucent(BRAND_BLACK, IMAGE_OVERLAY_ALPHA)
 """BRAND_BLACK, and APP["panel"], at IMAGE_OVERLAY_ALPHA."""
 APP_PROVENANCE: Final[dict[str, str]] = {
@@ -547,7 +544,6 @@ APP_PROVENANCE: Final[dict[str, str]] = {
     "APP_PANEL_HOVER": "register",
     "APP_HOVER_LIGHT": "register",
     "APP_WINDOW_OVERLAY": "register-overlay",
-    "APP_CANVAS_OVERLAY": "register-overlay",
     "APP_PANEL_OVERLAY": "register-overlay",
     "IMAGE_CANVAS_LIGHT": "app-canvas",
     "APP_SURFACE_LIGHT_3": "register",
@@ -1021,7 +1017,11 @@ IMAGE_MODE_COLORS: Final[dict[str, str | int]] = {
     'name': 'Image',
     # ── Picker-specific overrides for image mode ──
     'window_bg':          APP_WINDOW_OVERLAY,
-    'image_viewer_bg':    APP_CANVAS_OVERLAY,
+    # No image_viewer_bg here. In image mode the viewer paints
+    # OVERLAY_BLACK_MEDIUM and never reads the key, so its override,
+    # APP_CANVAS_OVERLAY, painted nothing and was removed -- proven by
+    # render first, RNV-CANVAS-OVERLAY-GONE, 2026-09-26. The key comes
+    # through the splat with dark's value, unread.
     'scroll_area_bg':     APP_WINDOW_OVERLAY,
     'zoom_label_bg':      APP_PANEL_OVERLAY,
     'checkbox_bg':        translucent(TRUE_BLACK, IMAGE_CHECKBOX_ALPHA),

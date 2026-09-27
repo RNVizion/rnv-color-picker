@@ -55,7 +55,6 @@ ALPHAS = {
 #: its alpha byte. By NAME, not by hex -- see test_nothing_moved_that_was_not_ruled.
 MADE_OF = {
     "APP_WINDOW_OVERLAY": ("TRUE_BLACK", 0xED),
-    "APP_CANVAS_OVERLAY": ("APP_CANVAS", 0xED),
     "APP_PANEL_OVERLAY": ("BRAND_BLACK", 0xED),
     "IMAGE_MENU_BG": ("TRUE_BLACK", 0xC8),
     "IMAGE_BUTTON_FRAME_BG": ("TRUE_BLACK", 0x64),
@@ -347,7 +346,6 @@ def test_nothing_moved_that_was_not_ruled():
         assert decompose(live[where]) == (getattr(colors, base).lower(), alpha), (
             f"{where} is {live[where]}, which is not {base} at {alpha:#04x}")
     assert IMAGE["window_bg"] == IMAGE["scroll_area_bg"] == colors.APP_WINDOW_OVERLAY
-    assert IMAGE["image_viewer_bg"] == colors.APP_CANVAS_OVERLAY
     assert IMAGE["zoom_label_bg"] == colors.APP_PANEL_OVERLAY
 
 
@@ -615,3 +613,55 @@ def test_no_named_colour_is_spelled_in_integers():
     assert files >= TUPLE_FILES, f"only {files} files swept -- the walk has gone blind"
     assert not strays, ("named colours still spelled in integers, where no "
                         "register move reaches them:\n  " + "\n  ".join(strays))
+
+
+# RNV-CANVAS-OVERLAY-GONE
+# ------------------------------------------------- the overlay nothing read
+
+def test_the_unread_canvas_overlay_stays_removed():
+    """RNV-CANVAS-OVERLAY-GONE, ruling 5 of 2026-09-26. APP_CANVAS_OVERLAY --
+    APP_CANVAS at IMAGE_OVERLAY_ALPHA, #ed0a0a0a -- was image mode's
+    image_viewer_bg, and nothing read it: the viewer reads image_viewer_bg
+    only outside image mode, and in image mode paints OVERLAY_BLACK_MEDIUM.
+    A render set it to #ff00ff. No pixel changed in 171 captures of the main
+    window, Settings and About in all three modes, and no text changed in
+    1,635 stylesheet and palette entries, while a control that moved dark's
+    image_viewer_bg changed 11 captures and 12 entries. So the constant went,
+    with its provenance entry and the override. Image mode inherits dark's
+    image_viewer_bg through the splat, and does not read it.
+
+    Gone from the module and named nowhere in the application. An override
+    brought back is a colour on no element: decide it, do not inherit it."""
+    assert not hasattr(colors, "APP_CANVAS_OVERLAY"), "APP_CANVAS_OVERLAY is back"
+    assert "APP_CANVAS_OVERLAY" not in colors.APP_PROVENANCE
+    assert IMAGE["image_viewer_bg"] == DARK["image_viewer_bg"], (
+        "image mode overrides image_viewer_bg again, and image mode never reads it")
+    sources = list(_sources())
+    assert any(rel.as_posix() == "utils/config.py" for rel, _ in sources), (
+        "the sweep cannot see utils/config.py, so it proves nothing")
+    named = [f"{rel}:{node.lineno}" for rel, tree in sources for node in ast.walk(tree)
+             if (isinstance(node, ast.Name) and node.id == "APP_CANVAS_OVERLAY")
+             or (isinstance(node, ast.Constant) and node.value == "APP_CANVAS_OVERLAY")]
+    assert not named, f"APP_CANVAS_OVERLAY is named again: {named}"
+
+
+def test_image_mode_still_does_not_read_image_viewer_bg():
+    """The premise the removal stands on, held in the source: every read of
+    image_viewer_bg in the application sits in the branch of an `if is_image`
+    that is NOT image mode. If image mode starts reading the key it gets
+    dark's opaque canvas, so an image value has to be decided first."""
+    reads = []
+    for rel, tree in _sources():
+        parents = {child: node for node in ast.walk(tree)
+                   for child in ast.iter_child_nodes(node)}
+        for n in ast.walk(tree):
+            if (isinstance(n, ast.Subscript) and isinstance(n.slice, ast.Constant)
+                    and n.slice.value == "image_viewer_bg"):
+                reads.append(f"{rel}:{n.lineno}")
+                child, node = n, parents.get(n)
+                while node is not None and not (isinstance(node, ast.If)
+                                                and ast.unparse(node.test) == "is_image"):
+                    child, node = node, parents.get(node)
+                assert node is not None and any(child is s for s in node.orelse), (
+                    f"{rel}:{n.lineno} reads image_viewer_bg where image mode can reach it")
+    assert reads, "no read of image_viewer_bg was found, so this proves nothing"
