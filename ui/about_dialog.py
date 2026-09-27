@@ -14,6 +14,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap, QFont, QColor, QPalette
 import sys
 import os
+from typing import Callable
 
 from utils.logger import Logger
 from utils.cache import QColorCache, StylesheetCache
@@ -48,6 +49,12 @@ class AboutDialog(QDialog):
         # Delete dialog when closed to prevent state corruption on reopen
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
         
+        # RNV-ABOUT-SWITCH 2026-09-27: every stylesheet that reads the mode
+        # when it is built, as (widget, the function that builds it).
+        # _apply_theme() calls each function again on a switch. See
+        # _style_for_mode().
+        self._mode_styled: list[tuple[QWidget, Callable[[], str]]] = []
+
         self._build_ui()
         self._apply_theme()
         
@@ -101,7 +108,7 @@ class AboutDialog(QDialog):
         # Final fallback to text if icon not found
         if not icon_loaded:
             logo_label.setText("RNV")
-            logo_label.setStyleSheet(f"""
+            self._style_for_mode(logo_label, lambda: f"""
                 font-size: 32px;
                 font-weight: bold;
                 color: {self._get_accent_text()};
@@ -159,8 +166,9 @@ class AboutDialog(QDialog):
         close_btn = QPushButton("Close")
         close_btn.setMinimumWidth(100)
         close_btn.clicked.connect(self.close)
-        _theme = self._get_theme()
-        close_btn.setStyleSheet(f"""
+        def close_sheet() -> str:
+            _theme = self._get_theme()
+            return f"""
             QPushButton {{
                 background-color: {_theme['dialog_btn_bg']};
                 color: {_theme['dialog_btn_text']};
@@ -184,7 +192,8 @@ class AboutDialog(QDialog):
                 color: {_theme['text_disabled']};
                 border: 1px solid {_theme['dialog_btn_border']};
             }}
-        """)
+        """
+        self._style_for_mode(close_btn, close_sheet)
         btn_layout.addWidget(close_btn)
         btn_layout.addStretch()
         
@@ -192,14 +201,28 @@ class AboutDialog(QDialog):
     
     def _create_about_tab(self) -> QWidget:
         """Create the About tab with app description and system info."""
+        # RNV-ABOUT-SCROLL 2026-09-27: in a scroll area, as the other three
+        # tabs are. This tab's content needs about 507px and the fixed-size
+        # dialog gives it 260, so its layout squeezed every label to two or
+        # three pixels and none of the text could be read.
         widget = QWidget()
-        layout = QVBoxLayout(widget)
+        outer = QVBoxLayout(widget)
+        outer.setContentsMargins(0, 0, 0, 0)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setStyleSheet("QScrollArea { border: none; }")
+        outer.addWidget(scroll)
+        content = QWidget()
+        scroll.setWidget(content)
+        layout = QVBoxLayout(content)
         layout.setContentsMargins(20, 15, 20, 15)
         layout.setSpacing(15)
         
         # App description header
         desc_header = QLabel("Professional Color Extraction Application")
-        desc_header.setStyleSheet(f"font-weight: bold; font-size: 13px; color: {self._get_accent_text()};")
+        self._style_for_mode(desc_header, lambda: (
+            f"font-weight: bold; font-size: 13px; color: {self._get_accent_text()};"))
         layout.addWidget(desc_header)
         
         # Description text
@@ -266,12 +289,12 @@ class AboutDialog(QDialog):
             ("Platform:", platform),
         ]
         
-        muted = self._get_theme()['text_muted']
         for row, (label, value) in enumerate(info_items):
             lbl = QLabel(label)
             lbl.setStyleSheet("font-size: 11px; font-weight: bold;")
             val = QLabel(value)
-            val.setStyleSheet(f"font-size: 11px; color: {muted};")
+            self._style_for_mode(val, lambda: (
+                f"font-size: 11px; color: {self._get_theme()['text_muted']};"))
             sys_layout.addWidget(lbl, row, 0)
             sys_layout.addWidget(val, row, 1)
         
@@ -289,7 +312,8 @@ class AboutDialog(QDialog):
         
         # Header
         header = QLabel("Feature Overview")
-        header.setStyleSheet(f"font-weight: bold; font-size: 13px; color: {self._get_accent_text()};")
+        self._style_for_mode(header, lambda: (
+            f"font-weight: bold; font-size: 13px; color: {self._get_accent_text()};"))
         layout.addWidget(header)
         
         # Scroll area
@@ -337,7 +361,8 @@ class AboutDialog(QDialog):
         for category, features in feature_categories:
             # Category header
             cat_label = QLabel(f"# {category}")
-            cat_label.setStyleSheet(f"font-weight: bold; font-size: 12px; color: {self._get_accent_text()}; padding-top: 5px;")
+            self._style_for_mode(cat_label, lambda: (
+                f"font-weight: bold; font-size: 12px; color: {self._get_accent_text()}; padding-top: 5px;"))
             features_layout.addWidget(cat_label)
             
             # Features in category
@@ -362,7 +387,8 @@ class AboutDialog(QDialog):
         
         # Header
         header = QLabel("Keyboard Shortcuts")
-        header.setStyleSheet(f"font-weight: bold; font-size: 13px; color: {self._get_accent_text()};")
+        self._style_for_mode(header, lambda: (
+            f"font-weight: bold; font-size: 13px; color: {self._get_accent_text()};"))
         layout.addWidget(header)
         
         # Scroll area
@@ -412,11 +438,11 @@ class AboutDialog(QDialog):
         for category, shortcuts in shortcut_categories:
             # Category header
             cat_label = QLabel(category)
-            cat_label.setStyleSheet(f"font-weight: bold; font-size: 11px; color: {self._get_accent_text()}; padding-top: 8px;")
+            self._style_for_mode(cat_label, lambda: (
+                f"font-weight: bold; font-size: 11px; color: {self._get_accent_text()}; padding-top: 8px;"))
             shortcuts_layout.addWidget(cat_label)
             
             # Shortcuts grid
-            muted = self._get_theme()['text_muted']
             for key, action in shortcuts:
                 row_widget = QWidget()
                 row_layout = QHBoxLayout(row_widget)
@@ -425,7 +451,8 @@ class AboutDialog(QDialog):
                 
                 key_label = QLabel(key)
                 key_label.setFixedWidth(100)
-                key_label.setStyleSheet(f"font-size: 11px; color: {muted};")
+                self._style_for_mode(key_label, lambda: (
+                    f"font-size: 11px; color: {self._get_theme()['text_muted']};"))
                 row_layout.addWidget(key_label)
                 
                 action_label = QLabel(action)
@@ -450,7 +477,8 @@ class AboutDialog(QDialog):
         
         # Header
         header = QLabel("Credits & Acknowledgments")
-        header.setStyleSheet(f"font-weight: bold; font-size: 13px; color: {self._get_accent_text()};")
+        self._style_for_mode(header, lambda: (
+            f"font-weight: bold; font-size: 13px; color: {self._get_accent_text()};"))
         layout.addWidget(header)
         
         # Scroll area
@@ -493,12 +521,12 @@ class AboutDialog(QDialog):
             ("Color Science:", "NumPy, scikit-learn"),
         ]
         
-        tech_muted = self._get_theme()['text_muted']
         for row, (label, value) in enumerate(technologies):
             lbl = QLabel(label)
             lbl.setStyleSheet("font-size: 11px; font-weight: bold;")
             val = QLabel(value)
-            val.setStyleSheet(f"font-size: 11px; color: {tech_muted};")
+            self._style_for_mode(val, lambda: (
+                f"font-size: 11px; color: {self._get_theme()['text_muted']};"))
             tech_layout.addWidget(lbl, row, 0)
             tech_layout.addWidget(val, row, 1)
         
@@ -548,9 +576,9 @@ class AboutDialog(QDialog):
             f"© 2026 RNV Development. All rights reserved."
         )
         footer.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        footer.setStyleSheet(
+        self._style_for_mode(footer, lambda: (
             f"font-size: 11px; color: {self._get_accent_text()}; padding-top: 15px;"
-        )
+        ))
         credits_layout.addWidget(footer)
         
         scroll.setWidget(scroll_content)
@@ -562,11 +590,28 @@ class AboutDialog(QDialog):
         """Create a horizontal divider."""
         line = QFrame()
         line.setFrameShape(QFrame.Shape.HLine)
-        line.setFrameShadow(QFrame.Shadow.Sunken)
-        divider_color = self._get_theme()['border_hover']
-        line.setStyleSheet(f"color: {divider_color};")
+        # RNV-ABOUT-DIVIDER 2026-09-27: Plain, so the line is drawn in the
+        # colour below, as the Sessions divider now is. It was Sunken, and Qt
+        # draws a sunken line in its own shading -- #9f9f9f and #ffffff in
+        # every mode, a white line on the dark dialog -- so border_hover was
+        # never drawn.
+        line.setFrameShadow(QFrame.Shadow.Plain)
+        self._style_for_mode(line, lambda: f"color: {self._get_theme()['border_hover']};")
         return line
     
+    def _style_for_mode(self, widget: QWidget, sheet: Callable[[], str]) -> None:
+        """Style widget with sheet(), now and again after every theme switch.
+
+        RNV-ABOUT-SWITCH, 2026-09-27 -- the settings panel's helper of the
+        same name, for the same fault. For a stylesheet that reads the mode
+        when it is built. Set once, it kept the mode the dialog was opened
+        in: a switch made with the dialog open left the Close button, the
+        gold headings and the muted text in the old mode's colours.
+        _apply_theme() calls every registered sheet() again.
+        """
+        widget.setStyleSheet(sheet())
+        self._mode_styled.append((widget, sheet))
+
     def _get_accent_text(self) -> str:
         """Return the brand gold for gold TEXT in the current theme.
 
@@ -683,6 +728,14 @@ class AboutDialog(QDialog):
             }}
             {tab_style}
         """)
+
+        # RNV-ABOUT-SWITCH 2026-09-27: restyle everything styled for a mode.
+        # The app calls this on every switch made while the dialog is open,
+        # and it restyled the banner alone -- the Close button, the gold
+        # headings, the muted values and keys, the footer and the divider
+        # kept the mode the dialog was opened in.
+        for widget, sheet in getattr(self, "_mode_styled", ()):
+            widget.setStyleSheet(sheet())
 
 
 def show_about_dialog(parent=None) -> None:

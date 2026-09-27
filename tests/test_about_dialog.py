@@ -477,3 +477,138 @@ class TestShowAboutDialog:
 
         show_about_dialog()
         assert captured_parents == [None]
+
+
+# RNV-ABOUT-SWITCH
+# ─────────────────────────────────────────────────────────────────────────────
+# 9.  A SWITCH WITH THE DIALOG OPEN leaves it as a dialog built in that mode
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestAboutFollowsASwitch:
+    """RNV-ABOUT-SWITCH and RNV-ABOUT-DIVIDER, 2026-09-27. A switch made with
+    the About dialog open restyled only its banner: the Close button, the
+    gold headings and categories, the muted values and keys, and the footer
+    kept the mode the dialog was opened in. And its divider was sunken, which
+    Qt draws in its own shading in every mode, so border_hover was never
+    drawn.
+
+    The first test is the general one: after any switch, every widget
+    carries the stylesheet a dialog built in that mode gives it."""
+
+    THEMES = {"dark": config.DARK_THEME_COLORS, "light": config.LIGHT_THEME_COLORS,
+              "image": config.IMAGE_MODE_COLORS}
+    GOLD_TEXT = {"dark": config.BRAND_GOLD, "image": config.BRAND_GOLD,
+                 "light": config.BRAND_DARK_GOLD_DEEP}
+    GOLD = ("RNV", "Professional Color Extraction Application", "Feature Overview",
+            "Keyboard Shortcuts", "Credits & Acknowledgments", "# Color Extraction",
+            "# Themes & Display", "File Operations", "Color Swatches")
+    MUTED = ("PyQt6", "Ctrl+O", "Ctrl+Shift+C", "F12", "Shift + Drag", "Pillow (PIL)",
+             "NumPy, scikit-learn")
+    #: from a dialog built in dark, every ordered pair of different modes
+    WALK = ("light", "image", "dark", "light", "dark", "image", "light")
+
+    @classmethod
+    def _build(cls, qtbot, monkeypatch, mode):
+        """A dialog built in `mode`, as the `dialog` fixture builds one."""
+        parent = _make_mock_parent(mode, with_window_icon=False)
+        parent.theme_manager.get_current_theme = MagicMock(return_value=cls.THEMES[mode])
+        monkeypatch.setattr(os.path, "exists", lambda p: False)
+        dlg = AboutDialog(parent=parent)
+        dlg._test_real_parent = parent
+        qtbot.addWidget(dlg)
+        return dlg
+
+    @classmethod
+    def _switch(cls, dlg, mode):
+        """What the app does on a switch with the dialog open: the theme
+        manager moves, then the app calls _apply_theme()."""
+        tm = dlg.parent().theme_manager
+        tm.current_theme = mode
+        tm.get_current_theme.return_value = cls.THEMES[mode]
+        dlg._apply_theme()
+
+    @staticmethod
+    def _styles(dlg):
+        return [dlg.styleSheet()] + [(type(w).__name__, w.objectName(), w.styleSheet())
+                                     for w in dlg.findChildren(QWidget)]
+
+    @staticmethod
+    def _label(dlg, text):
+        found = [w for w in dlg.findChildren(QLabel) if w.text() == text]
+        assert len(found) == 1, (text, len(found))
+        return found[0]
+
+    @staticmethod
+    def _ink(widget) -> str:
+        from PyQt6.QtGui import QPalette
+        widget.ensurePolished()
+        return widget.palette().color(QPalette.ColorRole.WindowText).name()
+
+    @pytest.mark.parametrize("built, to", [(a, b) for a in ("dark", "light", "image")
+                                           for b in ("dark", "light", "image") if a != b])
+    def test_a_switched_dialog_is_styled_as_one_built_in_that_mode(self, qtbot, monkeypatch,
+                                                                   built, to):
+        switched = self._build(qtbot, monkeypatch, built)
+        self._switch(switched, to)
+        fresh = self._build(qtbot, monkeypatch, to)
+        a, b = self._styles(switched), self._styles(fresh)
+        assert len(a) == len(b), (len(a), len(b))
+        differ = [(i, x, y) for i, (x, y) in enumerate(zip(a, b)) if x != y]
+        assert not differ, differ[:3]
+
+    def test_the_gold_text_follows_every_switch(self, qtbot, monkeypatch):
+        dlg = self._build(qtbot, monkeypatch, "dark")
+        footer = [w for w in dlg.findChildren(QLabel) if "rights reserved" in w.text()]
+        assert len(footer) == 1
+        for mode in self.WALK:
+            self._switch(dlg, mode)
+            for label in [self._label(dlg, t) for t in self.GOLD] + footer:
+                ink = self._ink(label)
+                assert ink == self.GOLD_TEXT[mode].lower(), (mode, label.text()[:30], ink)
+
+    def test_the_muted_text_follows_every_switch(self, qtbot, monkeypatch):
+        dlg = self._build(qtbot, monkeypatch, "dark")
+        for mode in self.WALK:
+            self._switch(dlg, mode)
+            for text in self.MUTED:
+                ink = self._ink(self._label(dlg, text))
+                assert ink == self.THEMES[mode]["text_muted"].lower(), (mode, text, ink)
+
+    def test_the_close_button_follows_every_switch(self, qtbot, monkeypatch):
+        dlg = self._build(qtbot, monkeypatch, "dark")
+        close = [b for b in dlg.findChildren(QPushButton) if b.text() == "Close"]
+        assert len(close) == 1
+        for mode in self.WALK:
+            self._switch(dlg, mode)
+            image = close[0].grab().toImage()
+            ground = image.pixelColor(3, image.height() // 2).name()
+            assert ground == self.THEMES[mode]["dialog_btn_bg"].lower(), (mode, ground)
+
+    def test_every_label_on_the_about_tab_gets_its_height(self, qtbot, monkeypatch):
+        """RNV-ABOUT-SCROLL. The tab needs about 507px and the dialog gives it
+        260; without a scroll area every label was squeezed to 2-3px."""
+        dlg = self._build(qtbot, monkeypatch, "dark")
+        dlg.show()
+        qtbot.waitExposed(dlg)
+        dlg.tab_widget.setCurrentIndex(0)
+        QApplication.processEvents()
+        page = dlg.tab_widget.widget(0)
+        assert page.findChildren(QScrollArea), "the About tab does not scroll"
+        labels = page.findChildren(QLabel)
+        assert len(labels) >= 15, len(labels)
+        for label in labels:
+            need = (label.heightForWidth(label.width()) if label.hasHeightForWidth()
+                    else label.sizeHint().height())
+            assert label.height() >= need, (label.text()[:40], label.height(), need)
+
+    def test_the_divider_draws_its_grey_in_every_mode(self, qtbot, monkeypatch):
+        dlg = self._build(qtbot, monkeypatch, "dark")
+        lines = [f for f in dlg.findChildren(QFrame) if f.frameShape() == QFrame.Shape.HLine]
+        assert len(lines) == 1, len(lines)
+        for step, mode in enumerate(("dark",) + self.WALK):
+            if step:                                        # built in dark; then the walk
+                self._switch(dlg, mode)
+            image = lines[0].grab().toImage()
+            row = {image.pixelColor(x, image.height() // 2).name() for x in range(image.width())}
+            want = self.THEMES[mode]["border_hover"].lower()
+            assert row == {want}, (mode, sorted(row), want)
