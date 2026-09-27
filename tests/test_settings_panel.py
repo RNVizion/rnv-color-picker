@@ -2042,9 +2042,11 @@ class TestSaveUIToSettings:
 
 class TestSaveSettingsToFile:
     """`_save_settings_to_file` is the 'Save Settings' button handler. Calls
-    `_save_ui_to_settings(skip_theme=True)` then shows an info dialog."""
+    `_save_ui_to_settings()` -- the Default Theme included -- then applies
+    what it saved, then shows an info dialog. RNV-SAVE-APPLIES, 2026-09-27:
+    until then it skipped the theme, as Apply does, and applied nothing."""
 
-    def test_calls_save_with_skip_theme(self, panel, monkeypatch):
+    def test_calls_save_with_the_theme(self, panel, monkeypatch):
         captured = []
         original = panel._save_ui_to_settings
         def spy(skip_theme=False):
@@ -2053,7 +2055,7 @@ class TestSaveSettingsToFile:
         monkeypatch.setattr(panel, "_save_ui_to_settings", spy)
         monkeypatch.setattr(_DH, "show_info", lambda *a, **k: None)
         panel._save_settings_to_file()
-        assert captured == [True]
+        assert captured == [False]
 
     def test_shows_info_dialog(self, panel, monkeypatch):
         monkeypatch.setattr(panel, "_save_ui_to_settings", lambda **k: None)
@@ -2571,3 +2573,115 @@ class TestPanelFollowsASwitch:
         monkeypatch.setitem(panel.settings_manager.settings, "theme", "dark")
         panel._load_settings_into_ui()
         assert panel.theme_combo.currentText() == "Dark Mode"
+
+
+# RNV-SAVE-APPLIES
+# ═════════════════════════════════════════════════════════════════════════════
+# SAVE APPLIES; APPLY LEAVES THE MODE UNSAVED; THE SESSIONS DIVIDER DRAWS ITS GREY
+# ═════════════════════════════════════════════════════════════════════════════
+class TestSaveAppliesAndTheDivider:
+    """RNV-SAVE-APPLIES and RNV-SESSION-DIVIDER, 2026-09-27.
+
+    "apply does not save but save does apply": Save Settings writes every
+    setting, the Default Theme included, and hands them to the app exactly
+    as Apply does. Apply still leaves the mode unsaved. And every setting
+    the panel hands over is one the app acts on -- the panel sent
+    "preserve_colors" while the app listened for "preserve_colors_on_extract".
+
+    "Yes fix session divider": the divider was a sunken line, which Qt draws
+    in its own shading in every mode, so its border_hover was never drawn."""
+
+    SENT = ["max_colors", "default_sort_method", "preserve_colors", "show_tooltips",
+            "show_debug_overlay"]
+
+    @staticmethod
+    def _quiet(panel, monkeypatch):
+        """Save and Apply with no dialog and no file: what they write and send."""
+        written, sent, asked = [], [], []
+        monkeypatch.setattr(panel.settings_manager, "set", lambda k, v: written.append((k, v)))
+        monkeypatch.setattr(panel.settings_manager, "save_settings", lambda: None)
+        monkeypatch.setattr(_DH, "show_info", lambda *a, **k: None)
+        panel.settings_changed.connect(lambda k, v: sent.append((k, v)))
+        panel.theme_change_requested.connect(asked.append)
+        return written, sent, asked
+
+    @staticmethod
+    def _set_controls(panel):
+        panel.max_colors_input.setText("256")
+        panel.sort_combo.setCurrentIndex(1)                 # HSL
+        panel.preserve_colors_check.setChecked(True)
+        panel.show_tooltips_check.setChecked(False)
+        panel.debug_overlay_check.setChecked(True)
+        panel.theme_combo.setCurrentText("Image Mode")
+
+    def test_save_writes_the_mode_and_applies_it(self, qtbot, monkeypatch):
+        panel = TestPanelFollowsASwitch._build(qtbot, "dark")
+        written, sent, asked = self._quiet(panel, monkeypatch)
+        panel.theme_combo.setCurrentText("Light Mode")
+        panel._save_settings_to_file()
+        assert ("theme", "light") in written
+        assert asked == ["light"]
+        assert [k for k, _ in sent] == self.SENT
+
+    def test_save_applies_exactly_what_apply_applies(self, qtbot, monkeypatch):
+        applied = TestPanelFollowsASwitch._build(qtbot, "dark")
+        saved = TestPanelFollowsASwitch._build(qtbot, "dark")
+        for panel in (applied, saved):
+            self._set_controls(panel)
+        # one settings manager serves both panels, so one after the other
+        written_a, sent_a, asked_a = self._quiet(applied, monkeypatch)
+        applied._apply_settings()
+        written_s, sent_s, asked_s = self._quiet(saved, monkeypatch)
+        saved._save_settings_to_file()
+        assert sent_a == sent_s and asked_a == asked_s == ["image"], (sent_a, sent_s)
+        assert [k for k, _ in sent_a] == self.SENT
+        # the one difference: Save writes the mode, Apply does not
+        assert [w for w in written_s if w[0] != "theme"] == written_a
+        assert ("theme", "image") in written_s and "theme" not in [k for k, _ in written_a]
+
+    def test_apply_still_leaves_the_mode_unsaved(self, qtbot, monkeypatch):
+        panel = TestPanelFollowsASwitch._build(qtbot, "dark")
+        written, _sent, asked = self._quiet(panel, monkeypatch)
+        panel.theme_combo.setCurrentText("Light Mode")
+        panel._apply_settings()
+        assert asked == ["light"]
+        assert "theme" not in [k for k, _ in written]
+
+    def test_save_on_the_current_mode_switches_nothing(self, qtbot, monkeypatch):
+        panel = TestPanelFollowsASwitch._build(qtbot, "light")
+        written, _sent, asked = self._quiet(panel, monkeypatch)
+        panel._save_settings_to_file()
+        assert asked == []
+        assert ("theme", "light") in written
+
+    def test_every_setting_the_panel_sends_is_one_the_app_acts_on(self, qtbot, monkeypatch):
+        from types import SimpleNamespace
+        import RNV_Color_Picker
+        panel = TestPanelFollowsASwitch._build(qtbot, "dark")
+        self._set_controls(panel)
+        _written, sent, _asked = self._quiet(panel, monkeypatch)
+        panel._apply_settings()
+        app = SimpleNamespace(MAX_COLORS=333, sort_method="hilbert", preserve_colors=False,
+                              tooltips_enabled=True, sort_checkbox=MagicMock(),
+                              preserve_checkbox=MagicMock(), debug_label=MagicMock(),
+                              _apply_tooltips=MagicMock())
+        for key, value in sent:
+            RNV_Color_Picker.ColorPickerApp._on_setting_changed(app, key, value)
+        assert app.MAX_COLORS == 256
+        assert app.sort_method == "hsl"
+        assert app.preserve_colors is True
+        app.preserve_checkbox.setChecked.assert_called_with(True)
+        assert app.tooltips_enabled is False and app._apply_tooltips.called
+        app.debug_label.setVisible.assert_called_with(True)
+
+    def test_the_sessions_divider_draws_its_grey_in_every_mode(self, qtbot):
+        panel = TestPanelFollowsASwitch._build(qtbot, "dark")
+        lines = [f for f in panel.findChildren(QFrame) if f.frameShape() == QFrame.Shape.HLine]
+        assert len(lines) == 1, len(lines)
+        for step, mode in enumerate(("dark",) + TestPanelFollowsASwitch.WALK):
+            if step:                                        # built in dark; then the walk
+                TestPanelFollowsASwitch._switch(panel, mode)
+            image = lines[0].grab().toImage()
+            row = {image.pixelColor(x, image.height() // 2).name() for x in range(image.width())}
+            want = TestPanelFollowsASwitch.THEMES[mode]["border_hover"].lower()
+            assert row == {want}, (mode, sorted(row), want)

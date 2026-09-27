@@ -1844,7 +1844,11 @@ class SettingsPanel(QDialog):
         """Create a horizontal divider line."""
         line = QFrame()
         line.setFrameShape(QFrame.Shape.HLine)
-        line.setFrameShadow(QFrame.Shadow.Sunken)
+        # RNV-SESSION-DIVIDER 2026-09-27: Plain, so the line is drawn in the
+        # colour below. It was Sunken, and Qt draws a sunken line in its own
+        # shading -- #9f9f9f, #efefef and #ffffff in every mode, a white line
+        # on the dark panel -- so border_hover was never drawn.
+        line.setFrameShadow(QFrame.Shadow.Plain)
         # 'border_hover' is the divider key used across the app — the previous
         # 'border_light' key never existed in any theme dict, causing the
         # fallback hex to silently render in every theme.
@@ -1961,12 +1965,20 @@ class SettingsPanel(QDialog):
             logger.success("Settings saved")
     
     def _save_settings_to_file(self) -> None:
-        """Save settings to file."""
-        self._save_ui_to_settings(skip_theme=True)
+        """Save settings to file, the Default Theme with them, and apply them.
+
+        RNV-SAVE-APPLIES, 2026-09-27: "apply does not save but save does
+        apply". Apply hands the settings to the app and leaves the mode
+        unsaved. Save writes every setting, the mode included, then hands
+        them to the app exactly as Apply does. It used to skip the mode, as
+        Apply does, and apply nothing.
+        """
+        self._save_ui_to_settings()
+        self._apply_to_app()
         if DIALOG_HELPER_AVAILABLE and DialogHelper:
-            DialogHelper.show_info(self, "Settings have been saved successfully.", title="Settings Saved")
+            DialogHelper.show_info(self, "Settings have been saved and applied.", title="Settings Saved")
         else:
-            QMessageBox.information(self, "Settings Saved", "Settings have been saved successfully.")
+            QMessageBox.information(self, "Settings Saved", "Settings have been saved and applied.")
     
     def _reset_settings_to_defaults(self) -> None:
         """Reset all settings to defaults."""
@@ -1996,9 +2008,28 @@ class SettingsPanel(QDialog):
     
     def _apply_settings(self) -> None:
         """Apply settings and emit signals."""
-        # Save settings
+        # Save settings -- all but the mode. RNV-SAVE-APPLIES: "apply does
+        # not save". The mode Apply switches to lasts until the app closes;
+        # Save Settings is what keeps it.
         self._save_ui_to_settings(skip_theme=True)
+        self._apply_to_app()
         
+        if logger:
+            logger.success("Settings applied")
+        
+        if DIALOG_HELPER_AVAILABLE and DialogHelper:
+            DialogHelper.show_info(self, "Settings have been applied.", title="Applied")
+        else:
+            QMessageBox.information(self, "Applied", "Settings have been applied.")
+    
+    def _apply_to_app(self) -> None:
+        """Hand this panel's settings to the app: settings_changed for the five
+        it acts on while it runs, and theme_change_requested when the Default
+        Theme box differs from the mode the app is in.
+
+        RNV-SAVE-APPLIES, 2026-09-27: split out of _apply_settings() so that
+        Save Settings applies exactly what Apply does.
+        """
         # Emit signals for changed settings
         try:
             max_colors = int(self.max_colors_input.text())
@@ -2024,14 +2055,6 @@ class SettingsPanel(QDialog):
         
         if selected_theme != current_theme:
             self.theme_change_requested.emit(selected_theme)
-        
-        if logger:
-            logger.success("Settings applied")
-        
-        if DIALOG_HELPER_AVAILABLE and DialogHelper:
-            DialogHelper.show_info(self, "Settings have been applied.", title="Applied")
-        else:
-            QMessageBox.information(self, "Applied", "Settings have been applied.")
     
     # =========================================================================
     # THEME

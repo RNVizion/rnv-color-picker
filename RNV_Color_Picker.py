@@ -1641,7 +1641,12 @@ class ColorPickerApp(QMainWindow):
                     self.sort_checkbox.setText(
                         "Sort: Hilbert Curve" if value == "hilbert" else "Sort: HSL"
                     )
-            elif key == "preserve_colors_on_extract":
+            # RNV-SAVE-APPLIES 2026-09-27: the settings panel sends
+            # "preserve_colors" -- the key the settings file and this
+            # window's own checkbox use. This listened for
+            # "preserve_colors_on_extract", which nothing sends, so the
+            # setting never reached the checkbox from Apply.
+            elif key == "preserve_colors":
                 self.preserve_colors = bool(value)
                 if hasattr(self, 'preserve_checkbox'):
                     self.preserve_checkbox.setChecked(bool(value))
