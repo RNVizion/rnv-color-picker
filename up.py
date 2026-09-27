@@ -1,42 +1,41 @@
-"""the Settings panel follows a mode switch made while it is open
+"""Save applies, Apply leaves the mode unsaved, and the Sessions divider draws its grey
 
     python up.py             # apply, then run the guards and CI's own commands
     python up.py --check     # rehearse every edit in memory, write nothing
     python up.py --verify    # run the guards and CI's commands, change nothing
 
-For rnv-color-picker, derived against a fresh clone at the live head (cd87fd6).
+For rnv-color-picker, derived against a fresh clone at the live head (abc3092).
 
 RNV-DELIVERY-SCRIPT-DO-NOT-SWEEP. This script is a delivery tool, not
 application source, and it names what it retires. That marker is what tells
 this fleet's scanners to skip it.
 
-RULED 2026-09-27: "Yes we should fix those to 1 - 4" -- the four things a
-switch made with Settings open left behind, measured with the app's own
-buttons and a render of every tab after every switch.
+RULED 2026-09-27: "Yes fix session divider" and "Also apply does not save
+but save does apply".
 
-1. The gold headings on the Sessions, Shortcuts and Settings tabs, the
-   sixteen shortcut key plates and the tip kept the mode the panel was
-   opened in: their stylesheets read the mode once, at build. Each is now
-   built by a function registered with _style_for_mode(), and update_theme()
-   builds it again on every switch -- the same sheet, read for the mode the
-   app is in. The divider and the two missing-module notes read the mode the
-   same way and are registered too.
-2. A new panel painted the harmony base preview in the mode's gold, a
-   placeholder, while its inputs said 191, 145, 69. The tab now paints it
-   from its inputs as it is built, as the colour-blindness tab already does.
-3. The Default Theme box kept the mode the panel was opened in, and Apply --
-   which switches the app to whatever the box says -- switched it back.
-   update_theme() now sets the box to the mode the app is in, on every
-   switch and when a panel is built. Reset to Defaults still loads the
-   default into it, and a mode picked in the box still applies.
-4. The comment on the rating label's guard said _apply_theme() runs before
-   the tabs are built. It does not; corrected.
+The divider. The line under the session buttons was a sunken line. Qt draws
+a sunken line in its own shading -- #9f9f9f over #ffffff in every mode, a
+white line on the dark panel -- so the border_hover its stylesheet asks for
+was never drawn. It is a plain line now: 1px of #444444 on the dark panel,
+#aaaaaa in light, and it follows a switch like the rest of the panel.
 
-Rendered with the app's own main(): after each switch through image, dark,
-light and back into image, every tab matches a panel opened fresh, pixel for
-pixel -- 18 of 18 (9 before). A panel opened fresh changes in one place, the
-harmony preview, in every mode. Apply after a switch kept the mode 6 times
-in 6 (before, it switched back 3 times in 5).
+Save and Apply. Apply goes on doing what it did: it saves every setting but
+the mode and hands them all to the app, the mode switch included, which
+lasts until the app closes. Save Settings used to do less than Apply -- it
+skipped the mode and handed nothing to the app. It now writes every
+setting, the mode included, and hands them over exactly as Apply does.
+
+On the way: the panel hands "preserve_colors" to the app, and the app
+listened for "preserve_colors_on_extract", which nothing sends. Ticking
+"Preserve colors when extracting" and pressing Apply never reached the main
+window's own Preserve Colors checkbox. It does now, from Apply and Save.
+
+Measured with the app's own buttons: Save with the box on another mode
+switches the app and writes the mode to the settings file; Apply switches
+it and leaves the file alone; the Preserve setting reaches the main window
+from both. Rendered: the Sessions tab changes in every mode, at the divider
+only -- 1,196 pixels, the two rows of the old bevel -- and after every
+switch every tab still matches a panel opened fresh.
 """
 from __future__ import annotations
 
@@ -51,13 +50,13 @@ import tempfile
 from pathlib import Path
 
 REPO = 'rnv-color-picker'
-SENTINEL = 'RNV-PANEL-SWITCH'
+SENTINEL = 'RNV-SAVE-APPLIES'
 SENTINEL_FILE = 'tests/test_settings_panel.py'
 GUARD = 'tests/test_settings_panel.py'
 #: Every guard this round touches, run before CI's own commands.
 GUARD_CMD = [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider",
              'tests/test_settings_panel.py']
-DESCRIPTION = 'the Settings panel follows a mode switch made while it is open'
+DESCRIPTION = 'Save applies, Apply leaves the mode unsaved, and the Sessions divider draws its grey'
 
 SUITES = [
     ("CI step 1: unittest -v test_rnv_color_picker",
@@ -89,9 +88,9 @@ def post_write() -> None:
 #: The workflows SUITES was written from, by content hash.
 CI_MIRRORS = {'.github/workflows/tests.yml': '8d472651b899dcf403c7e77919fdfb90f1a31e06d663973f54e6b903c853fbba'}
 
-SHADOWS = {"config.py", "conftest.py", "settings_panel.py", "test_rnv_color_picker.py"}
+SHADOWS = {"config.py", "conftest.py", "settings_panel.py", "test_rnv_color_picker.py", "RNV_Color_Picker.py"}
 
-LEFT_ALONE = ["the Sessions tab's divider line. It asks for border_hover and never draws it: the line is sunken, and a sunken line takes Qt's default shading (#9f9f9f, #efefef, #ffffff) in every mode -- a white line on the dark panel. Its stylesheet now follows a switch like the rest, but a change to what it draws needs a ruling.", "a switch made with Apply is not saved. The next launch opens in the mode last chosen with the main window's button. The box now shows the mode the app is in either way. Whether Apply should save it needs a ruling.", 'the two preview placeholders, harmony and colour blindness, which still read the accent and are painted over from their inputs before the panel is shown.', "_get_accent_text() and the palette's text_accent: the same gold in every mode, by two routes. A note for the chart."]
+LEFT_ALONE = ['the About dialog. Switch with it open and its Close button, gold headings, shortcut keys and credit names keep the old mode, 4 tabs of 4 whenever light is involved -- the fault the Settings panel had. Its divider is built like the Sessions one and draws the same white line. Making it draw its grey alone would add one more stale colour, so both wait for a ruling.', "Apply's other settings: it still saves them, as it always has. Only the mode is left unsaved."]
 
 
 def edits(tree) -> None:
@@ -99,50 +98,29 @@ def edits(tree) -> None:
     checked for its exact number of occurrences before anything is
     written."""
     tree.sub('ui/settings_panel.py',
-             'from typing import TYPE_CHECKING\n',
-             'from typing import TYPE_CHECKING, Callable\n')
+             '        line.setFrameShape(QFrame.Shape.HLine)\n        line.setFrameShadow(QFrame.Shadow.Sunken)\n',
+             '        line.setFrameShape(QFrame.Shape.HLine)\n        # RNV-SESSION-DIVIDER 2026-09-27: Plain, so the line is drawn in the\n        # colour below. It was Sunken, and Qt draws a sunken line in its own\n        # shading -- #9f9f9f, #efefef and #ffffff in every mode, a white line\n        # on the dark panel -- so border_hover was never drawn.\n        line.setFrameShadow(QFrame.Shadow.Plain)\n')
     tree.sub('ui/settings_panel.py',
-             '        super().__init__(parent)\n        \n        self.parent_app = parent\n        \n',
-             '        super().__init__(parent)\n        \n        self.parent_app = parent\n\n        # RNV-PANEL-SWITCH 2026-09-27: every stylesheet that reads the mode\n        # when it is built, as (widget, the function that builds it).\n        # update_theme() calls each function again on a switch. See\n        # _style_for_mode().\n        self._mode_styled: list[tuple[QWidget, Callable[[], str]]] = []\n        \n')
+             '    def _save_settings_to_file(self) -> None:\n        """Save settings to file."""\n        self._save_ui_to_settings(skip_theme=True)\n        if DIALOG_HELPER_AVAILABLE and DialogHelper:\n            DialogHelper.show_info(self, "Settings have been saved successfully.", title="Settings Saved")\n        else:\n            QMessageBox.information(self, "Settings Saved", "Settings have been saved successfully.")\n',
+             '    def _save_settings_to_file(self) -> None:\n        """Save settings to file, the Default Theme with them, and apply them.\n\n        RNV-SAVE-APPLIES, 2026-09-27: "apply does not save but save does\n        apply". Apply hands the settings to the app and leaves the mode\n        unsaved. Save writes every setting, the mode included, then hands\n        them to the app exactly as Apply does. It used to skip the mode, as\n        Apply does, and apply nothing.\n        """\n        self._save_ui_to_settings()\n        self._apply_to_app()\n        if DIALOG_HELPER_AVAILABLE and DialogHelper:\n            DialogHelper.show_info(self, "Settings have been saved and applied.", title="Settings Saved")\n        else:\n            QMessageBox.information(self, "Settings Saved", "Settings have been saved and applied.")\n')
     tree.sub('ui/settings_panel.py',
-             '        auto_header.setStyleSheet(StylesheetCache.get_subheader_stylesheet(self._get_accent_text()))\n',
-             '        self._style_for_mode(auto_header, lambda: StylesheetCache.get_subheader_stylesheet(\n            self._get_accent_text()))\n')
+             '    def _apply_settings(self) -> None:\n        """Apply settings and emit signals."""\n        # Save settings\n        self._save_ui_to_settings(skip_theme=True)\n        \n        # Emit signals for changed settings\n',
+             '    def _apply_settings(self) -> None:\n        """Apply settings and emit signals."""\n        # Save settings -- all but the mode. RNV-SAVE-APPLIES: "apply does\n        # not save". The mode Apply switches to lasts until the app closes;\n        # Save Settings is what keeps it.\n        self._save_ui_to_settings(skip_theme=True)\n        self._apply_to_app()\n        \n        if logger:\n            logger.success("Settings applied")\n        \n        if DIALOG_HELPER_AVAILABLE and DialogHelper:\n            DialogHelper.show_info(self, "Settings have been applied.", title="Applied")\n        else:\n            QMessageBox.information(self, "Applied", "Settings have been applied.")\n    \n    def _apply_to_app(self) -> None:\n        """Hand this panel\'s settings to the app: settings_changed for the five\n        it acts on while it runs, and theme_change_requested when the Default\n        Theme box differs from the mode the app is in.\n\n        RNV-SAVE-APPLIES, 2026-09-27: split out of _apply_settings() so that\n        Save Settings applies exactly what Apply does.\n        """\n        # Emit signals for changed settings\n')
     tree.sub('ui/settings_panel.py',
-             "            no_module.setStyleSheet(StylesheetCache.get_error_stylesheet(\n                self._get_theme()['status_error_text']))\n",
-             "            self._style_for_mode(no_module, lambda: StylesheetCache.get_error_stylesheet(\n                self._get_theme()['status_error_text']))\n", times=2)
-    tree.sub('ui/settings_panel.py',
-             '            section_header.setStyleSheet(f"font-weight: bold; color: {self._get_accent_text()}; padding-top: 8px;")\n',
-             '            self._style_for_mode(section_header, lambda: (\n                f"font-weight: bold; color: {self._get_accent_text()}; padding-top: 8px;"))\n')
-    tree.sub('ui/settings_panel.py',
-             '        tip.setStyleSheet(f"color: {self._get_accent_text()}; font-style: italic; padding-top: 10px;")\n',
-             '        self._style_for_mode(tip, lambda: (\n            f"color: {self._get_accent_text()}; font-style: italic; padding-top: 10px;"))\n')
-    tree.sub('ui/settings_panel.py',
-             '        _t = self._get_theme()\n        key_label.setStyleSheet(f"""\n',
-             '        def key_sheet() -> str:\n            _t = self._get_theme()\n            return f"""\n')
-    tree.sub('ui/settings_panel.py',
-             '            font-family: \'Consolas\', \'Courier New\', monospace;\n            font-weight: bold;\n        """)\n        key_label.setAlignment(Qt.AlignmentFlag.AlignCenter)\n',
-             '            font-family: \'Consolas\', \'Courier New\', monospace;\n            font-weight: bold;\n        """\n        self._style_for_mode(key_label, key_sheet)\n        key_label.setAlignment(Qt.AlignmentFlag.AlignCenter)\n')
-    tree.sub('ui/settings_panel.py',
-             '        header = QLabel(text)\n        accent = self._get_accent_text()\n        header.setStyleSheet(f"""\n            font-weight: bold;\n            font-size: 13px;\n            color: {accent};\n',
-             '        header = QLabel(text)\n        self._style_for_mode(header, lambda: f"""\n            font-weight: bold;\n            font-size: 13px;\n            color: {self._get_accent_text()};\n')
-    tree.sub('ui/settings_panel.py',
-             '        divider_color = self._get_theme()[\'border_hover\']\n        line.setStyleSheet(f"color: {divider_color};")\n',
-             '        self._style_for_mode(line, lambda: f"color: {self._get_theme()[\'border_hover\']};")\n')
-    tree.sub('ui/settings_panel.py',
-             '    def _create_section_header(self, text: str) -> QLabel:\n',
-             '    def _style_for_mode(self, widget: QWidget, sheet: Callable[[], str]) -> None:\n        """Style widget with sheet(), now and again after every theme switch.\n\n        RNV-PANEL-SWITCH, 2026-09-27. For a stylesheet that reads the mode --\n        _get_accent_text(), _get_theme() -- when it is built. Set once, it\n        kept the mode the panel was opened in: a switch made with the panel\n        open left the headers, the key plates and the tip in the old mode\'s\n        colours until the panel was opened again. update_theme() calls every\n        registered sheet() again, so each reads the mode the app is in.\n        For widgets that live as long as the panel.\n        """\n        widget.setStyleSheet(sheet())\n        self._mode_styled.append((widget, sheet))\n\n    def _create_section_header(self, text: str) -> QLabel:\n')
-    tree.sub('ui/settings_panel.py',
-             '        layout.addStretch()\n        \n        # Generate initial harmony\n        self._generate_harmony()\n        \n        return widget\n',
-             "        layout.addStretch()\n        \n        # Paint the base preview from its inputs, then generate the first\n        # harmony. RNV-PANEL-SWITCH (2), 2026-09-27: this called\n        # _generate_harmony() alone, so the preview kept the placeholder it\n        # was built with -- the mode's gold -- while the inputs said 191,\n        # 145, 69, until one of them moved. The colour-blindness preview is\n        # painted from its inputs the same way, at the end of its own tab.\n        self._update_harmony_base()\n        \n        return widget\n")
-    tree.sub('ui/settings_panel.py',
-             '        # GUARDED because _apply_theme() runs at line 146, BEFORE the tab\n        # widget is built at 158 and the accessibility tab at 168. On\n        # construction these widgets do not exist yet; the tab builds itself\n        # with a call to _update_contrast_check() at the end, so nothing is\n        # missed.\n',
-             '        # GUARDED so a switch never depends on the order __init__ builds\n        # things in. Corrected 2026-09-27 (RNV-PANEL-SWITCH): this said\n        # _apply_theme() runs before the tabs are built. It does not --\n        # __init__ calls _build_ui() first, so every tab exists by the time\n        # the theme is first applied. The accessibility tab also paints the\n        # label itself, with a call to _update_contrast_check() at the end\n        # of its build.\n')
-    tree.sub('ui/settings_panel.py',
-             '        if hasattr(self, "harmony_swatches_layout"):\n            self._generate_harmony()\n    \n    @staticmethod\n    def _build_dialog_stylesheet(theme: dict) -> str:\n',
-             '        if hasattr(self, "harmony_swatches_layout"):\n            self._generate_harmony()\n\n        # RNV-PANEL-SWITCH 2026-09-27: restyle everything styled for a mode\n        # -- the section headers, the Sessions subheader, the shortcut key\n        # plates, the tip, the divider and the missing-module notes. Each\n        # sheet is built again, so each reads the mode the app is in now.\n        for widget, sheet in getattr(self, "_mode_styled", ()):\n            widget.setStyleSheet(sheet())\n\n        # RNV-PANEL-SWITCH (3): the Default Theme box shows the mode the app\n        # is in. Apply switches the app to whatever the box says when it\n        # differs from the current mode, and nothing saves the box -- so a\n        # box left on the mode the panel was opened with made Apply switch\n        # the app back. This runs on every switch made while the panel is\n        # open, and when a panel is built, after the saved mode is loaded.\n        # Reset to Defaults still puts the default mode in the box.\n        if (hasattr(self, "theme_combo") and self.parent_app\n                and hasattr(self.parent_app, "theme_manager")):\n            index = {"dark": 0, "light": 1, "image": 2}.get(\n                self.parent_app.theme_manager.current_theme)\n            if index is not None:\n                self.theme_combo.setCurrentIndex(index)\n    \n    @staticmethod\n    def _build_dialog_stylesheet(theme: dict) -> str:\n')
+             '        if selected_theme != current_theme:\n            self.theme_change_requested.emit(selected_theme)\n        \n        if logger:\n            logger.success("Settings applied")\n        \n        if DIALOG_HELPER_AVAILABLE and DialogHelper:\n            DialogHelper.show_info(self, "Settings have been applied.", title="Applied")\n        else:\n            QMessageBox.information(self, "Applied", "Settings have been applied.")\n',
+             '        if selected_theme != current_theme:\n            self.theme_change_requested.emit(selected_theme)\n')
+    tree.sub('RNV_Color_Picker.py',
+             '            elif key == "preserve_colors_on_extract":\n',
+             '            # RNV-SAVE-APPLIES 2026-09-27: the settings panel sends\n            # "preserve_colors" -- the key the settings file and this\n            # window\'s own checkbox use. This listened for\n            # "preserve_colors_on_extract", which nothing sends, so the\n            # setting never reached the checkbox from Apply.\n            elif key == "preserve_colors":\n')
     tree.sub('tests/test_settings_panel.py',
-             '        del panel.harmony_swatches_layout\n        self._switch(panel, "light")        # no AttributeError\n        assert config.LIGHT_THEME_COLORS["text_muted"] in panel.styleSheet()\n',
-             '        del panel.harmony_swatches_layout\n        self._switch(panel, "light")        # no AttributeError\n        assert config.LIGHT_THEME_COLORS["text_muted"] in panel.styleSheet()\n\n\n# RNV-PANEL-SWITCH\n# ═════════════════════════════════════════════════════════════════════════════\n# A SWITCH WITH THE PANEL OPEN leaves it as a panel built in that mode\n# ═════════════════════════════════════════════════════════════════════════════\nclass TestPanelFollowsASwitch:\n    """RNV-PANEL-SWITCH, 2026-09-27. A switch made with Settings open left\n    parts of the panel in the mode it was opened in: the gold headers on the\n    Sessions, Shortcuts and Settings tabs, the shortcut key plates, the tip,\n    and the Default Theme box -- which then made Apply switch the app back.\n    And a new panel painted the harmony base preview in the mode\'s gold while\n    its inputs said 191, 145, 69.\n\n    The first test is the general one. After any switch, every widget in the\n    panel carries the stylesheet a panel built in that mode gives it; a\n    stylesheet that reads the mode once, at build, fails it. The others read\n    what Qt resolves and draws."""\n\n    THEMES = {"dark": config.DARK_THEME_COLORS, "light": config.LIGHT_THEME_COLORS,\n              "image": config.IMAGE_MODE_COLORS}\n    GOLD_TEXT = {"dark": config.BRAND_GOLD, "image": config.BRAND_GOLD,\n                 "light": config.BRAND_DARK_GOLD_DEEP}\n    GOLD_LABELS = ("Auto-Save Options", "File Operations", "Color Operations",\n                   "View Controls", "Application", "General Preferences",\n                   "Color Settings", "Export Settings", "UI Preferences",\n                   "Tip: Use keyboard shortcuts for fastest workflow!")\n    KEYS = ("Ctrl+O", "Ctrl+S", "Ctrl+E", "Ctrl+G", "Ctrl+K", "Ctrl+Shift+C", "Ctrl+D",\n            "Ctrl+0", "Scroll Wheel", "Double-Click", "Click+Drag", "Ctrl+,", "Ctrl+P",\n            "Ctrl+/", "F11", "F12")\n    BOX = {"dark": "Dark Mode", "light": "Light Mode", "image": "Image Mode"}\n    #: from a panel built in dark, every ordered pair of different modes\n    WALK = ("light", "image", "dark", "light", "dark", "image", "light")\n\n    @staticmethod\n    def _build(qtbot, mode):\n        """A panel built in `mode`, the way the `panel` fixture builds one."""\n        real_parent = QWidget()\n        mock = _make_mock_parent_app(mode)\n        real_parent.theme_manager = mock.theme_manager\n        real_parent.tooltips_enabled = mock.tooltips_enabled\n        real_parent.debug_label = mock.debug_label\n        built = SettingsPanel(parent=real_parent)\n        qtbot.addWidget(built)\n        built._test_real_parent = real_parent\n        return built\n\n    @classmethod\n    def _switch(cls, panel, mode):\n        """What the app does on a switch with the panel open: the theme\n        manager moves, then the app calls update_theme()."""\n        tm = panel.parent_app.theme_manager\n        tm.current_theme = mode\n        tm.get_current_theme.return_value = cls.THEMES[mode]\n        tm.is_image_mode.return_value = (mode == "image")\n        panel.update_theme()\n\n    @staticmethod\n    def _styles(panel):\n        """The dialog\'s stylesheet, then every widget\'s class, name and\n        stylesheet in the order the panel made them -- once Qt has deleted\n        the swatches the harmony let go of."""\n        from PyQt6.QtCore import QCoreApplication, QEvent\n        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete.value)\n        return [panel.styleSheet()] + [(type(w).__name__, w.objectName(), w.styleSheet())\n                                       for w in panel.findChildren(QWidget)]\n\n    @staticmethod\n    def _label(panel, text):\n        found = [w for w in panel.findChildren(QLabel) if w.text() == text]\n        assert len(found) == 1, (text, len(found))\n        return found[0]\n\n    @staticmethod\n    def _ink(widget) -> str:\n        from PyQt6.QtGui import QPalette\n        widget.ensurePolished()\n        return widget.palette().color(QPalette.ColorRole.WindowText).name()\n\n    @staticmethod\n    def _quiet_apply(panel, monkeypatch):\n        monkeypatch.setattr(panel.settings_manager, "set", lambda k, v: None)\n        monkeypatch.setattr(panel.settings_manager, "save_settings", lambda: None)\n        monkeypatch.setattr(_DH, "show_info", lambda *a, **k: None)\n        asked = []\n        panel.theme_change_requested.connect(asked.append)\n        return asked\n\n    @pytest.mark.parametrize("built, to", [(a, b) for a in ("dark", "light", "image")\n                                           for b in ("dark", "light", "image") if a != b])\n    def test_a_switched_panel_is_styled_as_one_built_in_that_mode(self, qtbot, built, to):\n        switched = self._build(qtbot, built)\n        self._switch(switched, to)\n        fresh = self._build(qtbot, to)\n        a, b = self._styles(switched), self._styles(fresh)\n        assert len(a) == len(b), (len(a), len(b))\n        differ = [(i, x, y) for i, (x, y) in enumerate(zip(a, b)) if x != y]\n        assert not differ, differ[:3]\n\n    def test_the_gold_text_follows_every_switch(self, qtbot):\n        panel = self._build(qtbot, "dark")\n        for mode in self.WALK:\n            self._switch(panel, mode)\n            for text in self.GOLD_LABELS:\n                ink = self._ink(self._label(panel, text))\n                assert ink == self.GOLD_TEXT[mode].lower(), (mode, text, ink)\n\n    def test_the_key_plates_follow_every_switch(self, qtbot):\n        panel = self._build(qtbot, "dark")\n        for mode in self.WALK:\n            self._switch(panel, mode)\n            theme = self.THEMES[mode]\n            for key in self.KEYS:\n                plate = self._label(panel, key)\n                image = plate.grab().toImage()\n                ground = image.pixelColor(2, image.height() // 2).name()\n                assert ground == theme["pressed_bg"].lower(), (mode, key, ground)\n                assert self._ink(plate) == theme["text_primary"].lower(), (mode, key)\n\n    def test_the_missing_module_notes_follow_a_switch(self, qtbot, monkeypatch):\n        """Without its module the Harmony or the Accessibility tab shows a\n        note in the mode\'s error red -- and light has a red of its own."""\n        import ui.settings_panel as settings_panel\n        monkeypatch.setattr(settings_panel, "ColorHarmony", None)\n        monkeypatch.setattr(settings_panel, "ColorAccessibility", None)\n        panel = self._build(qtbot, "dark")\n        notes = [w for w in panel.findChildren(QLabel) if "module not available" in w.text()]\n        assert len(notes) == 2, [w.text() for w in notes]\n        assert self.THEMES["dark"]["status_error_text"] != self.THEMES["light"]["status_error_text"]\n        for mode in self.WALK:\n            self._switch(panel, mode)\n            for note in notes:\n                ink = self._ink(note)\n                assert ink == self.THEMES[mode]["status_error_text"].lower(), (mode, note.text(), ink)\n\n    @pytest.mark.parametrize("mode", ["dark", "light", "image"])\n    def test_a_new_panel_paints_the_harmony_preview_from_its_inputs(self, qtbot, mode):\n        panel = self._build(qtbot, mode)\n        rgb = (panel.harmony_r_spin.value(), panel.harmony_g_spin.value(),\n               panel.harmony_b_spin.value())\n        image = panel.harmony_base_preview.grab().toImage()\n        centre = image.pixelColor(image.width() // 2, image.height() // 2).name()\n        assert centre == QColor(*rgb).name(), (mode, rgb, centre)\n        assert panel.harmony_colors[0] == rgb\n\n    def test_apply_after_a_switch_keeps_the_mode(self, qtbot, monkeypatch):\n        panel = self._build(qtbot, "dark")\n        asked = self._quiet_apply(panel, monkeypatch)\n        for mode in self.WALK:\n            self._switch(panel, mode)\n            assert panel.theme_combo.currentText() == self.BOX[mode], mode\n            panel._apply_settings()\n            assert asked == [], (mode, asked)\n\n    def test_a_new_panel_shows_the_mode_the_app_is_in(self, qtbot, monkeypatch):\n        """Nothing saves a switch made with Apply. A panel opened after one\n        showed the saved mode, and its Apply switched the app back to it."""\n        from utils.settings_manager import get_settings_manager\n        monkeypatch.setitem(get_settings_manager().settings, "theme", "dark")\n        panel = self._build(qtbot, "light")\n        assert panel.theme_combo.currentText() == "Light Mode"\n        asked = self._quiet_apply(panel, monkeypatch)\n        panel._apply_settings()\n        assert asked == []\n\n    def test_the_box_still_switches_the_mode_when_it_is_changed(self, qtbot, monkeypatch):\n        panel = self._build(qtbot, "dark")\n        self._switch(panel, "light")\n        asked = self._quiet_apply(panel, monkeypatch)\n        panel.theme_combo.setCurrentText("Image Mode")\n        panel._apply_settings()\n        assert asked == ["image"]\n\n    def test_reset_still_loads_the_saved_default_into_the_box(self, qtbot, monkeypatch):\n        panel = self._build(qtbot, "light")\n        monkeypatch.setitem(panel.settings_manager.settings, "theme", "dark")\n        panel._load_settings_into_ui()\n        assert panel.theme_combo.currentText() == "Dark Mode"\n')
+             '    """`_save_settings_to_file` is the \'Save Settings\' button handler. Calls\n    `_save_ui_to_settings(skip_theme=True)` then shows an info dialog."""\n\n    def test_calls_save_with_skip_theme(self, panel, monkeypatch):\n',
+             '    """`_save_settings_to_file` is the \'Save Settings\' button handler. Calls\n    `_save_ui_to_settings()` -- the Default Theme included -- then applies\n    what it saved, then shows an info dialog. RNV-SAVE-APPLIES, 2026-09-27:\n    until then it skipped the theme, as Apply does, and applied nothing."""\n\n    def test_calls_save_with_the_theme(self, panel, monkeypatch):\n')
+    tree.sub('tests/test_settings_panel.py',
+             '        panel._save_settings_to_file()\n        assert captured == [True]\n',
+             '        panel._save_settings_to_file()\n        assert captured == [False]\n')
+    tree.sub('tests/test_settings_panel.py',
+             '    def test_reset_still_loads_the_saved_default_into_the_box(self, qtbot, monkeypatch):\n        panel = self._build(qtbot, "light")\n        monkeypatch.setitem(panel.settings_manager.settings, "theme", "dark")\n        panel._load_settings_into_ui()\n        assert panel.theme_combo.currentText() == "Dark Mode"\n',
+             '    def test_reset_still_loads_the_saved_default_into_the_box(self, qtbot, monkeypatch):\n        panel = self._build(qtbot, "light")\n        monkeypatch.setitem(panel.settings_manager.settings, "theme", "dark")\n        panel._load_settings_into_ui()\n        assert panel.theme_combo.currentText() == "Dark Mode"\n\n\n# RNV-SAVE-APPLIES\n# ═════════════════════════════════════════════════════════════════════════════\n# SAVE APPLIES; APPLY LEAVES THE MODE UNSAVED; THE SESSIONS DIVIDER DRAWS ITS GREY\n# ═════════════════════════════════════════════════════════════════════════════\nclass TestSaveAppliesAndTheDivider:\n    """RNV-SAVE-APPLIES and RNV-SESSION-DIVIDER, 2026-09-27.\n\n    "apply does not save but save does apply": Save Settings writes every\n    setting, the Default Theme included, and hands them to the app exactly\n    as Apply does. Apply still leaves the mode unsaved. And every setting\n    the panel hands over is one the app acts on -- the panel sent\n    "preserve_colors" while the app listened for "preserve_colors_on_extract".\n\n    "Yes fix session divider": the divider was a sunken line, which Qt draws\n    in its own shading in every mode, so its border_hover was never drawn."""\n\n    SENT = ["max_colors", "default_sort_method", "preserve_colors", "show_tooltips",\n            "show_debug_overlay"]\n\n    @staticmethod\n    def _quiet(panel, monkeypatch):\n        """Save and Apply with no dialog and no file: what they write and send."""\n        written, sent, asked = [], [], []\n        monkeypatch.setattr(panel.settings_manager, "set", lambda k, v: written.append((k, v)))\n        monkeypatch.setattr(panel.settings_manager, "save_settings", lambda: None)\n        monkeypatch.setattr(_DH, "show_info", lambda *a, **k: None)\n        panel.settings_changed.connect(lambda k, v: sent.append((k, v)))\n        panel.theme_change_requested.connect(asked.append)\n        return written, sent, asked\n\n    @staticmethod\n    def _set_controls(panel):\n        panel.max_colors_input.setText("256")\n        panel.sort_combo.setCurrentIndex(1)                 # HSL\n        panel.preserve_colors_check.setChecked(True)\n        panel.show_tooltips_check.setChecked(False)\n        panel.debug_overlay_check.setChecked(True)\n        panel.theme_combo.setCurrentText("Image Mode")\n\n    def test_save_writes_the_mode_and_applies_it(self, qtbot, monkeypatch):\n        panel = TestPanelFollowsASwitch._build(qtbot, "dark")\n        written, sent, asked = self._quiet(panel, monkeypatch)\n        panel.theme_combo.setCurrentText("Light Mode")\n        panel._save_settings_to_file()\n        assert ("theme", "light") in written\n        assert asked == ["light"]\n        assert [k for k, _ in sent] == self.SENT\n\n    def test_save_applies_exactly_what_apply_applies(self, qtbot, monkeypatch):\n        applied = TestPanelFollowsASwitch._build(qtbot, "dark")\n        saved = TestPanelFollowsASwitch._build(qtbot, "dark")\n        for panel in (applied, saved):\n            self._set_controls(panel)\n        # one settings manager serves both panels, so one after the other\n        written_a, sent_a, asked_a = self._quiet(applied, monkeypatch)\n        applied._apply_settings()\n        written_s, sent_s, asked_s = self._quiet(saved, monkeypatch)\n        saved._save_settings_to_file()\n        assert sent_a == sent_s and asked_a == asked_s == ["image"], (sent_a, sent_s)\n        assert [k for k, _ in sent_a] == self.SENT\n        # the one difference: Save writes the mode, Apply does not\n        assert [w for w in written_s if w[0] != "theme"] == written_a\n        assert ("theme", "image") in written_s and "theme" not in [k for k, _ in written_a]\n\n    def test_apply_still_leaves_the_mode_unsaved(self, qtbot, monkeypatch):\n        panel = TestPanelFollowsASwitch._build(qtbot, "dark")\n        written, _sent, asked = self._quiet(panel, monkeypatch)\n        panel.theme_combo.setCurrentText("Light Mode")\n        panel._apply_settings()\n        assert asked == ["light"]\n        assert "theme" not in [k for k, _ in written]\n\n    def test_save_on_the_current_mode_switches_nothing(self, qtbot, monkeypatch):\n        panel = TestPanelFollowsASwitch._build(qtbot, "light")\n        written, _sent, asked = self._quiet(panel, monkeypatch)\n        panel._save_settings_to_file()\n        assert asked == []\n        assert ("theme", "light") in written\n\n    def test_every_setting_the_panel_sends_is_one_the_app_acts_on(self, qtbot, monkeypatch):\n        from types import SimpleNamespace\n        import RNV_Color_Picker\n        panel = TestPanelFollowsASwitch._build(qtbot, "dark")\n        self._set_controls(panel)\n        _written, sent, _asked = self._quiet(panel, monkeypatch)\n        panel._apply_settings()\n        app = SimpleNamespace(MAX_COLORS=333, sort_method="hilbert", preserve_colors=False,\n                              tooltips_enabled=True, sort_checkbox=MagicMock(),\n                              preserve_checkbox=MagicMock(), debug_label=MagicMock(),\n                              _apply_tooltips=MagicMock())\n        for key, value in sent:\n            RNV_Color_Picker.ColorPickerApp._on_setting_changed(app, key, value)\n        assert app.MAX_COLORS == 256\n        assert app.sort_method == "hsl"\n        assert app.preserve_colors is True\n        app.preserve_checkbox.setChecked.assert_called_with(True)\n        assert app.tooltips_enabled is False and app._apply_tooltips.called\n        app.debug_label.setVisible.assert_called_with(True)\n\n    def test_the_sessions_divider_draws_its_grey_in_every_mode(self, qtbot):\n        panel = TestPanelFollowsASwitch._build(qtbot, "dark")\n        lines = [f for f in panel.findChildren(QFrame) if f.frameShape() == QFrame.Shape.HLine]\n        assert len(lines) == 1, len(lines)\n        for step, mode in enumerate(("dark",) + TestPanelFollowsASwitch.WALK):\n            if step:                                        # built in dark; then the walk\n                TestPanelFollowsASwitch._switch(panel, mode)\n            image = lines[0].grab().toImage()\n            row = {image.pixelColor(x, image.height() // 2).name() for x in range(image.width())}\n            want = TestPanelFollowsASwitch.THEMES[mode]["border_hover"].lower()\n            assert row == {want}, (mode, sorted(row), want)\n')
 
 
 def _original(tree, rel: str) -> str:
@@ -197,146 +175,75 @@ def _calls(fn, attr: str) -> list:
 
 def checks(tree) -> None:
     """Against the IN-MEMORY tree, before anything reaches disk."""
-    import copy
-
-    PANEL = "ui/settings_panel.py"
+    PANEL, APP, GUARD = "ui/settings_panel.py", "RNV_Color_Picker.py", "tests/test_settings_panel.py"
     old_p, new_p = _original(tree, PANEL), tree.read(PANEL)
     old_t, new_t = ast.parse(old_p), ast.parse(new_p)
-    MODE = {"_get_accent", "_get_accent_text", "_get_theme"}
 
-    def panel_class(t):
-        return next(n for n in t.body if isinstance(n, ast.ClassDef) and n.name == "SettingsPanel")
+    def a_class(t, name):
+        return next(n for n in t.body if isinstance(n, ast.ClassDef) and n.name == name)
 
-    def methods(t):
-        return {n.name: n for n in panel_class(t).body if isinstance(n, ast.FunctionDef)}
+    def methods(t, cls):
+        return {n.name: n for n in a_class(t, cls).body if isinstance(n, ast.FunctionDef)}
 
-    def reads_mode(node):
-        return any(isinstance(c, ast.Call) and isinstance(c.func, ast.Attribute)
-                   and c.func.attr in MODE and ast.unparse(c.func.value) == "self"
-                   for c in ast.walk(node))
+    def dumps(stmts):
+        return [ast.dump(s) for s in stmts]
 
-    def calls(fn, name):
-        return sum(1 for c in ast.walk(fn) if isinstance(c, ast.Call)
-                   and isinstance(c.func, ast.Attribute) and c.func.attr == name
-                   and ast.unparse(c.func.value) == "self")
-
-    # --- what moved: nine methods, one new helper, the typing import; nothing else
-    om, nm = methods(old_t), methods(new_t)
-    assert set(nm) - set(om) == {"_style_for_mode"} and not set(om) - set(nm), set(nm) ^ set(om)
+    # --- what moved in the panel: three methods, one new; nothing else
+    om, nm = methods(old_t, "SettingsPanel"), methods(new_t, "SettingsPanel")
+    assert set(nm) - set(om) == {"_apply_to_app"} and not set(om) - set(nm), set(nm) ^ set(om)
     moved = sorted(n for n in om if ast.dump(om[n]) != ast.dump(nm[n]))
-    assert moved == sorted(["__init__", "_create_sessions_tab", "_create_harmony_tab",
-                            "_create_accessibility_tab", "_create_shortcuts_tab",
-                            "_create_shortcut_row", "_create_section_header",
-                            "_create_section_divider", "update_theme"]), moved
-    assert ([ast.dump(n) for n in panel_class(old_t).body if not isinstance(n, ast.FunctionDef)]
-            == [ast.dump(n) for n in panel_class(new_t).body if not isinstance(n, ast.FunctionDef)])
-    outside = lambda t: [ast.dump(n) for n in t.body if n is not panel_class(t)]   # noqa: E731
-    differ = [(a, b) for a, b in zip(outside(old_t), outside(new_t)) if a != b]
-    assert len(outside(old_t)) == len(outside(new_t)) and len(differ) == 1, "the module moved beyond the panel"
-    assert "Callable" in differ[0][1] and "Callable" not in differ[0][0], differ
+    assert moved == ["_apply_settings", "_create_section_divider", "_save_settings_to_file"], moved
+    outside = lambda t: [ast.dump(n) for n in t.body if not (isinstance(n, ast.ClassDef)   # noqa: E731
+                                                            and n.name == "SettingsPanel")]
+    assert outside(old_t) == outside(new_t), "the module moved beyond the panel"
 
-    # --- 1. the same sheets as before, now built again on every switch
-    def with_locals(fn, expr):
-        """expr with each local it reads replaced by what fn assigned it"""
-        local = {n.targets[0].id: n.value for n in ast.walk(fn)
-                 if isinstance(n, ast.Assign) and len(n.targets) == 1
-                 and isinstance(n.targets[0], ast.Name) and reads_mode(n.value)}
+    # --- the divider: Plain, and nothing else about it moved
+    div_old, div_new = ast.unparse(om["_create_section_divider"]), ast.unparse(nm["_create_section_divider"])
+    assert "QFrame.Shadow.Sunken" in div_old
+    assert div_new == div_old.replace("QFrame.Shadow.Sunken", "QFrame.Shadow.Plain"), \
+        "the divider changed beyond its shadow"
 
-        class Sub(ast.NodeTransformer):
-            def visit_Name(self, node):
-                return copy.deepcopy(local[node.id]) if node.id in local else node
-        return Sub().visit(copy.deepcopy(expr))
+    # --- Apply: the same steps, the hand-over moved into _apply_to_app()
+    old_apply, new_apply, hand = om["_apply_settings"].body, nm["_apply_settings"].body, nm["_apply_to_app"].body
+    assert ast.unparse(new_apply[1]) == "self._save_ui_to_settings(skip_theme=True)", \
+        "Apply saves the mode"
+    assert ast.unparse(new_apply[2]) == "self._apply_to_app()", "Apply does not hand the settings over"
+    assert dumps(hand[1:]) == dumps(old_apply[2:-2]), "a setting changed on its way into _apply_to_app()"
+    assert dumps(new_apply[:2] + new_apply[3:]) == dumps(old_apply[:2] + old_apply[-2:]), \
+        "Apply changed beyond the hand-over"
 
-    def direct(fn):
-        """the stylesheets fn sets straight away that read the mode"""
-        out = []
-        for c in ast.walk(fn):
-            if isinstance(c, ast.Call) and getattr(c.func, "attr", None) == "setStyleSheet" and c.args:
-                arg = with_locals(fn, c.args[0])
-                if reads_mode(arg):
-                    out.append((ast.unparse(c.func.value), ast.dump(arg)))
-        return sorted(out)
+    # --- Save: every setting, the mode included, then the same hand-over
+    save = nm["_save_settings_to_file"].body
+    assert ast.unparse(save[1]) == "self._save_ui_to_settings()", "Save does not write the mode"
+    assert ast.unparse(save[2]) == "self._apply_to_app()", "Save does not apply"
+    assert dumps(save[3:]) == dumps([ast.parse(ast.unparse(s).replace(
+        "saved successfully", "saved and applied")).body[0] for s in om["_save_settings_to_file"].body[2:]])
 
-    def registered(fn):
-        """the stylesheets fn hands to _style_for_mode"""
-        nested = {n.name: n for n in ast.walk(fn) if isinstance(n, ast.FunctionDef) and n is not fn}
-        out = []
-        for c in ast.walk(fn):
-            if isinstance(c, ast.Call) and getattr(c.func, "attr", None) == "_style_for_mode":
-                target, sheet = c.args
-                if isinstance(sheet, ast.Lambda):
-                    body = sheet.body
-                else:
-                    inner = nested[sheet.id]
-                    ret = [s for s in inner.body if isinstance(s, ast.Return)]
-                    assert len(ret) == 1, ast.unparse(inner)
-                    body = with_locals(inner, ret[0].value)
-                out.append((ast.unparse(target), ast.dump(body)))
-        return sorted(out)
+    # --- the app acts on every setting the panel hands it
+    sent = {c.args[0].value for c in ast.walk(nm["_apply_to_app"]) if isinstance(c, ast.Call)
+            and getattr(c.func, "attr", None) == "emit" and ast.unparse(c.func.value) == "self.settings_changed"}
+    old_a, new_a = _original(tree, APP), tree.read(APP)
+    handler = methods(ast.parse(new_a), "ColorPickerApp")["_on_setting_changed"]
+    heard = {n.comparators[0].value for n in ast.walk(handler) if isinstance(n, ast.Compare)
+             and ast.unparse(n.left) == "key" and isinstance(n.comparators[0], ast.Constant)}
+    assert sent == heard, f"the panel sends {sorted(sent - heard)} and the app does not listen"
+    assert ast.dump(ast.parse(new_a.replace('key == "preserve_colors":', 'key == "preserve_colors_on_extract":'))) \
+        == ast.dump(ast.parse(old_a)), "the app moved beyond the preserve key"
 
-    count = 0
-    for name in moved:
-        if name in ("__init__", "update_theme"):
-            continue
-        before, after = direct(om[name]), sorted(direct(nm[name]) + registered(nm[name]))
-        assert before == after, f"{name}: a stylesheet changed on the way"
-        count += len(registered(nm[name]))
-    assert count == 8, f"{count} stylesheets registered, not 8"
-    left = sorted((n, target) for n in nm for target, _ in direct(nm[n]))
-    assert left == [("_create_accessibility_tab", "self.sim_color_preview"),
-                    ("_create_harmony_swatch", "color_box"),
-                    ("_create_harmony_tab", "self.harmony_base_preview"),
-                    ("_update_contrast_check", "self.contrast_ratio_label"),
-                    ("update_theme", "self")], \
-        f"a stylesheet reads the mode at build and nothing redraws it: {left}"
-
-    # ... and each that is left is drawn again on a switch, or painted over
-    # from its inputs before the panel is shown
-    ut = nm["update_theme"]
-    assert calls(ut, "_update_contrast_check") == 1, "update_theme() no longer repaints the rating label"
-    assert calls(ut, "_generate_harmony") == 1, "update_theme() no longer redraws the harmony"
-    assert calls(nm["_generate_harmony"], "_create_harmony_swatch") == 1
-    assert calls(nm["_create_accessibility_tab"], "_update_blindness_sim") == 1, \
-        "the colour-blindness preview is not painted from its inputs"
-    assert calls(nm["_create_harmony_tab"], "_update_harmony_base") == 1, \
-        "the harmony tab does not paint its preview from its inputs"
-    assert calls(nm["_create_harmony_tab"], "_generate_harmony") == 0
-    base = ast.unparse(nm["_update_harmony_base"])
-    assert "self.harmony_r_spin.value()" in base and "self.harmony_base_preview.setStyleSheet" in base
-    assert calls(nm["_update_harmony_base"], "_generate_harmony") == 1
-
-    # --- the register and the loop that uses it
-    sfm = nm["_style_for_mode"]
-    assert [ast.unparse(s) for s in sfm.body[1:]] == [
-        "widget.setStyleSheet(sheet())", "self._mode_styled.append((widget, sheet))"]
-    init = nm["__init__"].body
-    at = [i for i, s in enumerate(init) if "self._mode_styled" in ast.unparse(s)]
-    build = [i for i, s in enumerate(init) if ast.unparse(s) == "self._build_ui()"]
-    assert len(at) == 1 and len(build) == 1 and at[0] < build[0], "the register is made after the build"
-    assert ast.unparse(init[at[0]]).endswith("= []")
-    loops = [ast.unparse(s) for s in ut.body if isinstance(s, ast.For)]
-    assert loops == ["for widget, sheet in getattr(self, '_mode_styled', ()):\n"
-                     "    widget.setStyleSheet(sheet())"], \
-        "update_theme() does not restyle what was styled for a mode"
-
-    # --- 3. the box shows the mode the app is in; the loader still loads the saved one
-    box = [ast.unparse(s) for s in ut.body if isinstance(s, ast.If) and "theme_combo" in ast.unparse(s)]
-    assert (len(box) == 1 and "self.parent_app.theme_manager.current_theme" in box[0]
-            and "self.theme_combo.setCurrentIndex(index)" in box[0]
-            and "settings" not in box[0]), "the Default Theme box does not follow the mode"
-    assert ast.dump(om["_load_settings_into_ui"]) == ast.dump(nm["_load_settings_into_ui"])
-
-    # --- 4. the guard's comment gives the right reason
-    assert "BEFORE the tab" in old_p
-    assert "BEFORE the tab" not in new_p and "__init__ calls _build_ui() first" in new_p, \
-        "the rating label's comment still gives the wrong reason"
-
-    # --- the guard: appended, nothing above it touched
-    old_g, new_g = _original(tree, "tests/test_settings_panel.py"), tree.read("tests/test_settings_panel.py")
-    assert new_g.startswith(old_g), "the guard file changed above its new class"
-    ast.parse(new_g)
-    tail_g = new_g[len(old_g):]
-    assert SENTINEL in tail_g and "class TestPanelFollowsASwitch" in tail_g
+    # --- the guard: Save's pinned test turned round, one class appended; nothing else
+    old_g, new_g = _original(tree, GUARD), tree.read(GUARD)
+    og, ng = ast.parse(old_g), ast.parse(new_g)
+    assert isinstance(ng.body[-1], ast.ClassDef) and ng.body[-1].name == "TestSaveAppliesAndTheDivider"
+    assert SENTINEL in (ast.get_docstring(ng.body[-1]) or "")
+    assert dumps([n for n in og.body if getattr(n, "name", None) != "TestSaveSettingsToFile"]) == \
+        dumps([n for n in ng.body[:-1] if getattr(n, "name", None) != "TestSaveSettingsToFile"]), \
+        "the guard file changed beyond Save's tests"
+    ot, nt = methods(og, "TestSaveSettingsToFile"), methods(ng, "TestSaveSettingsToFile")
+    assert set(ot) == {"test_calls_save_with_skip_theme", "test_shows_info_dialog"}
+    assert set(nt) == {"test_calls_save_with_the_theme", "test_shows_info_dialog"}
+    assert ast.dump(ot["test_shows_info_dialog"]) == ast.dump(nt["test_shows_info_dialog"])
+    assert ast.unparse(nt["test_calls_save_with_the_theme"].body[-1]) == "assert captured == [False]", \
+        "Save's pinned test still expects the mode skipped"
 # ------------------------------------------------------------------ plumbing
 #
 # EXIT CODES ARE A TAXONOMY, NOT A BOOLEAN. Rev 6 §3.0.1. A harness that
