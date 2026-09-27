@@ -2279,3 +2279,117 @@ class TestMutedDescriptions:
                       and id(node) not in docs and css_grey.search(node.value)]
         assert files >= 20, f"only {files} files swept -- the walk has gone blind"
         assert not found, "CSS grey still written as a colour:\n  " + "\n  ".join(found)
+
+
+# RNV-HARMONY-SWITCH
+# ═════════════════════════════════════════════════════════════════════════════
+# HARMONY: the base swatch's gold edge follows a switch made with the panel open
+# ═════════════════════════════════════════════════════════════════════════════
+class TestHarmonyFollowsASwitch:
+    """RNV-HARMONY-SWITCH, 2026-09-27. The base swatch of the generated harmony
+    is edged in the mode's gold: BRAND_GOLD in dark and image, BRAND_DARK_GOLD
+    in light. The gold is read when the swatch is built, and a switch made
+    with the panel open kept the previous mode's gold on the edge until the
+    harmony was generated again. update_theme() generates it again now. The
+    harmony is the spin boxes and the type combo, so what it shows stays the
+    same; only the edge follows the mode.
+
+    Each test reads the colour Qt DRAWS -- a pixel grabbed from the swatch --
+    as well as the stylesheet, so a rule that stops reaching the swatch fails
+    even while the text of the rule is still there."""
+
+    THEMES = {"dark": config.DARK_THEME_COLORS, "light": config.LIGHT_THEME_COLORS,
+              "image": config.IMAGE_MODE_COLORS}
+    GOLD = {"dark": config.BRAND_GOLD, "image": config.BRAND_GOLD,
+            "light": config.BRAND_DARK_GOLD}
+    #: from a panel built in dark, every ordered pair of different modes
+    WALK = ("light", "image", "dark", "light", "dark", "image", "light")
+
+    @classmethod
+    def _switch(cls, panel, mode):
+        """What the app does on a switch with the panel open: the theme
+        manager moves, then the app calls update_theme()."""
+        tm = panel.parent_app.theme_manager
+        tm.current_theme = mode
+        tm.get_current_theme.return_value = cls.THEMES[mode]
+        tm.is_image_mode.return_value = (mode == "image")
+        panel.update_theme()
+
+    @staticmethod
+    def _swatches(panel):
+        """The swatches the row holds now, in order. Read from the layout: a
+        swatch it let go of lingers as a child until Qt deletes it."""
+        row = panel.harmony_swatches_layout
+        found = [row.itemAt(i).widget() for i in range(row.count())]
+        found = [w for w in found if w is not None]     # not the stretch
+        assert found, "the harmony row holds no swatch"
+        return found
+
+    @classmethod
+    def _boxes(cls, panel):
+        """Each swatch's colour box, in order: the one label fixed at 66 x 50."""
+        from PyQt6.QtCore import QSize
+        boxes = []
+        for swatch in cls._swatches(panel):
+            found = [w for w in swatch.findChildren(QLabel)
+                     if w.minimumSize() == QSize(66, 50) == w.maximumSize()]
+            assert len(found) == 1, [w.text() for w in swatch.findChildren(QLabel)]
+            boxes.append(found[0])
+        return boxes
+
+    @staticmethod
+    def _drawn(box):
+        """(edge, fill) as Qt draws them: the middle of the left edge, inside
+        the border whichever width it is and clear of the rounded corners,
+        and the centre of the box."""
+        image = box.grab().toImage()
+        mid = image.height() // 2
+        return (image.pixelColor(1, mid).name(),
+                image.pixelColor(image.width() // 2, mid).name())
+
+    def test_a_switch_edges_the_base_in_the_modes_gold(self, panel):
+        for mode in self.WALK:
+            self._switch(panel, mode)
+            base, *others = self._boxes(panel)
+            gold = self.GOLD[mode].lower()
+            assert f"3px solid {gold}" in base.styleSheet().lower(), (mode, base.styleSheet())
+            assert self._drawn(base)[0] == gold, (mode, self._drawn(base))
+            assert others, mode
+            for box in others:
+                assert f"2px solid {config.GREY_44}" in box.styleSheet(), (mode, box.styleSheet())
+                assert self._drawn(box)[0] == config.GREY_44.lower(), (mode, self._drawn(box))
+
+    def test_a_switch_keeps_the_harmony_on_show(self, panel):
+        panel.harmony_type_combo.setCurrentText("Tetradic (Square)")
+        for spin, value in zip((panel.harmony_r_spin, panel.harmony_g_spin,
+                                panel.harmony_b_spin), (30, 144, 200)):
+            spin.setValue(value)
+
+        def shown():
+            hexes = [w.text() for s in self._swatches(panel)
+                     for w in s.findChildren(QLabel) if w.text().startswith("#")]
+            return (list(panel.harmony_colors), [self._drawn(b)[1] for b in self._boxes(panel)],
+                    hexes, panel.harmony_desc_label.text(),
+                    panel.harmony_type_combo.currentText(),
+                    (panel.harmony_r_spin.value(), panel.harmony_g_spin.value(),
+                     panel.harmony_b_spin.value()))
+
+        before = shown()
+        assert len(before[0]) == 4 and before[0][0] == (30, 144, 200), before[0]
+        assert before[1][0] == "#1e90c8" and before[2][0] == "#1E90C8", before[1:3]
+        for mode in ("light", "image", "dark"):
+            self._switch(panel, mode)
+            assert shown() == before, mode
+
+    def test_a_switched_panel_draws_the_harmony_a_fresh_one_draws(self, panel, panel_light):
+        self._switch(panel, "light")
+        switched, fresh = self._boxes(panel), self._boxes(panel_light)
+        assert [b.styleSheet() for b in switched] == [b.styleSheet() for b in fresh]
+        assert [self._drawn(b) for b in switched] == [self._drawn(b) for b in fresh]
+
+    def test_update_theme_does_not_need_the_harmony_row(self, panel):
+        """Without its module the harmony tab builds no swatch row, and a
+        switch must not depend on the order __init__ builds things in."""
+        del panel.harmony_swatches_layout
+        self._switch(panel, "light")        # no AttributeError
+        assert config.LIGHT_THEME_COLORS["text_muted"] in panel.styleSheet()

@@ -2067,6 +2067,21 @@ class SettingsPanel(QDialog):
         # missed.
         if hasattr(self, "contrast_ratio_label"):
             self._update_contrast_check()
+
+        # RNV-HARMONY-SWITCH 2026-09-27: redraw the generated harmony. Its
+        # base swatch is edged in the mode's gold, which is read when the
+        # swatch is built, so a switch made with this panel open kept the
+        # previous mode's gold on that edge until the harmony was generated
+        # again. The harmony is the spin boxes and the type combo and nothing
+        # else, so generating it again draws the same swatches, edged for
+        # this mode.
+        #
+        # Guarded so a switch never depends on the harmony row existing: the
+        # tab builds none without its module, and the order __init__ builds
+        # things in (every tab first, then the theme) is not something a
+        # theme switch should have to know.
+        if hasattr(self, "harmony_swatches_layout"):
+            self._generate_harmony()
     
     @staticmethod
     def _build_dialog_stylesheet(theme: dict) -> str:
