@@ -48,7 +48,7 @@ from ui.progress_dialog import LoadingDialog, QuickProgressDialog
 
 # Utilities
 from utils.config import (
-    prefers_dark_ink,
+    contrast_ink_rgb, SVG_EXPORT_BG, SVG_EXPORT_STROKE,
     ThemeManager, MAX_COLORS, APP_VERSION,
     BUTTON_HEIGHT_MIN, BUTTON_HEIGHT_MAX,
     WINDOW_WIDTH_MIN, WINDOW_WIDTH_MAX, SWATCH_SIZE,
@@ -1104,10 +1104,12 @@ class ColorPickerApp(QMainWindow):
         offset_x = (page_width - content_width) // 2
         offset_y = (page_height - content_height) // 2
 
+        # RNV-NAMED-AND-USED (2026-10-04): the sheet's paper and ink, by
+        # name. They were (255, 255, 255) and (0, 0, 0); the same pixels.
         if is_png:
-            palette_img = Image.new("RGBA", (page_width, page_height), (255, 255, 255, 255))
+            palette_img = Image.new("RGBA", (page_width, page_height), SVG_EXPORT_BG)
         else:
-            palette_img = Image.new("RGB", (page_width, page_height), (255, 255, 255))
+            palette_img = Image.new("RGB", (page_width, page_height), SVG_EXPORT_BG)
 
         draw = ImageDraw.Draw(palette_img)
 
@@ -1120,7 +1122,7 @@ class ColorPickerApp(QMainWindow):
             
             draw.rectangle(
                 [x, y, x + swatch_width, y + swatch_height], 
-                fill=rgb, outline=(0, 0, 0), width=2
+                fill=rgb, outline=SVG_EXPORT_STROKE, width=2
             )
             
             try:
@@ -1143,7 +1145,7 @@ class ColorPickerApp(QMainWindow):
                     text_color = ColorCache.get_text_color_for_background((r, g, b))
                     hex_code = ColorCache.rgb_to_hex((r, g, b))
                 else:
-                    text_color = (0, 0, 0) if prefers_dark_ink((r, g, b)) else (255, 255, 255)
+                    text_color = contrast_ink_rgb((r, g, b))
                     hex_code = f'#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}'
                 
                 draw.text((x + 10, y + 10), f"#{idx + 1}", fill=text_color, font=font)

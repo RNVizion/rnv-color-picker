@@ -69,8 +69,10 @@ MODE_MARKERS = (('DARK', ('DARK_THEME', '.DARK', 'DARK_THEME_COLORS')),
 #: mode -> the live palette.
 PALETTES = {'DARK': DARK, 'LIGHT': LIGHT, 'IMAGE': IMAGE}
 
-#: Keys tried, in order, when a rule inherits its ground.
-GROUND_KEYS = ('panel_bg', 'window_bg', 'card_bg')
+#: Keys tried, in order, when a rule inherits its ground. dialog_bg was
+#: panel_bg until RNV-NAMED-AND-USED (2026-10-04): nothing painted panel_bg,
+#: and dialog_bg is the key that paints the same ground at the same value.
+GROUND_KEYS = ('dialog_bg', 'window_bg', 'card_bg')
 
 #: Declarations that are below the floor and are CORRECT ANYWAY, keyed by the
 #: declaration text rather than by line number -- an edit above a site shifts

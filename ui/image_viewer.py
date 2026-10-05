@@ -24,7 +24,7 @@ from PyQt6.QtGui import (
 from utils.logger import Logger
 from utils.cache import QColorCache, StylesheetCache
 from utils.signal_manager import SignalConnectionManager
-from utils.config import BRAND_GOLD, IMAGE_MENU_BG
+from utils.config import BRAND_GOLD, IMAGE_MENU_BG, SELECTION_BOX_COLOR
 
 logger = Logger("ImageViewer")
 CACHE_AVAILABLE = True
@@ -229,10 +229,11 @@ class ImageViewer(QGraphicsView):
 
             if not self.selection_rect_item:
                 # Use cached yellow color for selection
+                # RNV-NAMED-AND-USED (2026-10-04): was "yellow", twice.
                 if CACHE_AVAILABLE and QColorCache:
-                    yellow = QColorCache.get("yellow")
+                    yellow = QColorCache.get(SELECTION_BOX_COLOR)
                 else:
-                    yellow = QColor("yellow")
+                    yellow = QColor(SELECTION_BOX_COLOR)
                 pen = QPen(yellow, 2, Qt.PenStyle.DotLine)
                 pen.setCosmetic(True)
                 self.selection_rect_item = self.scene_ref.addRect(rect, pen)

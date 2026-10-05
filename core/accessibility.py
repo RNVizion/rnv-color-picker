@@ -248,8 +248,9 @@ class ColorAccessibility:
         # 4,513 that differ all sit inside luminance 0.17900 to 0.17913,
         # where both inks land within 0.01 of 4.5:1 and neither is visibly
         # better than the other.
-        ink = config.contrast_ink(background)
-        return (255, 255, 255) if ink == config.WHITE else (0, 0, 0)
+        # RNV-NAMED-AND-USED (2026-10-04): the triple comes from the same
+        # place; it was written out here as (255, 255, 255) and (0, 0, 0).
+        return config.contrast_ink_rgb(background)
     
     @staticmethod
     def suggest_accessible_color(

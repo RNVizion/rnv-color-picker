@@ -242,7 +242,8 @@ feedback", the old rule was wrong half the time.
 """
 
 BRAND_DARK_GOLD_PRESSED: Final[str] = BRAND_DARK_GOLD
-"""Light-mode pressed. It IS the accent.
+"""Light-mode pressed. It IS the accent. Read by the cached close-button
+sheet alone since the palettes' `accent_pressed` went (2026-10-04).
 
 Two reasons, and either alone would be enough. The brand runs two golds
 per mode and light spends its second on BRAND_DARK_GOLD_DEEP. And
@@ -273,11 +274,10 @@ one key.
 
 BRAND_GOLD_RGB: Final[tuple[int, int, int]] = _to_rgb(BRAND_GOLD)
 """Derived. A hardcoded tuple is invisible to every hex-based search, so
-it survives sweeps that catch every other reference to the colour."""
+it survives sweeps that catch every other reference to the colour.
 
-BRAND_DARK_GOLD_RGB: Final[tuple[int, int, int]] = _to_rgb(BRAND_DARK_GOLD)
-"""Derived, same reason. This one held (177, 145, 69) -- the retired gold,
-in the one form no sweep would have found."""
+RNV-NAMED-AND-USED (2026-10-04): its dark-gold twin went. Nothing in the
+application read it; a name is kept for what uses it."""
 
 
 # ==================== APP Neutrals ====================
@@ -387,15 +387,6 @@ rev 27 as the third rung of the light surface ladder; named here under
 the register's key, the way APP_PANEL_HOVER and APP_HOVER_LIGHT are.
 Every key that carries it is a surface, so it is not split."""
 
-APP_SURFACE_LIGHT_2: Final[str] = "#fbfbfb"
-"""engine/brand.py APP["surface-light-2"]. One rung above the panel ground.
-
-RNV-LIGHT-WIRING (2026-09-06): new to this application. It arrives
-because two strays collapse onto it -- #f8f8f8 and #fafafa, which sat
-0.60 and 0.20 CIEDE2000 from this rung and on no ladder at all. Same
-ruling as #252525 onto the card: a value a fraction of a step from a
-registered one is that one, misspelled."""
-
 APP_PRESSED_LIGHT: Final[str] = "#e0e0e0"
 """engine/brand.py APP["pressed-light"]. The light PRESSED plate -- an
 interaction state, which is why this name goes only on `pressed_bg`.
@@ -411,15 +402,9 @@ GREY_E0: Final[str] = "#e0e0e0"
 APP_PRESSED_LIGHT without being a pressed state. See the split note
 there. Named by its byte, like every other ramp step."""
 
-GREY_EE: Final[str] = "#eeeeee"
-"""grey(14) on the ramp, #eeeeee. Static surfaces that share a hex with
-APP_HOVER_LIGHT without being a hover: a list header, a scroll ground.
-Same split rnv-text-transformer ruled for its diff headers."""
-
-GREY_DD: Final[str] = "#dddddd"
-"""grey(13) on the ramp, #dddddd. Edges and grid lines that share a hex
-with APP_TEXT without being text. The register's APP["text"] is ink;
-a gridline is not, and moving the ink should not move the grid."""
+# RNV-NAMED-AND-USED (2026-10-04): two more ramp steps stood here, #eeeeee
+# and #dddddd, each feeding one light list key that nothing read. They went
+# with the keys.
 
 GREY_66: Final[str] = "#666666"
 """grey(6) on the ramp, #666666. Secondary and muted text on light."""
@@ -547,11 +532,8 @@ APP_PROVENANCE: Final[dict[str, str]] = {
     "APP_PANEL_OVERLAY": "register-overlay",
     "IMAGE_CANVAS_LIGHT": "app-canvas",
     "APP_SURFACE_LIGHT_3": "register",
-    "APP_SURFACE_LIGHT_2": "register",
     "APP_PRESSED_LIGHT": "register",
     "GREY_E0": "app-ramp",
-    "GREY_EE": "app-ramp",
-    "GREY_DD": "app-ramp",
     "GREY_66": "app-ramp",
     "GREY_88": "app-ramp",
     "GREY_55": "app-ramp",
@@ -588,24 +570,23 @@ Black on it reads 4.73, so STATUS_SUCCESS_FG stays #000000.
 
 WAS #28a745, written out four times in this file with no constant between the
 value and its uses -- twice in the palettes, once as STATUS_SUCCESS_BG and
-once as STATUS_ACTIVE_COLOR. Named here so it has one home."""
+once as an alias for an active label. Named here so it has one home.
 
-STATUS_WARNING: Final[str] = "#a2703c"
-"""Registered. WAS #ffc107, retired on arithmetic rather than taste: it read
-1.63 on #ffffff and 1.49 on #f5f5f5, so it could not legally carry a boundary
-on a light ground at all.
+RNV-NAMED-AND-USED (2026-10-04): the palettes' `success` key and that alias
+went, read by nothing. STATUS_SUCCESS_BG is what paints this."""
 
-It reads as gold-adjacent because it half IS one -- the register derives it
-50% toward BRAND_DARK_GOLD in OKLab, landing 9.1 CIEDE2000 away, which clears
-the register's own 8.40 "clearly different" threshold by 0.7."""
+# RNV-NAMED-AND-USED (2026-10-04): the register's warning FILL, #a2703c, is
+# not carried here. This application draws no warning fill: the name fed only
+# the palettes' `warning` key, which nothing read. The warning TEXT pair
+# below is what the rating scale paints.
 
 STATUS_SUCCESS_TEXT: Final[str] = "#ad85a3"
 """Registered. Success TEXT on a dark panel: 5.52 on #1a1a1a, 4.55 on #2a2a2a.
 
-Here for STATUS_ACTIVE_COLOR below, which is painted with `color:` and cannot
-take the fill. The register ruled on 2026-09-04 that an active label aliases
-success-text rather than success, after finding the same alias in
-rnv-icon-builder about to fail on adoption day."""
+The rating scale's `excellent` tier in the dark palette. The register ruled
+on 2026-09-04 that an active label aliases success-text rather than success,
+after finding the same alias in rnv-icon-builder about to fail on adoption
+day."""
 
 STATUS_SUCCESS_TEXT_LIGHT: Final[str] = "#825d79"
 """Registered. The same text on a light panel: 4.52 on #f5f5f5.
@@ -630,7 +611,7 @@ needed ... adding it later is how an asymmetry gets built in". The warning pair
 is the asymmetry that got built in anyway, in the same change that argued
 against it.
 
-STATUS_WARNING is a FILL and cannot do this job: it reads 4.07 on #1a1a1a,
+The register's warning FILL, #a2703c, cannot do this job: it reads 4.07 on #1a1a1a,
 below the 4.5 text floor. That is the fill/text band split the family header
 above describes, and it is why there are separate values rather than one."""
 
@@ -747,9 +728,7 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
     
     # ── Base surfaces ──
     'window_bg':          TRUE_BLACK,
-    'panel_bg':           BRAND_BLACK,
     'card_bg':            APP_CARD,
-    'bg_secondary':       APP_CARD,   # alias for card_bg
     'input_bg':           BRAND_BLACK,
     'hover_bg':           APP_PANEL_HOVER,
     'pressed_bg':         APP_BORDER,
@@ -757,10 +736,6 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
     
     # ── Text ──
     'text_primary':       APP_TEXT,
-    # NOT CONSUMED. Nothing reads this key -- 'text_muted' below carries the
-    # same value and does the job in six places. Kept, and kept correct, so
-    # wiring it up is a one-line change rather than a colour decision.
-    'text_secondary':     GREY_88,
     'text_muted':         GREY_88,
     'text_disabled':      GREY_55,
     'text_accent':        BRAND_GOLD,
@@ -770,7 +745,6 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
     'border_default':     APP_BORDER,
     'border_focus':       BRAND_GOLD,
     'border_hover':       GREY_44,
-    'border_accent':      BRAND_GOLD,
     'input_border':       APP_BORDER,
     
     # ── Dialog buttons (gold accent system) ──
@@ -819,35 +793,16 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
     
     # ── List / Table ──
     'list_bg':            APP_CARD,   # was #252525, see scrollbar_bg
-    'list_alt_bg':        BRAND_BLACK,
     'list_selected_bg':   BRAND_GOLD,
     'list_selected_text': TRUE_BLACK,
     'list_hover_bg':      APP_PANEL_HOVER,
     'list_hover_text':    BRAND_GOLD,
-    'list_header_bg':     APP_CARD,
-    'list_grid':          APP_BORDER,
     
-    # ── Dialog / status ──
+    # ── Dialog ──
     'dialog_bg':          BRAND_BLACK,
-    'dialog_border':      APP_BORDER,
     
     # ── Tooltip ──
-    'tooltip_bg':         APP_CARD,
     'tooltip_border':     BRAND_GOLD,
-    'tooltip_text':       APP_TEXT,
-    
-    # ── Semantic status ──
-    # RNV-STATUS-FAMILY: the fills, now named. All three were
-    # bare literals; every hex a palette carries needs a
-    # constant, or nothing can move it. These three keys are
-    # looked up nowhere in this application and are not wired
-    # up by this pass -- if any is ever painted as TEXT it
-    # must take a _TEXT value instead, because a fill sits at
-    # L* 48-59 and cannot reach 4.5:1 on either ground.
-    'success':            STATUS_SUCCESS,
-    'warning':            STATUS_WARNING,
-    'error':              STATUS_ERROR,
-    'info':               BRAND_GOLD,
     
     # ── Picker-specific (unique to this app) ──
     'image_viewer_bg':       APP_CANVAS,
@@ -856,12 +811,9 @@ DARK_THEME_COLORS: Final[dict[str, str | int]] = {
     'zoom_label_border':     APP_BORDER,
     'swatch_border_width':   2,
     'swatch_border_color':   APP_TEXT,
-    'output_text_color':     BRAND_GOLD,
-    'text_accent_secondary': BRAND_GOLD,
     
-    # ── Gold accent hover/pressed tints (no better semantic name exists) ──
+    # ── Gold accent hover tint (no better semantic name exists) ──
     'accent_hover':       BRAND_GOLD_HOVER,
-    'accent_pressed':     BRAND_GOLD_PRESSED,
 }
 
 
@@ -888,9 +840,7 @@ LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
     
     # ── Base surfaces ──
     'window_bg':          APP_SURFACE_LIGHT_3,
-    'panel_bg':           APP_SURFACE_LIGHT_3,
     'card_bg':            WHITE,
-    'bg_secondary':       WHITE,
     'input_bg':           WHITE,
     'hover_bg':           APP_HOVER_LIGHT,
     'pressed_bg':         APP_PRESSED_LIGHT,
@@ -898,8 +848,6 @@ LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
     
     # ── Text ──
     'text_primary':       TRUE_BLACK,
-    # NOT CONSUMED -- see the note in the dark palette.
-    'text_secondary':     GREY_66,
     'text_muted':         GREY_66,
     'text_disabled':      APP_TEXT_DIM,
     'text_accent':        BRAND_DARK_GOLD_DEEP,
@@ -909,7 +857,6 @@ LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
     'border_default':     GREY_CC,
     'border_focus':       BRAND_DARK_GOLD,
     'border_hover':       APP_TEXT_DIM,
-    'border_accent':      BRAND_DARK_GOLD,
     'input_border':       GREY_CC,
     
     # ── Dialog buttons (gold accent system) ──
@@ -955,35 +902,16 @@ LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
     
     # ── List / Table ──
     'list_bg':            WHITE,
-    'list_alt_bg':        APP_SURFACE_LIGHT_2,   # was #f8f8f8, collapsed onto #fbfbfb
     'list_selected_bg':   BRAND_DARK_GOLD,
     'list_selected_text': WHITE,
     'list_hover_bg':      APP_HOVER_LIGHT,
     'list_hover_text':    BRAND_DARK_GOLD_DEEP,
-    'list_header_bg':     GREY_EE,   # was #f0f0f0, collapsed onto #eeeeee
-    'list_grid':          GREY_DD,
     
-    # ── Dialog / status ──
+    # ── Dialog ──
     'dialog_bg':          APP_SURFACE_LIGHT_3,
-    'dialog_border':      GREY_CC,
     
     # ── Tooltip ──
-    'tooltip_bg':         WHITE,
     'tooltip_border':     BRAND_DARK_GOLD,
-    'tooltip_text':       TRUE_BLACK,
-    
-    # ── Semantic status ──
-    # RNV-STATUS-FAMILY: the fills, now named. All three were
-    # bare literals; every hex a palette carries needs a
-    # constant, or nothing can move it. These three keys are
-    # looked up nowhere in this application and are not wired
-    # up by this pass -- if any is ever painted as TEXT it
-    # must take a _TEXT value instead, because a fill sits at
-    # L* 48-59 and cannot reach 4.5:1 on either ground.
-    'success':            STATUS_SUCCESS,
-    'warning':            STATUS_WARNING,
-    'error':              STATUS_ERROR,
-    'info':               BRAND_DARK_GOLD,
     
     # ── Picker-specific ──
     'image_viewer_bg':       IMAGE_CANVAS_LIGHT,
@@ -992,12 +920,9 @@ LIGHT_THEME_COLORS: Final[dict[str, str | int]] = {
     'zoom_label_border':     TRUE_BLACK,
     'swatch_border_width':   2,
     'swatch_border_color':   TRUE_BLACK,
-    'output_text_color':     BRAND_DARK_GOLD,
-    'text_accent_secondary': BRAND_DARK_GOLD,
     
-    # ── Gold accent hover/pressed tints (no better semantic name exists) ──
+    # ── Gold accent hover tint (no better semantic name exists) ──
     'accent_hover':       BRAND_DARK_GOLD_HOVER,
-    'accent_pressed':     BRAND_DARK_GOLD_PRESSED,
 }
 
 
@@ -1022,7 +947,10 @@ IMAGE_MODE_COLORS: Final[dict[str, str | int]] = {
     # APP_CANVAS_OVERLAY, painted nothing and was removed -- proven by
     # render first, RNV-CANVAS-OVERLAY-GONE, 2026-09-26. The key comes
     # through the splat with dark's value, unread.
-    'scroll_area_bg':     APP_WINDOW_OVERLAY,
+    # No scroll_area_bg either, since RNV-NAMED-AND-USED (2026-10-04):
+    # in image mode the scroll area is transparent over the same
+    # OVERLAY_BLACK_MEDIUM, and both of its sheets read the key only in
+    # their other branch. Its override, APP_WINDOW_OVERLAY, went.
     'zoom_label_bg':      APP_PANEL_OVERLAY,
     'checkbox_bg':        translucent(TRUE_BLACK, IMAGE_CHECKBOX_ALPHA),
     # ── Scrollbar overrides — translucent greys, gold on hover ──
@@ -1141,7 +1069,7 @@ def prefers_dark_ink(background: "str | tuple[int, int, int]") -> bool:
 
 def contrast_ink_rgb(background: "str | tuple[int, int, int]") -> tuple[int, int, int]:
     """The same answer as an RGB triple, for the QColor and Pillow callers."""
-    return (0, 0, 0) if prefers_dark_ink(background) else (255, 255, 255)
+    return _to_rgb(contrast_ink(background))
 
 
 def swatch_edge(background: "str | tuple[int, int, int]") -> str:
@@ -1169,21 +1097,11 @@ STATUS_SUCCESS_BG: Final[str] = STATUS_SUCCESS
 STATUS_SUCCESS_FG: Final[str] = "#000000"
 STATUS_ERROR_BG:   Final[str] = STATUS_ERROR
 STATUS_ERROR_FG:   Final[str] = "#000000"
-# Unreferenced outside this file. Kept as an alias rather than
-# deleted -- rnv-icon-builder holds the same name for the folder
-# watcher, and the register still has no name for `running` as
-# distinct from `succeeded`; it recorded on 2026-09-04 that the
-# trigger for registering one is a SECOND consumer, not a date.
-#
-# IT ALIASES success-text, NOT success. Ruled by the register the
-# same day, after the identically-named constant in icon-builder --
-# which IS painted, with `color:` -- turned out to be about to fail
-# the 4.5 text floor on adoption day. Bootstrap's green read 5.55 on
-# BRAND_BLACK and doubled as text by accident; the RNV fills are
-# mid-tones by design and #926c89 reads 3.91 there. Nothing paints
-# this one today, and that is the reason to get it right now rather
-# than the reason not to: it is what the next reader will copy.
-STATUS_ACTIVE_COLOR: Final[str] = STATUS_SUCCESS_TEXT
+# RNV-NAMED-AND-USED (2026-10-04): an alias for an active label stood
+# here, on success-text, unreferenced outside this file. It went: a name
+# is kept for what uses it. If this application ever paints a running
+# state as TEXT, it takes STATUS_SUCCESS_TEXT -- the register's ruling
+# of 2026-09-04 -- and never the fill, which reads 3.91 on BRAND_BLACK.
 
 
 # ── Semi-transparent black overlays (fixed visual effects) ──
@@ -1206,15 +1124,25 @@ OVERLAY_BLACK_HEAVY:  Final[tuple[int, int, int, int]] = translucent_tuple(
     TRUE_BLACK, OVERLAY_HEAVY_ALPHA)
 """Heavy dim overlay (alpha 180/255) — magnifier crosshair shadow."""
 
-# ── SVG palette export (printable artifact) ──
-# Fixed paper-white background and ink-black stroke for the SVG export
-# format. Theme-independent because exported SVGs need to look the same
-# regardless of which theme was active at export time.
+# ── The selection box (fixed, like the overlays above) ──
+# RNV-NAMED-AND-USED (2026-10-04): the dotted box dragged over an image.
+# It was written "yellow" twice in ui/image_viewer.py, once for the cache
+# and once for the road without it. CSS yellow is this value; the same
+# pixels. No register value holds it, so the name is the application's.
+SELECTION_BOX_COLOR: Final[str] = "#ffff00"
+"""The image viewer's selection rectangle (CSS yellow)."""
+
+# ── Palette export (printable artifact) ──
+# Fixed paper-white background and ink-black stroke for the exported
+# palette: the SVG file and, since RNV-NAMED-AND-USED (2026-10-04), the
+# image sheet, which wrote the same two as integer tuples. Theme-
+# independent because an export needs to look the same regardless of
+# which theme was active at export time.
 SVG_EXPORT_BG:     Final[str] = "#ffffff"
-"""Background fill for SVG palette export (paper white)."""
+"""Background fill for palette export (paper white)."""
 
 SVG_EXPORT_STROKE: Final[str] = "#000000"
-"""Stroke color for SVG palette export swatch borders (ink black)."""
+"""Stroke color for palette export swatch borders (ink black)."""
 
 # ── Missing-data placeholder ──
 # Default value used when a color history dict entry is missing its 'hex'
@@ -1222,6 +1150,12 @@ SVG_EXPORT_STROKE: Final[str] = "#000000"
 # visually obvious in the UI rather than silently rendering as a real color.
 MISSING_HEX_PLACEHOLDER: Final[str] = "#000000"
 """Placeholder hex when a color entry dict lacks its 'hex' key."""
+
+MISSING_RGB_PLACEHOLDER: Final[tuple[int, int, int]] = _to_rgb(MISSING_HEX_PLACEHOLDER)
+"""The same sentinel as channels, when an entry lacks its 'rgb' key.
+RNV-NAMED-AND-USED (2026-10-04): this was [0, 0, 0], written out in the four
+places that read an entry, beside the hex that already had its name. Made
+from that hex, so the two cannot part."""
 
 
 # ============================================================================
@@ -1483,7 +1417,6 @@ __all__: list[str] = [
     'BRAND_GOLD',
     'BRAND_DARK_GOLD',
     'BRAND_GOLD_RGB',
-    'BRAND_DARK_GOLD_RGB',
     'BRAND_GOLD_HOVER',
     'BRAND_GOLD_PRESSED',
     'BRAND_DARK_GOLD_HOVER',
@@ -1516,16 +1449,16 @@ __all__: list[str] = [
     'STATUS_SUCCESS_BG',
     'STATUS_SUCCESS_FG',
     'STATUS_ERROR',
-    'STATUS_ERROR_LIGHT',
     'STATUS_ERROR_BG',
     'STATUS_ERROR_FG',
-    'STATUS_ACTIVE_COLOR',
     'OVERLAY_BLACK_LIGHT',
     'OVERLAY_BLACK_MEDIUM',
     'OVERLAY_BLACK_HEAVY',
+    'SELECTION_BOX_COLOR',
     'SVG_EXPORT_BG',
     'SVG_EXPORT_STROKE',
     'MISSING_HEX_PLACEHOLDER',
+    'MISSING_RGB_PLACEHOLDER',
     # Classes
     'ThemeManager',
     # App constants

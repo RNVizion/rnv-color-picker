@@ -31,7 +31,7 @@ from utils.config import (
     CONTRAST_DEMO_BLACK_FG, CONTRAST_DEMO_WHITE_FG,
     STATUS_SUCCESS_BG, STATUS_SUCCESS_FG,
     STATUS_ERROR_BG, STATUS_ERROR_FG,
-    MISSING_HEX_PLACEHOLDER,
+    MISSING_HEX_PLACEHOLDER, MISSING_RGB_PLACEHOLDER,
 )
 from core.color_history import get_color_history_manager
 from core.color_harmony import ColorHarmony, HarmonyType
@@ -69,7 +69,7 @@ class ColorHistoryItem(QListWidgetItem):
         
         # Set background color to show the actual color
         try:
-            rgb = color_data.get("rgb", [0, 0, 0])
+            rgb = color_data.get("rgb", MISSING_RGB_PLACEHOLDER)
             
             # Use cached colors if available
             if CACHE_AVAILABLE and QColorCache and ColorCache:
@@ -283,7 +283,7 @@ class SettingsPanel(QDialog):
             return
         
         try:
-            rgb = tuple(item.color_data.get("rgb", [0, 0, 0]))
+            rgb = tuple(item.color_data.get("rgb", MISSING_RGB_PLACEHOLDER))
             hex_code = item.color_data.get("hex", MISSING_HEX_PLACEHOLDER)
             
             # Emit signal to add color to palette
@@ -357,7 +357,7 @@ class SettingsPanel(QDialog):
                         
                         for entry in history:
                             hex_code = entry.get("hex", MISSING_HEX_PLACEHOLDER)
-                            rgb = entry.get("rgb", [0, 0, 0])
+                            rgb = entry.get("rgb", MISSING_RGB_PLACEHOLDER)
                             timestamp = entry.get("timestamp", "")
                             f.write(f"{hex_code}  RGB({rgb[0]}, {rgb[1]}, {rgb[2]})  {timestamp}\n")
                     

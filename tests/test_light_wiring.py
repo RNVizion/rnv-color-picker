@@ -158,8 +158,6 @@ def test_one_hex_one_name_unless_it_is_a_declared_split():
         by_hex.setdefault(hexv.lower(), []).append(name)
     allowed_pairs = {
         frozenset({"APP_PRESSED_LIGHT", "GREY_E0"}),
-        frozenset({"APP_HOVER_LIGHT", "GREY_EE"}),
-        frozenset({"APP_TEXT", "GREY_DD"}),
         # pre-existing, documented elsewhere in this module
         frozenset({"WHITE", "CONTRAST_DEMO_WHITE_BG"}),
         frozenset({"TRUE_BLACK", "CONTRAST_DEMO_BLACK_BG"}),

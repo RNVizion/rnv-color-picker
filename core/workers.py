@@ -15,7 +15,7 @@ from sklearn.cluster import KMeans
 from typing import Callable
 from dataclasses import dataclass
 
-from utils.config import prefers_dark_ink
+from utils.config import contrast_ink_rgb, SVG_EXPORT_BG, SVG_EXPORT_STROKE
 from utils.logger import Logger
 from utils.error_handler import ErrorHandler, ErrorContext
 from utils.signal_manager import SignalConnectionManager
@@ -431,10 +431,12 @@ class PaletteExportWorker(QThread):
             
             # Create image
             is_png = self.file_path.lower().endswith('.png')
+            # RNV-NAMED-AND-USED (2026-10-04): the sheet's paper and ink,
+            # by name. They were (255, 255, 255) and (0, 0, 0).
             if is_png:
-                palette_img = Image.new("RGBA", (page_width, page_height), (255, 255, 255, 255))
+                palette_img = Image.new("RGBA", (page_width, page_height), SVG_EXPORT_BG)
             else:
-                palette_img = Image.new("RGB", (page_width, page_height), (255, 255, 255))
+                palette_img = Image.new("RGB", (page_width, page_height), SVG_EXPORT_BG)
             
             draw = ImageDraw.Draw(palette_img)
             
@@ -477,7 +479,7 @@ class PaletteExportWorker(QThread):
                 # Draw swatch
                 draw.rectangle(
                     [x, y, x + swatch_width, y + swatch_height],
-                    fill=rgb, outline=(0, 0, 0), width=2
+                    fill=rgb, outline=SVG_EXPORT_STROKE, width=2
                 )
                 
                 # Text color based on brightness (use cache if available)
@@ -486,7 +488,7 @@ class PaletteExportWorker(QThread):
                     text_color = ColorCache.get_text_color_for_background((r, g, b))
                     hex_code = ColorCache.rgb_to_hex((r, g, b))
                 else:
-                    text_color = (0, 0, 0) if prefers_dark_ink((r, g, b)) else (255, 255, 255)
+                    text_color = contrast_ink_rgb((r, g, b))
                     hex_code = f'#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}'
                 
                 # Draw text

@@ -14,6 +14,7 @@ from pathlib import Path
 from utils.logger import Logger
 from utils.error_handler import ErrorHandler
 from utils.cache import ColorCache
+from utils.config import MISSING_RGB_PLACEHOLDER
 
 logger = Logger("ColorHistory")
 ERROR_HANDLER_AVAILABLE = True
@@ -244,7 +245,7 @@ class ColorHistoryManager:
         """
         colors = []
         for entry in self.history[:count]:
-            rgb = entry.get("rgb", [0, 0, 0])
+            rgb = entry.get("rgb", MISSING_RGB_PLACEHOLDER)
             colors.append(tuple(rgb))
         return colors
     

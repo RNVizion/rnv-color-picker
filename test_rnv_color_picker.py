@@ -1353,7 +1353,7 @@ class TestConfig(unittest.TestCase):
     def test_brand_gold(self):       self.assertEqual(config.BRAND_GOLD, "#d2bc93")
     def test_brand_gold_dark(self):  self.assertEqual(config.BRAND_DARK_GOLD, "#8c7337")
     def test_brand_gold_rgb(self):   self.assertEqual(config.BRAND_GOLD_RGB, (210,188,147))
-    def test_brand_gold_dark_rgb(self): self.assertEqual(config.BRAND_DARK_GOLD_RGB, (140,115,55))
+    def test_brand_gold_dark_rgb(self): self.assertEqual(ColorMath.hex_to_rgb(config.BRAND_DARK_GOLD), (140,115,55))
 
     # ── Theme dicts present ──
     def test_dark_theme_exists(self):  self.assertIsInstance(config.DARK_THEME_COLORS, dict)
@@ -1374,7 +1374,7 @@ class TestConfig(unittest.TestCase):
 
     # ── Required keys present in all 3 themes ──
     def test_all_themes_have_required_keys(self):
-        required = ["window_bg","panel_bg","card_bg","text_primary","text_secondary",
+        required = ["window_bg","card_bg","text_primary",
                     "border_default","dialog_btn_bg","tooltip_border","scrollbar_bg",
                     "scrollbar_handle","scrollbar_handle_hover"]
         for name, theme in [("DARK", config.DARK_THEME_COLORS),
@@ -1849,7 +1849,7 @@ class TestEdgeCases(unittest.TestCase):
         # but well above the conversational-readability floor. Just check it's
         # in a reasonable contrast range.
         ratio = ColorAccessibility.calculate_contrast_ratio(
-            config.BRAND_DARK_GOLD_RGB, (255,255,255))
+            ColorMath.hex_to_rgb(config.BRAND_DARK_GOLD), (255,255,255))
         self.assertGreater(ratio, 2.5)
         self.assertLess(ratio, 5.0)
 

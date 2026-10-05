@@ -40,7 +40,6 @@ RETIRED = {
 
 REGISTERED = {
     "STATUS_SUCCESS": "#926c89",
-    "STATUS_WARNING": "#a2703c",
     "STATUS_ERROR": "#c75b64",
     "STATUS_SUCCESS_TEXT": "#ad85a3",
     "STATUS_SUCCESS_TEXT_LIGHT": "#825d79",
@@ -53,7 +52,10 @@ REGISTERED = {
     "STATUS_ERROR_TEXT_LIGHT": "#ae4650",
 }
 
-FILLS = ("STATUS_SUCCESS", "STATUS_WARNING", "STATUS_ERROR")
+#: The fills this application draws. The register holds a third, the warning
+#: fill; nothing here drew it, so since RNV-NAMED-AND-USED (2026-10-04) it
+#: is not carried.
+FILLS = ("STATUS_SUCCESS", "STATUS_ERROR")
 TEXT_FLOOR = 4.5
 FILL_FLOOR = 3.0
 
@@ -158,23 +160,11 @@ def test_no_retired_value_is_in_any_palette(dead):
         assert not bad, f"{mode} still holds {dead} on {sorted(bad)} -- {RETIRED[dead]}"
 
 
-@pytest.mark.parametrize("key,const", [
-    ("success", "STATUS_SUCCESS"),
-    ("warning", "STATUS_WARNING"),
-    ("error", "STATUS_ERROR"),
-])
-def test_every_semantic_key_is_wired_through_a_constant(key, const):
-    """Swapping one literal for another passes a value check and defeats the
-    point: the constant is what a later register change moves.
-
-    Before 2026-09-03 all three of these were bare literals in two palettes,
-    and the green additionally had two more copies in the file tail -- one
-    colour at four addresses, none of them naming it.
-    """
-    src = (ROOT / "utils" / "config.py").read_text(encoding="utf-8-sig")
-    found = len(re.findall(r"'%s':\s+%s,\n" % (key, const), src))
-    assert found == 2, (
-        f"'{key}' is wired through {const} in {found} palettes, not 2")
+# RNV-NAMED-AND-USED (2026-10-04): a test stood here that held the palettes'
+# semantic keys to the fills by name. The keys went: no line of this
+# application looked one up. What it paints from the family is the badges,
+# the error text and the rating scale, each held below; and
+# tests/test_named_and_used.py fails for any palette colour nothing reads.
 
 
 def test_the_error_text_is_named_in_all_three_palettes():
@@ -205,7 +195,7 @@ def test_a_fill_clears_the_fill_floor_and_cannot_carry_text(name, ground):
 
 
 @pytest.mark.parametrize("mode,ground", [
-    ("dark", "panel_bg"), ("light", "panel_bg"), ("image", "panel_bg"),
+    ("dark", "dialog_bg"), ("light", "dialog_bg"), ("image", "dialog_bg"),
 ])
 def test_the_error_text_clears_its_own_panel(mode, ground):
     palette = PALETTES[mode]
@@ -231,18 +221,13 @@ def test_the_badges_still_pair_with_black():
 def test_the_role_aliases_point_at_the_colour_constants():
     """The naming rule: a constant names a COLOUR, an alias names a ROLE.
 
-    STATUS_ERROR_BG was already this shape. STATUS_SUCCESS_BG and
-    STATUS_ACTIVE_COLOR each held their own copy of the green instead.
+    STATUS_ERROR_BG was already this shape. STATUS_SUCCESS_BG held its own
+    copy of the green instead, and so did an alias for an active label,
+    which nothing painted; that alias went on 2026-10-04 (RNV-NAMED-AND-
+    USED).
     """
     assert C.STATUS_SUCCESS_BG == C.STATUS_SUCCESS
     assert C.STATUS_ERROR_BG == C.STATUS_ERROR
-    assert C.STATUS_ACTIVE_COLOR == C.STATUS_SUCCESS_TEXT
-    assert C.STATUS_ACTIVE_COLOR != C.STATUS_SUCCESS, (
-        "the active alias points at the FILL. An `active` label is painted "
-        "with `color:` -- the register ruled on 2026-09-04 that it aliases "
-        "success-text -- and the fill reads 3.91 on BRAND_BLACK against a 4.5 "
-        "text floor. Nothing paints this constant in THIS app, which is why "
-        "it has to be right: it is what the next reader copies.")
 
 
 def test_the_two_spellings_did_not_come_back():

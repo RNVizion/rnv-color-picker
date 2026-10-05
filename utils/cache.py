@@ -174,8 +174,10 @@ class QColorCache:
         """Initialize constant colors on first use."""
         if cls.LOCK_BORDER is None:
             cls.LOCK_BORDER = QColor(BRAND_GOLD)
-            cls.BLACK = QColor(0, 0, 0)
-            cls.WHITE = QColor(255, 255, 255)
+            # RNV-NAMED-AND-USED (2026-10-04): were QColor(0, 0, 0) and
+            # QColor(255, 255, 255). The same two colours, by name.
+            cls.BLACK = QColor(TRUE_BLACK)
+            cls.WHITE = QColor(WHITE)
             cls.TRANSPARENT = QColor(0, 0, 0, 0)
     
     @classmethod

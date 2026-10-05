@@ -54,7 +54,6 @@ PINNED = {
     'APP_PANEL_HOVER': '#3a3a3a',
     'APP_HOVER_LIGHT': '#eeeeee',
     'APP_SURFACE_LIGHT_3': '#f5f5f5',
-    'APP_SURFACE_LIGHT_2': '#fbfbfb',
     'APP_PRESSED_LIGHT': '#e0e0e0',
 }
 
@@ -62,7 +61,7 @@ PINNED = {
 #: swatch_border_color is an EDGE rather than an ink -- the grid governs both,
 #: which is why it moves with the text instead of being left behind.
 INK_KEYS = ('text_primary', 'dialog_btn_text', 'main_btn_text',
-            'main_btn_hover_text', 'tooltip_text', 'swatch_border_color')
+            'main_btn_hover_text', 'swatch_border_color')
 
 #: The other half of #e0e0e0's old double life: a LIGHT surface, which the
 #: grid does not govern and which did not move.

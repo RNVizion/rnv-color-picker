@@ -345,7 +345,10 @@ def test_nothing_moved_that_was_not_ruled():
         assert where in live, f"{where} is no longer derived"
         assert decompose(live[where]) == (getattr(colors, base).lower(), alpha), (
             f"{where} is {live[where]}, which is not {base} at {alpha:#04x}")
-    assert IMAGE["window_bg"] == IMAGE["scroll_area_bg"] == colors.APP_WINDOW_OVERLAY
+    # RNV-NAMED-AND-USED (2026-10-04): scroll_area_bg held it too, and image
+    # mode never read that key; it comes through the splat now, unread.
+    assert IMAGE["window_bg"] == colors.APP_WINDOW_OVERLAY
+    assert IMAGE["scroll_area_bg"] == DARK["scroll_area_bg"]
     assert IMAGE["zoom_label_bg"] == colors.APP_PANEL_OVERLAY
 
 
@@ -382,7 +385,9 @@ def test_the_collapsed_value_is_gone_in_every_spelling():
 
 LOWER8_MODULES = ('utils.config',)
 #: Found when this was written; below the floor, the sweep has gone blind.
-LOWER8_FLOOR = 10
+#: 10 until RNV-NAMED-AND-USED (2026-10-04), when image mode's unread
+#: scroll_area_bg override went.
+LOWER8_FLOOR = 9
 LOWER8_FILES = 25
 
 

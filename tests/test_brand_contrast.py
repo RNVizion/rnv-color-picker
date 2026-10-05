@@ -87,7 +87,6 @@ DERIVED_CONSTANTS = {
     "BRAND_GOLD_HOVER",
     "BRAND_GOLD_PRESSED",
     "BRAND_GOLD_RGB",
-    "BRAND_DARK_GOLD_RGB",
 }
 
 # Registered brand values. These must be literals: the register is the
@@ -185,7 +184,6 @@ def test_light_hover_moves_away_from_its_ground() -> None:
 
 @pytest.mark.parametrize("const,rgb", [
     ("BRAND_GOLD", "BRAND_GOLD_RGB"),
-    ("BRAND_DARK_GOLD", "BRAND_DARK_GOLD_RGB"),
 ])
 def test_rgb_tuple_matches_its_hex(const: str, rgb: str) -> None:
     """The RGB-tuple blind spot.
@@ -631,8 +629,10 @@ def test_the_rating_scale_is_a_palette_key_in_every_mode() -> None:
     a user's colours against WCAG painting its own verdict below the floor.
     """
     from core.accessibility import ColorAccessibility
+    # RNV-NAMED-AND-USED (2026-10-04): the settings panel paints dialog_bg.
+    # This read panel_bg, a key nothing painted, which held the same value.
     for name, palette in PALETTES.items():
-        ground = palette.get("panel_bg") or palette["window_bg"]
+        ground = palette["dialog_bg"]
         for key in ColorAccessibility.RATING_KEYS:
             assert key in palette, f"{name} has no {key}"
             ratio = contrast_ratio(palette[key], ground)
@@ -672,7 +672,7 @@ def test_error_text_is_theme_aware() -> None:
             f"{name} has no status_error_text key")
     dark = C.DARK_THEME_COLORS
     assert contrast_ratio(dark["status_error_text"],
-                          dark["panel_bg"]) >= TEXT_FLOOR
+                          dark["dialog_bg"]) >= TEXT_FLOOR
 
 
 RETIRED = {
@@ -747,13 +747,13 @@ def test_retired_values_are_gone() -> None:
 
 def test_dark_error_text_clears_its_panel() -> None:
     d = C.DARK_THEME_COLORS
-    assert contrast_ratio(d["status_error_text"], d["panel_bg"]) >= TEXT_FLOOR
+    assert contrast_ratio(d["status_error_text"], d["dialog_bg"]) >= TEXT_FLOOR
 
 
 def test_light_error_text_clears_its_panel() -> None:
     """No exemption. The light error red is derived to clear the floor."""
     light = C.LIGHT_THEME_COLORS
-    ratio = contrast_ratio(light["status_error_text"], light["panel_bg"])
+    ratio = contrast_ratio(light["status_error_text"], light["dialog_bg"])
     assert ratio >= TEXT_FLOOR, (
         f"light error text measures {ratio:.4f}, below the {TEXT_FLOOR} floor")
 
@@ -996,18 +996,13 @@ def test_every_gold_is_the_accent_or_derived_from_it() -> None:
     allowed = {getattr(C, n).lower() for n in
                ("BRAND_GOLD", "BRAND_DARK_GOLD", "BRAND_DARK_GOLD_DEEP",
                 "BRAND_GOLD_HOVER")}
-    # RNV-STATUS-FAMILY (2026-09-03): the semantic warning is not a
-    # gold, but it reads as one to the shape test below because it
-    # half IS one -- the register derives it 50% toward
-    # BRAND_DARK_GOLD in OKLab. CIEDE2000 9.1 from that gold, which
-    # clears the register's own 8.40 threshold. Named rather than
-    # written as a hex so it moves with the constant.
-    allowed.add(C.STATUS_WARNING.lower())
-    # RNV-RATING-SCALE (2026-09-12): the warning TEXT pair reads as gold for
-    # exactly the same reason and by the same construction -- they are the
-    # text siblings of the fill above and hold its hue, so the shape test
-    # below cannot tell them from a hand-written gold. Registered values, and
-    # named rather than written as hexes so they move with the constants.
+    # RNV-RATING-SCALE (2026-09-12): the warning TEXT pair reads as gold to
+    # the shape test below because it half IS one -- the register derives
+    # the warning 50% toward BRAND_DARK_GOLD in OKLab -- so the test cannot
+    # tell them from a hand-written gold. Registered values, and named
+    # rather than written as hexes so they move with the constants. The
+    # warning FILL was allowed here too until RNV-NAMED-AND-USED
+    # (2026-10-04): no palette holds it now.
     allowed.add(C.STATUS_WARNING_TEXT.lower())
     allowed.add(C.STATUS_WARNING_TEXT_LIGHT.lower())
     stray = []

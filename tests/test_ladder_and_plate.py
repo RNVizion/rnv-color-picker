@@ -63,7 +63,7 @@ OVERLAYS = {
 WIRED = {
     'DARK_THEME_COLORS': ('hover_bg', 'dialog_btn_hover_bg', 'list_hover_bg',
                           'image_viewer_bg'),
-    'IMAGE_MODE_COLORS': ('window_bg', 'scroll_area_bg', 'zoom_label_bg'),
+    'IMAGE_MODE_COLORS': ('window_bg', 'zoom_label_bg'),
     'LIGHT_THEME_COLORS': ('hover_bg', 'dialog_btn_hover_bg', 'tab_hover_bg',
                            'list_hover_bg', 'image_viewer_bg'),
 }
@@ -145,7 +145,9 @@ def test_the_wiring_map_is_not_empty():
     assert WIRED and all(WIRED.values())
     # 13 until 2026-09-26, when image mode's image_viewer_bg override went:
     # nothing read it (RNV-CANVAS-OVERLAY-GONE, tests/test_derived_values.py).
-    assert sum(len(v) for v in WIRED.values()) >= 12
+    # 12 until 2026-10-04, when its scroll_area_bg override went the same
+    # way (RNV-NAMED-AND-USED).
+    assert sum(len(v) for v in WIRED.values()) >= 11
 
 
 # ------------------------------------------------------------------- the values
