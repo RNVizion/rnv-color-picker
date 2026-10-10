@@ -83,9 +83,7 @@ def contrast_ratio(fg: str, bg: str) -> float:
 DERIVED_CONSTANTS = {
     "BRAND_DARK_GOLD_DEEP",
     "BRAND_DARK_GOLD_HOVER",
-    "BRAND_DARK_GOLD_PRESSED",
     "BRAND_GOLD_HOVER",
-    "BRAND_GOLD_PRESSED",
     "BRAND_GOLD_RGB",
 }
 
@@ -150,23 +148,6 @@ def test_deep_gold_tracks_its_source() -> None:
 
 def test_dark_hover_tracks_its_source() -> None:
     assert C.BRAND_GOLD_HOVER == C.lighten(C.BRAND_GOLD, 13)
-
-
-def test_dark_pressed_is_the_accent_itself() -> None:
-    """Mirrors light. Pressed returns to rest rather than claiming a third
-    gold -- see test_two_golds_per_mode below, which is the rule this
-    serves."""
-    assert C.BRAND_GOLD_PRESSED == C.BRAND_GOLD
-
-
-def test_light_pressed_is_the_accent_itself() -> None:
-    """There is nowhere darker for a light-mode pressed state to go.
-
-    Darkening past BRAND_DARK_GOLD drops black-on-gold under the floor,
-    which would force white text and break the register's text-on-gold
-    rule. So pressed IS the accent, deliberately.
-    """
-    assert C.BRAND_DARK_GOLD_PRESSED == C.BRAND_DARK_GOLD
 
 
 def test_light_hover_moves_away_from_its_ground() -> None:
@@ -952,8 +933,7 @@ def _golds_in(palette: dict[str, str]) -> dict[str, list[str]]:
     """Distinct gold values a palette holds, and the keys holding each."""
     known = {getattr(C, n).lower() for n in
              ("BRAND_GOLD", "BRAND_DARK_GOLD", "BRAND_DARK_GOLD_DEEP",
-              "BRAND_GOLD_HOVER", "BRAND_GOLD_PRESSED",
-              "BRAND_DARK_GOLD_HOVER", "BRAND_DARK_GOLD_PRESSED")}
+              "BRAND_GOLD_HOVER", "BRAND_DARK_GOLD_HOVER")}
     out: dict[str, list[str]] = {}
     for key, value in palette.items():
         if isinstance(value, str) and value.lower() in known:

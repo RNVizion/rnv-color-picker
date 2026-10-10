@@ -18,13 +18,11 @@ from PyQt6.QtWidgets import QApplication
 
 from utils.logger import Logger
 from utils.config import (
-    BRAND_GOLD, BRAND_DARK_GOLD,
-    BRAND_GOLD_HOVER, BRAND_GOLD_PRESSED,
-    BRAND_DARK_GOLD_HOVER, BRAND_DARK_GOLD_PRESSED,
+    BRAND_GOLD,
     TRUE_BLACK, WHITE,
     swatch_edge, contrast_ink_rgb,
     STATUS_ERROR_BG,
-    IMAGE_MENU_BG, IMAGE_BUTTON_FRAME_BG,
+    IMAGE_MENU_BG,
 )
 
 logger = Logger("Cache")
@@ -383,34 +381,6 @@ class StylesheetCache:
         return cls._cache[key]
     
     @classmethod
-    def get_button_frame_stylesheet(
-        cls, 
-        theme_name: str, 
-        theme: dict, 
-        is_image_mode: bool
-    ) -> str:
-        """Get cached button frame stylesheet."""
-        key = (theme_name, is_image_mode, 'button_frame')
-        
-        if key not in cls._cache:
-            if is_image_mode:
-                cls._cache[key] = f"""
-                    QFrame {{
-                        background-color: {IMAGE_BUTTON_FRAME_BG};
-                        border-radius: 8px;
-                    }}
-                """
-            else:
-                cls._cache[key] = f"""
-                    QFrame {{
-                        background-color: {theme['window_bg']};
-                        border-radius: 8px;
-                    }}
-                """
-        
-        return cls._cache[key]
-    
-    @classmethod
     def get_scroll_area_stylesheet(
         cls,
         theme_name: str,
@@ -483,46 +453,6 @@ class StylesheetCache:
                     background-color: {theme['zoom_label_bg']};
                     padding: 2px 6px;
                     border-radius: 3px;
-                }}
-            """
-        
-        return cls._cache[key]
-    
-    @classmethod
-    def get_close_button_stylesheet(cls, is_dark: bool = True) -> str:
-        """Get cached close/OK button stylesheet (gold themed, theme-aware)."""
-        key = ('static', 'close_button', is_dark)
-        
-        if key not in cls._cache:
-            if is_dark:
-                bg      = BRAND_GOLD
-                # RNV-INK-RULE: a brand decision, not a measurement. Bright
-                # gold is a light ground and takes black; dark gold takes
-                # white. Measured, dark gold is 4.54 white against 4.62 black
-                # -- a coin flip that would have moved a pixel for nothing.
-                fg      = TRUE_BLACK
-                hover   = BRAND_GOLD_HOVER
-                pressed = BRAND_GOLD_PRESSED
-            else:
-                bg      = BRAND_DARK_GOLD
-                fg      = WHITE
-                hover   = BRAND_DARK_GOLD_HOVER
-                pressed = BRAND_DARK_GOLD_PRESSED
-            cls._cache[key] = f"""
-                QPushButton {{
-                    background-color: {bg};
-                    color: {fg};
-                    border: none;
-                    padding: 8px 24px;
-                    border-radius: 4px;
-                    font-weight: bold;
-                    min-width: 80px;
-                }}
-                QPushButton:hover {{
-                    background-color: {hover};
-                }}
-                QPushButton:pressed {{
-                    background-color: {pressed};
                 }}
             """
         

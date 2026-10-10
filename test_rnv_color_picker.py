@@ -1925,14 +1925,6 @@ class TestStylesheetCache(unittest.TestCase):
         ss = StylesheetCache.get_scrollbar_stylesheet(self.theme_name, self.theme)
         self.assertIsInstance(ss, str)
 
-    def test_close_button_stylesheet_dark(self):
-        ss = StylesheetCache.get_close_button_stylesheet(is_dark=True)
-        self.assertIsInstance(ss, str)
-
-    def test_close_button_stylesheet_light(self):
-        ss = StylesheetCache.get_close_button_stylesheet(is_dark=False)
-        self.assertIsInstance(ss, str)
-
     def test_header_stylesheet(self):
         ss = StylesheetCache.get_header_stylesheet(size=14, bold=True)
         self.assertIn("font-size", ss); self.assertIn("14px", ss)

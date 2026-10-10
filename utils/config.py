@@ -241,35 +241,11 @@ is why white measured 2.3868 on it. Stated as "a lighter tint for hover
 feedback", the old rule was wrong half the time.
 """
 
-BRAND_DARK_GOLD_PRESSED: Final[str] = BRAND_DARK_GOLD
-"""Light-mode pressed. It IS the accent. Read by the cached close-button
-sheet alone since the palettes' `accent_pressed` went (2026-10-04).
-
-Two reasons, and either alone would be enough. The brand runs two golds
-per mode and light spends its second on BRAND_DARK_GOLD_DEEP. And
-darkening past BRAND_DARK_GOLD drops black-on-gold under the floor, which
-would force white text and break the register's text-on-gold rule.
-"""
-
 BRAND_GOLD_HOVER: Final[str] = lighten(BRAND_GOLD, 13)      # -> #dfc9a0
 """Dark-mode hover. Derived, replacing the hand-written #dcc9a3.
 
 The old hand-written value's deltas were +10/+13/+16 -- non-uniform, so it had
 drifted off BRAND_GOLD's hue. A uniform step snaps it back.
-"""
-
-BRAND_GOLD_PRESSED: Final[str] = BRAND_GOLD
-"""Dark-mode pressed. It IS the accent, mirroring light mode exactly.
-
-The brand runs TWO golds per mode -- the registered one and one derived
-from it -- and no more. Dark spends its second on hover, so pressed
-returns to the accent rather than claiming a third.
-
-The interaction still reads: rest sits at the accent, hover lifts away
-from the dark ground, pressed drops back to rest. That is the same shape
-light uses, where hover deepens away from the light ground and pressed
-returns. The hand-written #b7a480 it replaces was a third gold serving
-one key.
 """
 
 BRAND_GOLD_RGB: Final[tuple[int, int, int]] = _to_rgb(BRAND_GOLD)
@@ -499,9 +475,6 @@ applications use; its colour was #505050 until 2026-09-25."""
 
 IMAGE_MENU_ALPHA: Final[int] = 0xC8
 """200. The context menu's ground in image mode (TRUE_BLACK)."""
-
-IMAGE_BUTTON_FRAME_ALPHA: Final[int] = 0x64
-"""100. The frame behind the main buttons in image mode (TRUE_BLACK)."""
 
 OVERLAY_LIGHT_ALPHA: Final[int] = 0x32
 """50. The screen picker's shading outside the magnifier (TRUE_BLACK)."""
@@ -965,11 +938,15 @@ IMAGE_MODE_COLORS: Final[dict[str, str | int]] = {
     'scrollbar_border':        'transparent',
 }
 
-# Image-mode grounds painted by stylesheets that are not built from
-# IMAGE_MODE_COLORS -- the context menu, three copies of it, and the
-# frame behind the main buttons. Named here so they derive with the rest.
+# The image-mode ground painted by stylesheets that are not built from
+# IMAGE_MODE_COLORS: the context menu, three copies of it. Named here so
+# it derives with the rest.
+# RNV-RULINGS-2026-10-05, item 6: the frame behind the main buttons had a name
+# here too, read only by a cached stylesheet function nothing called. The
+# function, the name and its alpha are gone, and so are the two pressed
+# golds only the other such function read. A pressed button paints its
+# palette's accent, which is what those two names held.
 IMAGE_MENU_BG: Final[str] = translucent(TRUE_BLACK, IMAGE_MENU_ALPHA)
-IMAGE_BUTTON_FRAME_BG: Final[str] = translucent(TRUE_BLACK, IMAGE_BUTTON_FRAME_ALPHA)
 
 
 # ============================================================================
@@ -1418,9 +1395,7 @@ __all__: list[str] = [
     'BRAND_DARK_GOLD',
     'BRAND_GOLD_RGB',
     'BRAND_GOLD_HOVER',
-    'BRAND_GOLD_PRESSED',
     'BRAND_DARK_GOLD_HOVER',
-    'BRAND_DARK_GOLD_PRESSED',
     # Theme dicts + entry function
     'DARK_THEME_COLORS',
     'LIGHT_THEME_COLORS',
@@ -1445,7 +1420,6 @@ __all__: list[str] = [
     'DEBUG_TEXT',
     'DEBUG_BG',
     'IMAGE_MENU_BG',
-    'IMAGE_BUTTON_FRAME_BG',
     'STATUS_SUCCESS_BG',
     'STATUS_SUCCESS_FG',
     'STATUS_ERROR',

@@ -738,8 +738,17 @@ class TestWorkerManagerStartWorker:
         w = ColorExtractionWorker(small_pixels)
         with qtbot.waitSignal(w.finished, timeout=5000):
             m.start_worker(w)
-        # After finished, the auto-cleanup should have removed it
+        # RNV-RULINGS-2026-10-05, item 8. The manager's cleanup is a second slot on
+        # the same signal, queued to this thread like the one waitSignal
+        # waits on. The wait ends on the first to arrive, and the cleanup
+        # may still be in the queue. Asserted there and then, this failed
+        # when run alone: 14 times in 15 one day, 4 in 30 the next. So it
+        # waits for the cleanup itself: 0 in 100.
+        qtbot.waitUntil(lambda: w not in m._active_workers, timeout=5000)
+        # After finished, the auto-cleanup has removed it
         assert w not in m._active_workers
+        # and the thread has ended before the worker goes out of scope
+        assert w.wait(5000)
 
 
 class TestWorkerManagerCancelAll:

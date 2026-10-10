@@ -68,8 +68,6 @@ DATA = {
         "the colour under the cursor before the first reading: where the picker starts",
     ("ui/color_swatch_widget.py", "(0, 0, 0)"):
         "a swatch built with no colour given, and its hue, saturation and lightness: defaults, as data",
-    ("utils/settings_manager.py", "[200, 200, 200]"):
-        "the stored default of a preference, default_slot_color: data in the settings file, not the look",
 }
 
 CSS_NAMES = frozenset("""aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue

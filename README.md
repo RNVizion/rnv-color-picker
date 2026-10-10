@@ -11,7 +11,7 @@
 ![Version](https://img.shields.io/badge/version-3.0.3-orange)
 ![License](https://img.shields.io/badge/license-MIT-yellow)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
-![Tests](https://img.shields.io/badge/tests-1641%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-1800%2B%20passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-86%25-brightgreen)
 
 [![Tests (Linux)](https://img.shields.io/github/actions/workflow/status/RNVizion/rnv-color-picker/tests.yml?branch=main&label=Tests%20%28Linux%29&logo=linux)](https://github.com/RNVizion/rnv-color-picker/actions/workflows/tests.yml)
@@ -27,7 +27,7 @@ A polished PyQt6 desktop application for extracting, organizing, and exporting c
 - **15+ palette export formats** — Adobe `.ase` and `.aco`, GIMP `.gpl`, Affinity, Procreate `.swatches`, Apple `.clr`, plus JSON, XML, CSS, SVG, and more.
 - **Three theme modes** — Dark, Light, and Image (custom backgrounds with translucent overlays).
 - **Performance-engineered** — paint events cut from 500ms → 65ms, color refresh from 1.7s → 65ms via widget recycling, LRU pixmap cache, and stylesheet/QColor caches.
-- **86% branch coverage** across 1,641 tests (unittest + pytest with hypothesis property-based testing and real Qt threading verification).
+- **86% branch coverage** across over 1,800 tests (unittest + pytest with hypothesis property-based testing and real Qt threading verification).
 
 ## Screenshots
 
@@ -178,19 +178,19 @@ RNV_Color_Picker/
 │   ├── fonts/                    # Embedded Montserrat-Black
 │   ├── button_images/            # Image-mode button graphics
 │   └── background_images/        # Image-mode backgrounds
-├── tests/                        # 1,241 pytest tests (test_*.py)
-└── test_rnv_color_picker.py      # 400 unittest tests (legacy harness)
+├── tests/                        # pytest tests (test_*.py)
+└── test_rnv_color_picker.py      # unittest tests (legacy harness)
 ```
 
 ## Testing
 
-The project carries 1,641 tests across two harnesses:
+The project carries over 1,800 tests across two harnesses:
 
 | Harness | Tests | Notes |
 |---|---|---|
-| `unittest` | 400 | Legacy regression suite |
-| `pytest` | 1,241 | Modern suite — hypothesis property tests, pytest-qt for real Qt threading |
-| **Total** | **1,641** | **86% TOTAL coverage** with branch coverage enabled |
+| `unittest` | over 300 | Legacy regression suite |
+| `pytest` | over 1,400 | Modern suite — hypothesis property tests, pytest-qt for real Qt threading |
+| **Total** | **over 1,800** | **86% TOTAL coverage** with branch coverage enabled |
 
 **Run the full suite:**
 
@@ -296,5 +296,5 @@ Built by [RNVizion](https://github.com/RNVizion)
 ---
 
 <p align="center">
-  Built with PyQt6 · 1,641 tests · 86% coverage
+  Built with PyQt6 · over 1,800 tests · 86% coverage
 </p>

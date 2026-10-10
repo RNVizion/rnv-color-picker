@@ -91,20 +91,35 @@ def test_the_edge_rule_shares_the_ink_rule():
 
 
 def test_the_brand_golds_are_ruled_not_measured():
-    """The close button keeps black on bright gold and white on dark gold.
+    """Text on the gold fill keeps black on bright gold and white on dark gold.
 
     Dark gold measures 4.54 white against 4.62 black -- close enough that the
-    arithmetic would flip it, which is exactly why the two call sites in
-    utils/cache.py name the colour outright instead of asking the rule. This
-    test states the margin so that a later 'cleanup' that routes them through
-    contrast_ink() has to argue with a number."""
+    arithmetic would flip it, which is exactly why the palettes name the
+    colour outright instead of asking the rule. This test states the margin
+    so that a later 'cleanup' that routes them through contrast_ink() has to
+    argue with a number.
+
+    RNV-RULINGS-2026-10-05, item 6. Until then this read two lines of the
+    cached close-button stylesheet, a function nothing in the application
+    called, and which is gone (tests/test_nothing_calls_is_gone.py names
+    it). The decision is held where it paints: the ink each palette puts on
+    its gold fill, for a pressed dialog button, a selected row, and a
+    pressed menu item or selected text."""
     white = config.contrast_ratio(config.BRAND_DARK_GOLD, config.WHITE)
     black = config.contrast_ratio(config.BRAND_DARK_GOLD, config.TRUE_BLACK)
     assert abs(white - black) < 0.15, (
         "the golds moved; re-take the ruling rather than the measurement")
-    src = (ROOT / "utils" / "cache.py").read_text(encoding="utf-8-sig")
-    assert "fg      = TRUE_BLACK" in src and "fg      = WHITE" in src, (
-        "the gold button inks are no longer written as a decision")
+    on_gold = (("dialog_btn_pressed_bg", "dialog_btn_pressed_text"),
+               ("list_selected_bg", "list_selected_text"),
+               ("selected_bg", "text_on_accent"))
+    for palette, gold, ink in ((config.DARK_THEME_COLORS, config.BRAND_GOLD, config.TRUE_BLACK),
+                               (config.LIGHT_THEME_COLORS, config.BRAND_DARK_GOLD, config.WHITE)):
+        for ground, text in on_gold:
+            assert palette[ground] == gold, (
+                f"{palette['name']}: {ground} is no longer the gold fill")
+            assert palette[text] == ink, (
+                f"{palette['name']}: {text} is {palette[text]}: the gold fill's ink is no "
+                f"longer written as a decision")
 
 
 def test_the_accessibility_helper_does_not_hold_a_second_copy():

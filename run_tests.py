@@ -4,7 +4,7 @@ Unified test runner for RNV Color Picker.
 Runs both test sources under coverage with branch analysis, then merges
 the data files into a single coverage report.
 
-  Suite 1 — test_rnv_color_picker.py    (400 unittest tests, ~4s)
+  Suite 1 — test_rnv_color_picker.py    (the unittest suite, ~4s)
   Suite 2 — tests/                       (pytest-qt interaction tests)
 
 Usage:

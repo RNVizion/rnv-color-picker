@@ -48,7 +48,6 @@ ALPHAS = {
     "SCROLLBAR_BG_ALPHA": 0x64,
     "SCROLLBAR_HANDLE_ALPHA": 0x96,
     "IMAGE_MENU_ALPHA": 0xC8,
-    "IMAGE_BUTTON_FRAME_ALPHA": 0x64,
 }
 
 #: What each derived value is MADE OF: the constant its colour comes from, and
@@ -57,7 +56,6 @@ MADE_OF = {
     "APP_WINDOW_OVERLAY": ("TRUE_BLACK", 0xED),
     "APP_PANEL_OVERLAY": ("BRAND_BLACK", 0xED),
     "IMAGE_MENU_BG": ("TRUE_BLACK", 0xC8),
-    "IMAGE_BUTTON_FRAME_BG": ("TRUE_BLACK", 0x64),
     "IMAGE_MODE_COLORS['checkbox_bg']": ("TRUE_BLACK", 0x64),
     "IMAGE_MODE_COLORS['scrollbar_bg']": ("APP_BORDER", 0x64),
     "IMAGE_MODE_COLORS['scrollbar_handle']": ("GREY_44", 0x96),  # ruled
@@ -386,8 +384,9 @@ def test_the_collapsed_value_is_gone_in_every_spelling():
 LOWER8_MODULES = ('utils.config',)
 #: Found when this was written; below the floor, the sweep has gone blind.
 #: 10 until RNV-NAMED-AND-USED (2026-10-04), when image mode's unread
-#: scroll_area_bg override went.
-LOWER8_FLOOR = 9
+#: scroll_area_bg override went. 9 until 2026-10-05, when the frame colour
+#: only an uncalled stylesheet function read went.
+LOWER8_FLOOR = 8
 LOWER8_FILES = 25
 
 
