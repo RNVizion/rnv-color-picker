@@ -1921,10 +1921,6 @@ class TestStylesheetCache(unittest.TestCase):
         ss = StylesheetCache.get_checkbox_stylesheet(self.theme_name, self.theme)
         self.assertIsInstance(ss, str)
 
-    def test_scrollbar_stylesheet_is_string(self):
-        ss = StylesheetCache.get_scrollbar_stylesheet(self.theme_name, self.theme)
-        self.assertIsInstance(ss, str)
-
     def test_header_stylesheet(self):
         ss = StylesheetCache.get_header_stylesheet(size=14, bold=True)
         self.assertIn("font-size", ss); self.assertIn("14px", ss)
@@ -1932,10 +1928,6 @@ class TestStylesheetCache(unittest.TestCase):
     def test_description_stylesheet(self):
         ss = StylesheetCache.get_description_stylesheet()
         self.assertIsInstance(ss, str)
-
-    def test_color_preview_stylesheet_uses_hex(self):
-        ss = StylesheetCache.get_color_preview_stylesheet("#d2bc93", size=60)
-        self.assertIn("#d2bc93", ss); self.assertIn("60px", ss)
 
     def test_caches_repeated_calls(self):
         # Same args twice should produce identical output (and ideally hit cache)

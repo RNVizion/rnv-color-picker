@@ -1,6 +1,8 @@
 """What nothing called is gone, and stays gone.
 
 RNV-RULINGS-2026-10-05, items 5 and 6. Ruled 2026-10-05: "Yes." to each.
+RNV-RULINGS-2026-10-11, item 19. Ruled 2026-10-11: "Yes we can remove as long
+as we know that it is safe to do so."
 
 WHAT WENT.
 
@@ -16,6 +18,18 @@ paints its palette's accent, which is the value the two pressed names held.
 Item 5. The stored preference default_slot_color. It sat in the settings'
 defaults, nothing read it, and no control set it.
 
+Item 19. Four more cached stylesheet functions nothing called, held here by
+name from 2026-10-05 until they were ruled: get_scroll_area_stylesheet(),
+get_scrollbar_stylesheet(), which only the first called,
+get_zoom_label_stylesheet() and get_color_preview_stylesheet(). Known to be
+safe before they went: nothing in the repository named them but this
+guard and two root-suite tests, which called them to see that they returned
+a string and went with them; and driven through every window, in each mode,
+the application never ran a line of them. The scroll area, the zoom label
+and the colour preview are styled where they are made, from the palette.
+No palette entry went with them: every key they read is read elsewhere. The
+import only the colour preview's used, swatch_edge, left the cache.
+
 WHAT THIS GUARD HOLDS.
 
 1. None of those names is written in the repository's Python again: not in
@@ -24,9 +38,6 @@ WHAT THIS GUARD HOLDS.
 2. The colour module and the cache do not define them.
 3. Every cached stylesheet function is called by the application, itself or
    through another that is. A test that calls one does not make it used.
-   HELD lists four more that nothing calls, found while removing the two; a
-   ruling is asked on them. A fifth is a failure, and so is a held one that
-   has gained a caller.
 4. The sweeps are looking.
 """
 from __future__ import annotations
@@ -38,22 +49,13 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 CACHE = "utils/cache.py"
 
 #: What went, and may not come back.
-FUNCTIONS_GONE = ("get_button_frame_stylesheet", "get_close_button_stylesheet")
+FUNCTIONS_GONE = ("get_button_frame_stylesheet", "get_close_button_stylesheet",
+                  "get_scroll_area_stylesheet", "get_scrollbar_stylesheet", "get_zoom_label_stylesheet",
+                  "get_color_preview_stylesheet")
 COLOURS_GONE = ("BRAND_GOLD_PRESSED", "BRAND_DARK_GOLD_PRESSED", "IMAGE_BUTTON_FRAME_BG",
                 "IMAGE_BUTTON_FRAME_ALPHA")
 PREFERENCE_GONE = "default_slot_color"
 GONE = FUNCTIONS_GONE + COLOURS_GONE + (PREFERENCE_GONE,)
-
-#: Cached stylesheet functions nothing in the application calls, found on
-#: 2026-10-05 and not removed: only the two above were ruled. name -> why it
-#: is here.
-HELD = {
-    "get_scroll_area_stylesheet": "nothing calls it",
-    "get_scrollbar_stylesheet": "called only by get_scroll_area_stylesheet(), which nothing calls; "
-                                "the root suite calls it to see that it returns a string",
-    "get_zoom_label_stylesheet": "nothing calls it",
-    "get_color_preview_stylesheet": "nothing calls it; the root suite calls it to see that it holds the hex",
-}
 
 #: The one file that names what went, to forbid it.
 MENTION_ONLY = {pathlib.Path(__file__).name}
@@ -135,8 +137,8 @@ def _uncalled(source: str, pairs) -> set:
 def test_what_went_is_not_written_again():
     found = _named(_python())
     assert not found, (
-        "a name removed on 2026-10-05 is written again:\n  " + "\n  ".join(found)
-        + "\nThe two functions were called by nothing, the colours were read only by them, and the "
+        "a name removed on 2026-10-05 or 2026-10-11 is written again:\n  " + "\n  ".join(found)
+        + "\nThe functions were called by nothing, the colours were read only by them, and the "
           "preference was read by nothing. If one is wanted, it needs a caller or a reader, and a ruling.")
 
 
@@ -155,14 +157,10 @@ def test_the_colour_module_and_the_cache_do_not_define_it():
 
 def test_every_cached_stylesheet_function_is_called():
     source = (ROOT / CACHE).read_text(encoding="utf-8-sig")
-    uncalled = _uncalled(source, list(_python(app_only=True)))
-    new = sorted(uncalled - set(HELD))
-    assert not new, (
-        f"nothing in the application calls StylesheetCache.{', .'.join(n + '()' for n in new)}. "
+    uncalled = sorted(_uncalled(source, list(_python(app_only=True))))
+    assert not uncalled, (
+        f"nothing in the application calls StylesheetCache.{', .'.join(n + '()' for n in uncalled)}. "
         f"A sheet nothing asks for paints nothing, and keeps its colours looking used. Call it, or remove it.")
-    stale = sorted(set(HELD) - uncalled)
-    assert not stale, (
-        f"{', '.join(stale)}: held as called by nothing, and it is called now, or gone. Take it out of HELD.")
 
 
 def test_the_sweeps_are_looking():

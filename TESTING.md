@@ -1,6 +1,6 @@
 # Testing
 
-> **Summary:** 1,641 tests across two harnesses · 86% TOTAL coverage with branch coverage enabled · 3 production bugs caught and fixed during the campaign · 26 reusable testing patterns banked.
+> **Summary:** over 1,800 tests across two harnesses · 86% TOTAL coverage with branch coverage enabled · 3 production bugs caught and fixed during the campaign · 26 reusable testing patterns banked.
 
 This document describes the test architecture, the seven-phase campaign that built the suite, the coverage profile, and the three production bugs that the suite caught before they reached users.
 
@@ -10,9 +10,9 @@ This document describes the test architecture, the seven-phase campaign that bui
 
 | Metric | Value |
 |---|---|
-| Total tests | **1,641** |
-| `unittest` harness | 400 tests |
-| `pytest` harness | 1,241 tests |
+| Total tests | **over 1,800** |
+| `unittest` harness | over 300 tests |
+| `pytest` harness | over 1,400 tests |
 | Coverage (TOTAL, branch enabled) | **86%** |
 | Modules at ≥90% coverage | 12 |
 | Production bugs caught by the suite | 3 |
@@ -34,7 +34,7 @@ The suite uses **two parallel harnesses** rather than a single test runner. This
 
 ### `unittest` harness (`test_rnv_color_picker.py`)
 
-A single 400-test file using Python's standard `unittest.TestCase`. Older portion of the suite, retained because:
+A single file of over 300 tests, using Python's standard `unittest.TestCase`. Older portion of the suite, retained because:
 
 - It catches regressions that depend on real Python startup paths (top-level import side effects, module-level cache initialization) which `pytest`'s collection mechanism can mask.
 - It runs with zero plugin dependencies — useful as a smoke check on a fresh machine before installing the dev requirements.
@@ -42,7 +42,7 @@ A single 400-test file using Python's standard `unittest.TestCase`. Older portio
 
 ### `pytest` harness (`tests/`)
 
-1,241 tests spread across one file per production module (`tests/test_<module>.py`). Uses:
+Over 1,400 pytest tests, spread across one file per production module (`tests/test_<module>.py`). Uses:
 
 - **`pytest-qt`** for real Qt event loop and signal verification (no mocking of widget signals).
 - **`hypothesis`** for property-based testing of color math and color history invariants — round-trip identity, monotonicity, max-size invariants, etc.

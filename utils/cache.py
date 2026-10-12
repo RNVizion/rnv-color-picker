@@ -20,7 +20,7 @@ from utils.logger import Logger
 from utils.config import (
     BRAND_GOLD,
     TRUE_BLACK, WHITE,
-    swatch_edge, contrast_ink_rgb,
+    contrast_ink_rgb,
     STATUS_ERROR_BG,
     IMAGE_MENU_BG,
 )
@@ -336,84 +336,6 @@ class StylesheetCache:
         return cls._cache[key]
     
     @classmethod
-    def get_scrollbar_stylesheet(cls, theme_name: str, theme: dict) -> str:
-        """Get cached scrollbar stylesheet for themed scroll areas."""
-        key = (theme_name, 'scrollbar')
-        
-        if key not in cls._cache:
-            cls._cache[key] = f"""
-                QScrollBar:vertical {{
-                    background: {theme['scrollbar_bg']};
-                    width: 12px;
-                    margin: 0px;
-                }}
-                QScrollBar::handle:vertical {{
-                    background: {theme['scrollbar_handle']};
-                    min-height: 30px;
-                    border-radius: 6px;
-                    margin: 2px;
-                }}
-                QScrollBar::handle:vertical:hover {{
-                    background: {theme['scrollbar_handle_hover']};
-                }}
-                QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
-                    height: 0px;
-                }}
-                QScrollBar:horizontal {{
-                    background: {theme['scrollbar_bg']};
-                    height: 12px;
-                    margin: 0px;
-                }}
-                QScrollBar::handle:horizontal {{
-                    background: {theme['scrollbar_handle']};
-                    min-width: 30px;
-                    border-radius: 6px;
-                    margin: 2px;
-                }}
-                QScrollBar::handle:horizontal:hover {{
-                    background: {theme['scrollbar_handle_hover']};
-                }}
-                QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
-                    width: 0px;
-                }}
-            """
-        
-        return cls._cache[key]
-    
-    @classmethod
-    def get_scroll_area_stylesheet(
-        cls,
-        theme_name: str,
-        theme: dict,
-        is_image_mode: bool
-    ) -> str:
-        """Get cached scroll area stylesheet."""
-        key = (theme_name, is_image_mode, 'scroll_area')
-        
-        if key not in cls._cache:
-            scrollbar_css = cls.get_scrollbar_stylesheet(theme_name, theme)
-            
-            if is_image_mode:
-                cls._cache[key] = f"""
-                    QScrollArea {{
-                        background-color: transparent;
-                        border: none;
-                    }}
-                    {scrollbar_css}
-                """
-            else:
-                cls._cache[key] = f"""
-                    QScrollArea {{
-                        background-color: {theme['scroll_area_bg']};
-                        border: 1px solid {theme['border_default']};
-                        border-radius: 8px;
-                    }}
-                    {scrollbar_css}
-                """
-        
-        return cls._cache[key]
-    
-    @classmethod
     def get_theme_button_stylesheet(cls, theme_name: str, theme: dict) -> str:
         """Get cached theme toggle button stylesheet (main window button — inverse system, no gold)."""
         key = (theme_name, 'theme_button')
@@ -435,24 +357,6 @@ class StylesheetCache:
                 QPushButton:pressed {{
                     background-color: {theme['main_btn_pressed_bg']};
                     color: {theme['main_btn_pressed_text']};
-                }}
-            """
-        
-        return cls._cache[key]
-    
-    @classmethod
-    def get_zoom_label_stylesheet(cls, theme_name: str, theme: dict) -> str:
-        """Get cached zoom label stylesheet."""
-        key = (theme_name, 'zoom_label')
-        
-        if key not in cls._cache:
-            cls._cache[key] = f"""
-                QLabel {{
-                    color: {theme['text_primary']};
-                    font-size: 11px;
-                    background-color: {theme['zoom_label_bg']};
-                    padding: 2px 6px;
-                    border-radius: 3px;
                 }}
             """
         
@@ -524,35 +428,6 @@ class StylesheetCache:
                     border: none;
                     padding: 0px;
                 }
-            """
-        
-        return cls._cache[key]
-    
-    @classmethod
-    def get_color_preview_stylesheet(cls, hex_color: str, size: int = 60) -> str:
-        """
-        Get cached color preview box stylesheet.
-        
-        Args:
-            hex_color: Hex color code (e.g., "#ff0000")
-            size: Box size in pixels
-            
-        Returns:
-            CSS stylesheet string
-        """
-        key = ('color_preview', hex_color, size)
-        
-        if key not in cls._cache:
-            cls._cache[key] = f"""
-                QLabel {{
-                    background-color: {hex_color};
-                    border: 2px solid {swatch_edge(hex_color)};
-                    border-radius: 8px;
-                    min-width: {size}px;
-                    min-height: {size}px;
-                    max-width: {size}px;
-                    max-height: {size}px;
-                }}
             """
         
         return cls._cache[key]

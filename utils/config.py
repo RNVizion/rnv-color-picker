@@ -935,7 +935,11 @@ IMAGE_MODE_COLORS: Final[dict[str, str | int]] = {
     # 2026-09-02 and left behind because nothing decoded rgba().
     'scrollbar_handle':        translucent(GREY_44, SCROLLBAR_HANDLE_ALPHA),
     'scrollbar_handle_hover':  BRAND_GOLD,
-    'scrollbar_border':        'transparent',
+    # No scrollbar_border either, since RNV-RULINGS-2026-10-11 (item 16):
+    # only the dark and light scrollbars are built from the key, by
+    # _build_scrollbar(); image mode's, SCROLLBAR_IMAGE below, writes
+    # `border: none`. Its override, 'transparent', painted nothing and went.
+    # The key comes through the splat with dark's value, unread.
 }
 
 # The image-mode ground painted by stylesheets that are not built from

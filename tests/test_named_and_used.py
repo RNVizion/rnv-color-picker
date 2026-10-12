@@ -409,7 +409,7 @@ def test_every_exported_name_exists():
 #: Image mode is the dark palette under its own name and, after the spread,
 #: the entries image mode reads and draws for itself. A new one is a
 #: decision: it is added here with the entry.
-IMAGE_OWN = ('status_error_text', 'window_bg', 'zoom_label_bg', 'checkbox_bg', 'scrollbar_bg', 'scrollbar_handle', 'scrollbar_handle_hover', 'scrollbar_border')
+IMAGE_OWN = ('status_error_text', 'window_bg', 'zoom_label_bg', 'checkbox_bg', 'scrollbar_bg', 'scrollbar_handle', 'scrollbar_handle_hover')
 
 
 def _palette_display(name: str) -> ast.Dict:
