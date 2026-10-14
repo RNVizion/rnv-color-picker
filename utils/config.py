@@ -403,8 +403,7 @@ GREY_55: Final[str] = "#555555"
 # is how it stayed invisible to a census that reads six. Only the short form
 # was ever used.
 #
-# GREY_CC is the light edge swatch_edge() reaches for on a dark ground. It
-# was three digits too, and equally invisible.
+# GREY_CC, light's border grey, was three digits too, and equally invisible.
 GREY_44: Final[str] = "#444444"
 GREY_CC: Final[str] = "#cccccc"
 
@@ -987,8 +986,7 @@ CONTRAST_DEMO_WHITE_FG: Final[str] = "#ffffff"
 #
 # So: one rule, stated once, as a real comparison rather than a threshold --
 # whichever candidate has the higher contrast ratio against the ground wins.
-# A threshold would need re-deriving for every pair; a ratio does not, which
-# is what lets swatch_edge() share the rule with contrast_ink().
+# A threshold would need re-deriving for every pair; a ratio does not.
 #
 # This is the same maths as the surface ladder and the 4.5 floor.
 
@@ -1052,10 +1050,6 @@ def contrast_ink_rgb(background: "str | tuple[int, int, int]") -> tuple[int, int
     """The same answer as an RGB triple, for the QColor and Pillow callers."""
     return _to_rgb(contrast_ink(background))
 
-
-def swatch_edge(background: "str | tuple[int, int, int]") -> str:
-    """Outline for a swatch of an arbitrary colour: GREY_CC or APP_BORDER."""
-    return better_on(background, APP_BORDER, GREY_CC)
 
 # ── Debug overlay ──
 # High-visibility terminal green on semi-transparent black. Used by the
@@ -1414,7 +1408,6 @@ __all__: list[str] = [
     'contrast_ink',
     'contrast_ink_rgb',
     'prefers_dark_ink',
-    'swatch_edge',
     'translucent',
     'translucent_tuple',
     'CONTRAST_DEMO_BLACK_BG',

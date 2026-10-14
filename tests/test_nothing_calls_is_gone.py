@@ -3,6 +3,7 @@
 RNV-RULINGS-2026-10-05, items 5 and 6. Ruled 2026-10-05: "Yes." to each.
 RNV-RULINGS-2026-10-11, item 19. Ruled 2026-10-11: "Yes we can remove as long
 as we know that it is safe to do so."
+RNV-RULINGS-2026-10-13, item 27. Ruled 2026-10-13: "A".
 
 WHAT WENT.
 
@@ -30,6 +31,13 @@ and the colour preview are styled where they are made, from the palette.
 No palette entry went with them: every key they read is read elsewhere. The
 import only the colour preview's used, swatch_edge, left the cache.
 
+Item 27. swatch_edge() itself, the outline a swatch of any colour would
+take. The colour preview's stylesheet was its one caller in the
+application, and nothing called that; after item 19 only a test called it,
+tests/test_ink_rule.py's test_the_edge_rule_shares_the_ink_rule, which went
+with it. The rule it applied is better_on(), which contrast_ink() applies
+and the application calls.
+
 WHAT THIS GUARD HOLDS.
 
 1. None of those names is written in the repository's Python again: not in
@@ -54,8 +62,10 @@ FUNCTIONS_GONE = ("get_button_frame_stylesheet", "get_close_button_stylesheet",
                   "get_color_preview_stylesheet")
 COLOURS_GONE = ("BRAND_GOLD_PRESSED", "BRAND_DARK_GOLD_PRESSED", "IMAGE_BUTTON_FRAME_BG",
                 "IMAGE_BUTTON_FRAME_ALPHA")
+#: Functions of the colour module.
+CONFIG_FUNCTIONS_GONE = ("swatch_edge",)
 PREFERENCE_GONE = "default_slot_color"
-GONE = FUNCTIONS_GONE + COLOURS_GONE + (PREFERENCE_GONE,)
+GONE = FUNCTIONS_GONE + COLOURS_GONE + CONFIG_FUNCTIONS_GONE + (PREFERENCE_GONE,)
 
 #: The one file that names what went, to forbid it.
 MENTION_ONLY = {pathlib.Path(__file__).name}
@@ -137,7 +147,7 @@ def _uncalled(source: str, pairs) -> set:
 def test_what_went_is_not_written_again():
     found = _named(_python())
     assert not found, (
-        "a name removed on 2026-10-05 or 2026-10-11 is written again:\n  " + "\n  ".join(found)
+        "a name removed on 2026-10-05, 2026-10-11 or 2026-10-13 is written again:\n  " + "\n  ".join(found)
         + "\nThe functions were called by nothing, the colours were read only by them, and the "
           "preference was read by nothing. If one is wanted, it needs a caller or a reader, and a ruling.")
 
@@ -150,6 +160,9 @@ def test_the_colour_module_and_the_cache_do_not_define_it():
         assert not hasattr(cache, name), f"utils.cache imports {name} again"
     for name in FUNCTIONS_GONE:
         assert not hasattr(cache.StylesheetCache, name), f"StylesheetCache.{name}() is back"
+    for name in CONFIG_FUNCTIONS_GONE:
+        assert not hasattr(config, name), f"utils.config defines {name}() again"
+        assert name not in config.__all__, f"utils.config exports {name}"
     from utils.settings_manager import SettingsManager
     assert PREFERENCE_GONE not in SettingsManager._get_default_settings()["preferences"], \
         f"the settings' defaults store {PREFERENCE_GONE} again"

@@ -78,18 +78,6 @@ def test_it_takes_a_hex_string_or_an_rgb_triple():
     assert config.contrast_ink("#0f0") == config.contrast_ink("#00ff00")
 
 
-def test_the_edge_rule_shares_the_ink_rule():
-    """swatch_edge answers the same question with a different pair. If it
-    ever grows its own threshold, this is what catches it."""
-    assert config.swatch_edge("#ffffff") == config.APP_BORDER
-    assert config.swatch_edge("#000000") == config.GREY_CC
-    for ground in ("#ffffff", "#000000", "#8c7337", "#00ff00", "#777777"):
-        edge = config.swatch_edge(ground)
-        other = config.GREY_CC if edge == config.APP_BORDER else config.APP_BORDER
-        assert config.contrast_ratio(ground, edge) >= \
-            config.contrast_ratio(ground, other)
-
-
 def test_the_brand_golds_are_ruled_not_measured():
     """Text on the gold fill keeps black on bright gold and white on dark gold.
 
