@@ -970,6 +970,37 @@ def test_the_registered_gold_is_one_of_the_two(palette_name: str) -> None:
         f"mode")
 
 
+def _hue_chroma_top(value: str) -> tuple[float | None, int, int]:
+    """The hue in degrees (None for a grey), the chroma, and the top channel."""
+    r, g, b = C._to_rgb(value)
+    hi, lo = max(r, g, b), min(r, g, b)
+    if hi == lo:
+        return None, 0, hi
+    c = hi - lo
+    if hi == r:
+        h = ((g - b) / c) % 6
+    elif hi == g:
+        h = (b - r) / c + 2
+    else:
+        h = (r - g) / c + 4
+    return h * 60, c, hi
+
+
+#: RNV-ACCENT-READ-2026-10-16. A hand-written gold is found by THIS APP'S
+#: accent: a colour within 20 degrees of the hue of BRAND_GOLD or
+#: BRAND_DARK_GOLD, read from the colour file. It was found by the shape of a
+#: gold, red > green > blue, which finds nothing once the brand's accent is
+#: another colour, and the test below would pass by looking at nothing. At
+#: today's golds the two tests find the same values, in every palette.
+_ACCENT_HUES = tuple(_hue_chroma_top(v)[0] for v in (C.BRAND_GOLD, C.BRAND_DARK_GOLD))
+_ACCENT_HUE_WINDOW = 20
+
+
+def _near_the_accent(hue: float | None) -> bool:
+    return hue is not None and min(min(abs(hue - a), 360 - abs(hue - a))
+                                   for a in _ACCENT_HUES) <= _ACCENT_HUE_WINDOW
+
+
 def test_every_gold_is_the_accent_or_derived_from_it() -> None:
     """No palette may hold a gold that is neither registered nor one of
     this module's derivatives -- which is what a hand-written variant is."""
@@ -994,12 +1025,26 @@ def test_every_gold_is_the_accent_or_derived_from_it() -> None:
             # a gold-ish value: warm, and close to one of ours in hue
             if v in allowed:
                 continue
-            r, g, b = C._to_rgb(v) if len(v) == 7 else (0, 0, 0)
-            if r > g > b and r - b > 40 and 90 < r < 240:
+            if len(v) != 7:
+                continue
+            hue, chroma, top = _hue_chroma_top(v)
+            if chroma > 40 and 90 < top < 240 and _near_the_accent(hue):
                 stray.append(f"  {name}.{key} = {value}")
     assert not stray, (
         "these look like golds and are neither registered nor derived "
         "here:\n" + "\n".join(stray))
+
+
+def test_the_stray_gold_check_is_looking() -> None:
+    """A negative check needs a companion proving it is still looking.
+
+    RNV-ACCENT-READ-2026-10-16. The check above must see the accent itself as
+    a gold, or it would pass whatever colour the accent became.
+    """
+    for name in ("BRAND_GOLD", "BRAND_DARK_GOLD"):
+        hue, chroma, top = _hue_chroma_top(getattr(C, name).lower())
+        assert chroma > 40 and 90 < top < 240 and _near_the_accent(hue), (
+            f"{name} {getattr(C, name)} is not seen as a gold by the check above")
 
 
 def test_the_tool_exclusion_does_not_swallow_the_repository() -> None:
