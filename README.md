@@ -140,6 +140,8 @@ Full keyboard shortcut reference: `Ctrl+/` opens the in-app About dialog with a 
 ```
 RNV_Color_Picker/
 ├── RNV_Color_Picker.py          # Application entry point and main window
+├── brand_map.json                # Where each colour comes from: rnv-brand or the app
+├── COLORS.md                     # This app's colour chart, written by the sync
 ├── core/                         # Pure logic — no UI dependencies
 │   ├── color_math.py             # RGB/HSV/HSL/Lab/RYB conversions, blending algorithms
 │   ├── color_collection.py       # Palette container with weight metadata
@@ -178,6 +180,11 @@ RNV_Color_Picker/
 │   ├── fonts/                    # Embedded Montserrat-Black
 │   ├── button_images/            # Image-mode button graphics
 │   └── background_images/        # Image-mode backgrounds
+├── tools/
+│   └── sync_colors.py            # Writes the colours in utils/config.py, and COLORS.md
+├── .github/workflows/
+│   ├── tests.yml                 # CI: the two suites
+│   └── brand-sync.yml            # Daily: colours from rnv-brand; a pull request only if one moved
 ├── tests/                        # pytest tests (test_*.py)
 └── test_rnv_color_picker.py      # unittest tests (legacy harness)
 ```

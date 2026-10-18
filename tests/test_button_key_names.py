@@ -25,28 +25,30 @@ MAIN = ("main_btn_bg", "main_btn_text", "main_btn_border", "main_btn_hover_bg",
         "main_btn_hover_text", "main_btn_pressed_bg", "main_btn_pressed_text")
 
 #: The sixteen dialog values, pinned. A rename that moves one is not a rename.
+#: RNV-COLOUR-SYNC, 2026-10-16: each key by the constant it paints, where it
+#: was written as that constant's hex code, so a brand move needs no edit here.
 PINNED_DIALOG = {
-    "dark": {"dialog_btn_bg": "#2a2a2a", "dialog_btn_text": "#dddddd",
-             "dialog_btn_hover_bg": "#3a3a3a", "dialog_btn_hover_text": "#d2bc93",
-             "dialog_btn_hover_border": "#d2bc93", "dialog_btn_pressed_bg": "#d2bc93",
-             "dialog_btn_pressed_text": "#000000", "dialog_btn_border": "#333333"},
-    "light": {"dialog_btn_bg": "#ffffff", "dialog_btn_text": "#000000",
-              "dialog_btn_hover_bg": "#eeeeee", "dialog_btn_hover_text": "#7e6529",
-              "dialog_btn_hover_border": "#8c7337", "dialog_btn_pressed_bg": "#8c7337",
-              "dialog_btn_pressed_text": "#ffffff", "dialog_btn_border": "#cccccc"},
+    "dark": {"dialog_btn_bg": "APP_CARD", "dialog_btn_text": "APP_TEXT",
+             "dialog_btn_hover_bg": "APP_PANEL_HOVER", "dialog_btn_hover_text": "BRAND_GOLD",
+             "dialog_btn_hover_border": "BRAND_GOLD", "dialog_btn_pressed_bg": "BRAND_GOLD",
+             "dialog_btn_pressed_text": "TRUE_BLACK", "dialog_btn_border": "APP_BORDER"},
+    "light": {"dialog_btn_bg": "WHITE", "dialog_btn_text": "TRUE_BLACK",
+              "dialog_btn_hover_bg": "APP_HOVER_LIGHT", "dialog_btn_hover_text": "BRAND_DARK_GOLD_DEEP",
+              "dialog_btn_hover_border": "BRAND_DARK_GOLD", "dialog_btn_pressed_bg": "BRAND_DARK_GOLD",
+              "dialog_btn_pressed_text": "WHITE", "dialog_btn_border": "GREY_CC"},
 }
 
 #: The main family is not touched by this pass, and saying so is the point:
 #: these two schemes are what the naming exists to keep apart.
 PINNED_MAIN = {
-    "dark": {"main_btn_bg": "#1a1a1a", "main_btn_text": "#dddddd",
-             "main_btn_border": "#333333", "main_btn_hover_bg": "#333333",
-             "main_btn_hover_text": "#dddddd", "main_btn_pressed_bg": "#444444",
-             "main_btn_pressed_text": "#000000"},
-    "light": {"main_btn_bg": "#ffffff", "main_btn_text": "#000000",
-              "main_btn_border": "#cccccc", "main_btn_hover_bg": "#333333",
-              "main_btn_hover_text": "#000000", "main_btn_pressed_bg": "#444444",
-              "main_btn_pressed_text": "#ffffff"},
+    "dark": {"main_btn_bg": "BRAND_BLACK", "main_btn_text": "APP_TEXT",
+             "main_btn_border": "APP_BORDER", "main_btn_hover_bg": "APP_BORDER",
+             "main_btn_hover_text": "APP_TEXT", "main_btn_pressed_bg": "GREY_44",
+             "main_btn_pressed_text": "TRUE_BLACK"},
+    "light": {"main_btn_bg": "WHITE", "main_btn_text": "TRUE_BLACK",
+              "main_btn_border": "GREY_CC", "main_btn_hover_bg": "APP_BORDER",
+              "main_btn_hover_text": "TRUE_BLACK", "main_btn_pressed_bg": "GREY_44",
+              "main_btn_pressed_text": "WHITE"},
 }
 
 SKIP = {".git", "build", "dist", ".venv", "__pycache__"}
@@ -57,6 +59,12 @@ SKIP = {".git", "build", "dist", ".venv", "__pycache__"}
 #: rename. Both are skipped by marker rather than by filename, because the
 #: delivery script arrives under whatever name it is saved as.
 MARKERS = ("RNV-BUTTON-NAMING-GUARD", "RNV-BUTTON-NAMING-TOOL-DO-NOT-SWEEP")
+
+
+def _values(pins):
+    """Each key's constant, as the value it holds."""
+    from utils import config
+    return {key: getattr(config, name) for key, name in pins.items()}
 
 
 def _palettes():
@@ -139,8 +147,9 @@ def test_both_palettes_carry_the_new_dialog_names():
 
 
 def test_the_rename_moved_no_dialog_value():
-    for mode, pins in PINNED_DIALOG.items():
+    for mode, names in PINNED_DIALOG.items():
         palette = _palettes()[mode]
+        pins = _values(names)
         actual = {k: palette.get(k) for k in pins}
         assert actual == pins, (
             f"the {mode} dialog button values changed.\n"
@@ -149,8 +158,9 @@ def test_the_rename_moved_no_dialog_value():
 
 
 def test_the_main_family_is_untouched():
-    for mode, pins in PINNED_MAIN.items():
+    for mode, names in PINNED_MAIN.items():
         palette = _palettes()[mode]
+        pins = _values(names)
         actual = {k: palette.get(k) for k in pins}
         assert actual == pins, (
             f"the {mode} main button values changed. This pass renames the "

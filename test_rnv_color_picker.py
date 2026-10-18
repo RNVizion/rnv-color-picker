@@ -87,6 +87,17 @@ from utils.settings_manager import SettingsManager
 from utils.error_handler    import ErrorHandler
 from utils import config
 from utils import file_utils as fu  # module-level functions
+from tests.colour_values import (
+    DATA_BLACK_SHORT, DATA_GREY_64, DATA_HISTORY_ABSENT_PINK, DATA_MEDIUM_PURPLE_RGB,
+    DATA_RED, DATA_RED_UPPER, DATA_WHITE_SHORT, EXAMPLE_BLACK, EXAMPLE_CACHE_FILL_KEY,
+    EXAMPLE_CACHE_REPEAT_KEY, EXAMPLE_GOLD, EXAMPLE_PURE_RED, EXAMPLE_PURE_RED_SHORT,
+    EXAMPLE_PURE_RED_UPPER, EXAMPLE_WHITE, INVALID_HEX_WORD)
+
+#: RNV-COLOUR-SYNC, 2026-10-17 (#52 A). Where each colour comes from, as
+#: brand_map.json says. The values are held by tests/test_colours_in_sync.py,
+#: against the register at the pin; what this suite holds is the name each
+#: one takes.
+BRAND_MAP = json.loads(Path(_ROOT, "brand_map.json").read_text(encoding="utf-8"))["colours"]
 
 # ── Optional imports — guarded so tests skip cleanly if a module fails ────────
 try:
@@ -197,14 +208,14 @@ class TestColorMath(unittest.TestCase):
     """color_math.py — RGB/HSV/HSL/LAB conversions, weighted mixes, validation."""
 
     # ── HEX ──
-    def test_rgb_to_hex_black(self):       self.assertEqual(ColorMath.rgb_to_hex((0,0,0)), "#000000")
-    def test_rgb_to_hex_white(self):       self.assertEqual(ColorMath.rgb_to_hex((255,255,255)), "#ffffff")
-    def test_rgb_to_hex_red(self):         self.assertEqual(ColorMath.rgb_to_hex((255,0,0)), "#ff0000")
-    def test_rgb_to_hex_brand_gold(self):  self.assertEqual(ColorMath.rgb_to_hex((210,188,147)), "#d2bc93")
-    def test_hex_to_rgb_black(self):       self.assertEqual(ColorMath.hex_to_rgb("#000000"), (0,0,0))
-    def test_hex_to_rgb_white(self):       self.assertEqual(ColorMath.hex_to_rgb("#ffffff"), (255,255,255))
-    def test_hex_to_rgb_uppercase(self):   self.assertEqual(ColorMath.hex_to_rgb("#FF0000"), (255,0,0))
-    def test_hex_to_rgb_3char(self):       self.assertEqual(ColorMath.hex_to_rgb("#f00"), (255,0,0))
+    def test_rgb_to_hex_black(self):       self.assertEqual(ColorMath.rgb_to_hex((0,0,0)), EXAMPLE_BLACK)
+    def test_rgb_to_hex_white(self):       self.assertEqual(ColorMath.rgb_to_hex((255,255,255)), EXAMPLE_WHITE)
+    def test_rgb_to_hex_red(self):         self.assertEqual(ColorMath.rgb_to_hex((255,0,0)), EXAMPLE_PURE_RED)
+    def test_rgb_to_hex_brand_gold(self):  self.assertEqual(ColorMath.rgb_to_hex((210,188,147)), EXAMPLE_GOLD)
+    def test_hex_to_rgb_black(self):       self.assertEqual(ColorMath.hex_to_rgb(EXAMPLE_BLACK), (0,0,0))
+    def test_hex_to_rgb_white(self):       self.assertEqual(ColorMath.hex_to_rgb(EXAMPLE_WHITE), (255,255,255))
+    def test_hex_to_rgb_uppercase(self):   self.assertEqual(ColorMath.hex_to_rgb(EXAMPLE_PURE_RED_UPPER), (255,0,0))
+    def test_hex_to_rgb_3char(self):       self.assertEqual(ColorMath.hex_to_rgb(EXAMPLE_PURE_RED_SHORT), (255,0,0))
 
     def test_roundtrip_rgb_hex(self):
         for c in [(0,0,0),(255,255,255),(128,64,200),(1,2,3),(16,0,255)]:
@@ -406,7 +417,7 @@ class TestColorHistoryManager(unittest.TestCase):
 
     def test_add_stores_hex(self):
         self.h.add_color((255,0,0))
-        self.assertEqual(self.h.history[0]["hex"], "#ff0000")
+        self.assertEqual(self.h.history[0]["hex"], DATA_RED)
 
     def test_add_stores_rgb_list(self):
         self.h.add_color((100,150,200))
@@ -448,25 +459,25 @@ class TestColorHistoryManager(unittest.TestCase):
 
     def test_remove_color_existing(self):
         self.h.add_color((255,0,0))
-        self.assertTrue(self.h.remove_color("#ff0000"))
+        self.assertTrue(self.h.remove_color(DATA_RED))
         self.assertEqual(len(self.h.history), 0)
 
     def test_remove_color_missing(self):
         self.h.add_color((255,0,0))
-        self.assertFalse(self.h.remove_color("#deadbe"))
+        self.assertFalse(self.h.remove_color(DATA_HISTORY_ABSENT_PINK))
 
     def test_remove_color_case_insensitive(self):
         self.h.add_color((255,0,0))
-        self.assertTrue(self.h.remove_color("#FF0000"))
+        self.assertTrue(self.h.remove_color(DATA_RED_UPPER))
 
     def test_get_color_info_existing(self):
         self.h.add_color((100,100,100))
-        info = self.h.get_color_info("#646464")
+        info = self.h.get_color_info(DATA_GREY_64)
         self.assertIsNotNone(info)
-        self.assertEqual(info["hex"], "#646464")
+        self.assertEqual(info["hex"], DATA_GREY_64)
 
     def test_get_color_info_missing(self):
-        self.assertIsNone(self.h.get_color_info("#nonexistent"))
+        self.assertIsNone(self.h.get_color_info(INVALID_HEX_WORD))
 
     def test_max_history_size(self):
         self.assertEqual(ColorHistoryManager.MAX_HISTORY_SIZE, 333)
@@ -562,10 +573,10 @@ class TestPaletteFormats(unittest.TestCase):
         self.assertEqual(len(PaletteFormats.import_palette(path)), 0)
 
     def test_hex_import_short_form(self):
-        """`#fff` 3-char shorthand is recognised and expanded."""
+        """`DATA_WHITE_SHORT` 3-char shorthand is recognised and expanded."""
         path = os.path.join(self.tmp, "short.hex")
         with open(path, "w") as f:
-            f.write("# Test\n#fff 100\n#000\n")
+            f.write(f"# Test\n{DATA_WHITE_SHORT} 100\n{DATA_BLACK_SHORT}\n")
         r = PaletteFormats.import_palette(path)
         self.assertEqual(len(r), 2)
         self.assertEqual(r[0][0], (255, 255, 255))
@@ -575,7 +586,7 @@ class TestPaletteFormats(unittest.TestCase):
         """Hex line without a weight defaults to 50."""
         path = os.path.join(self.tmp, "noweight.hex")
         with open(path, "w") as f:
-            f.write("#ff0000\n")
+            f.write(f"{DATA_RED}\n")
         r = PaletteFormats.import_palette(path)
         self.assertEqual(len(r), 1)
         self.assertEqual(r[0][1], 50)
@@ -584,7 +595,7 @@ class TestPaletteFormats(unittest.TestCase):
         """`# Color N` trailing comment must not corrupt weight parsing."""
         path = os.path.join(self.tmp, "trailing.hex")
         with open(path, "w") as f:
-            f.write("#ff0000 75 # Red color name\n")
+            f.write(f"{DATA_RED} 75 # Red color name\n")
         r = PaletteFormats.import_palette(path)
         self.assertEqual(r[0], ((255, 0, 0), 75))
 
@@ -598,7 +609,7 @@ class TestPaletteFormats(unittest.TestCase):
         self.assertIn("<svg", content)
 
     def test_svg_uses_export_constants(self):
-        """SVG export should pull #FFFFFF bg and #000000 stroke from config constants."""
+        """SVG export should pull SVG_EXPORT_BG and SVG_EXPORT_STROKE from config constants."""
         # Use a unique filename ending in .svg so the export dispatcher picks _export_svg
         path = os.path.join(self.tmp, "svg_constants_check.svg")
         PaletteFormats.export_palette(path, self.TEST_PAL)
@@ -832,7 +843,7 @@ class TestColorCollection(unittest.TestCase):
 
     def test_color_entry_hex(self):
         self.cc.add((255,0,0))
-        self.assertEqual(self.cc[0].hex_code, "#ff0000")
+        self.assertEqual(self.cc[0].hex_code, DATA_RED)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1350,8 +1361,8 @@ class TestConfig(unittest.TestCase):
     def setUp(self): self.tm = config.ThemeManager()
 
     # ── Brand colors ──
-    def test_brand_gold(self):       self.assertEqual(config.BRAND_GOLD, "#d2bc93")
-    def test_brand_gold_dark(self):  self.assertEqual(config.BRAND_DARK_GOLD, "#8c7337")
+    def test_brand_gold(self):       self.assertEqual(BRAND_MAP["BRAND_GOLD"], "APP.accent")
+    def test_brand_gold_dark(self):  self.assertEqual(BRAND_MAP["BRAND_DARK_GOLD"], "APP.accent-light-mode")
     def test_brand_gold_rgb(self):   self.assertEqual(config.BRAND_GOLD_RGB, (210,188,147))
     def test_brand_gold_dark_rgb(self): self.assertEqual(ColorMath.hex_to_rgb(config.BRAND_DARK_GOLD), (140,115,55))
 
@@ -1456,13 +1467,13 @@ class TestConfigNewConstants(unittest.TestCase):
                         config.OVERLAY_BLACK_HEAVY[3])
 
     def test_svg_export_bg_white(self):
-        self.assertEqual(config.SVG_EXPORT_BG.upper(), "#FFFFFF")
+        self.assertEqual(BRAND_MAP["SVG_EXPORT_BG"]["app"], config.SVG_EXPORT_BG)
 
     def test_svg_export_stroke_black(self):
-        self.assertEqual(config.SVG_EXPORT_STROKE.upper(), "#000000")
+        self.assertEqual(BRAND_MAP["SVG_EXPORT_STROKE"]["app"], config.SVG_EXPORT_STROKE)
 
     def test_missing_hex_placeholder(self):
-        self.assertEqual(config.MISSING_HEX_PLACEHOLDER.upper(), "#000000")
+        self.assertEqual(BRAND_MAP["MISSING_HEX_PLACEHOLDER"]["app"], config.MISSING_HEX_PLACEHOLDER)
 
     def test_constants_in_all(self):
         for name in ["OVERLAY_BLACK_LIGHT", "OVERLAY_BLACK_MEDIUM",
@@ -1488,7 +1499,7 @@ class TestCache(unittest.TestCase):
     """cache.py — ColorCache, QColorCache, StylesheetCache, FontCache."""
 
     def test_color_cache_rgb_to_hex(self):
-        self.assertEqual(ColorCache.rgb_to_hex((255,0,0)), "#ff0000")
+        self.assertEqual(ColorCache.rgb_to_hex((255,0,0)), EXAMPLE_PURE_RED)
 
     def test_color_cache_hsv_returns_3tuple(self):
         h,s,v = ColorCache.rgb_to_hsv((255,0,0))
@@ -1517,7 +1528,7 @@ class TestCache(unittest.TestCase):
     # ── QColorCache ──
     def test_qcolor_cache_get_returns_qcolor(self):
         from PyQt6.QtGui import QColor
-        c = QColorCache.get("#ff0000")
+        c = QColorCache.get(EXAMPLE_PURE_RED)
         self.assertIsInstance(c, QColor)
 
     def test_qcolor_cache_get_tuple(self):
@@ -1544,12 +1555,12 @@ class TestCache(unittest.TestCase):
         self.assertIsNotNone(QColorCache.LOCK_BORDER)
 
     def test_qcolor_cache_caches_repeated_get(self):
-        a = QColorCache.get("#deadbe")
-        b = QColorCache.get("#deadbe")
+        a = QColorCache.get(EXAMPLE_CACHE_REPEAT_KEY)
+        b = QColorCache.get(EXAMPLE_CACHE_REPEAT_KEY)
         self.assertIs(a, b)  # Same cached instance
 
     def test_qcolor_cache_clear(self):
-        QColorCache.get("#abc123")  # populate
+        QColorCache.get(EXAMPLE_CACHE_FILL_KEY)  # populate
         QColorCache.clear()
         # After clear, _cache is empty (constants attr remain via class)
 
@@ -1594,12 +1605,12 @@ class TestClipboard(unittest.TestCase):
         if txt: self.assertIn("rgb(", txt); self.assertIn("128", txt)
 
     def test_parse_color_from_hex(self):
-        self.cb.copy_text("#d2bc93")
+        self.cb.copy_text(EXAMPLE_GOLD)
         parsed = self.cb.try_parse_color_from_clipboard()
         if parsed: self.assertEqual(parsed, (210, 188, 147))
 
     def test_parse_color_from_rgb(self):
-        self.cb.copy_text("rgb(128, 64, 200)")
+        self.cb.copy_text(DATA_MEDIUM_PURPLE_RGB)
         parsed = self.cb.try_parse_color_from_clipboard()
         if parsed: self.assertEqual(parsed, (128, 64, 200))
 
@@ -1898,7 +1909,7 @@ class TestEdgeCases(unittest.TestCase):
     def test_missing_hex_used_for_dict_default(self):
         entry = {}  # missing 'hex' key
         hex_code = entry.get("hex", config.MISSING_HEX_PLACEHOLDER)
-        self.assertEqual(hex_code.upper(), "#000000")
+        self.assertEqual(hex_code, config.MISSING_HEX_PLACEHOLDER)
 
 
 # ══════════════════════════════════════════════════════════════════════════════

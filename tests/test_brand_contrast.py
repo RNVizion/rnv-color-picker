@@ -4,11 +4,15 @@ RNV Color Picker — Brand contrast and derivation guards
 RNV-GOLD-GUARD-FILE-NAMES-RETIRED-VALUES-BY-DESIGN
 
 That marker tells any value-sweeping tool to skip this file. Its whole
-purpose is to name retired colours -- #b19145, #c4a458, #4caf50 -- and
-assert they never come back. A sweep that rewrites those mentions turns
-the guard into "#8c7337 must never equal #8c7337", which passes forever
-and protects nothing. Use and mention are different things, and the file
-that states a rule about a value must never be searched for that value.
+purpose is to name retired colours -- RETIRED_APP_LOCAL_DARK_GOLD,
+RETIRED_ORPHANED_LIGHT_HOVER, RETIRED_MATERIAL_SUCCESS -- and assert they
+never come back. Since RNV-COLOUR-SYNC #53 A (2026-10-17) their values are
+written once, in tests/colour_values.py, which carries the same marker for
+the same reason, and this file reads them by name. A sweep that rewrites
+those mentions turns the guard into "BRAND_DARK_GOLD must never equal
+BRAND_DARK_GOLD", which passes forever and protects nothing. Use and mention
+are different things, and the file that states a rule about a value must
+never be searched for that value.
 
 These tests do not check that colours have particular values. They check
 what a value test cannot see:
@@ -36,6 +40,7 @@ from __future__ import annotations
 
 import ast
 import functools
+import json
 import re
 import subprocess
 from pathlib import Path
@@ -43,10 +48,22 @@ from pathlib import Path
 import pytest
 
 from utils import config as C
+from tests.colour_values import (
+    EXAMPLE_BLACK, EXAMPLE_DARK_GOLD, EXAMPLE_WHITE, REGISTER_GOLD_TEXT_GROUND_FLOOR,
+    RETIRED_APP_LOCAL_DARK_GOLD, RETIRED_HAND_WRITTEN_DARK_HOVER,
+    RETIRED_HAND_WRITTEN_DARK_PRESSED, RETIRED_HAND_WRITTEN_LIGHT_PRESSED,
+    RETIRED_LIGHT_STRAY_F0, RETIRED_LIGHT_STRAY_FA, RETIRED_MATERIAL_ERROR,
+    RETIRED_MATERIAL_SUCCESS, RETIRED_MATERIAL_SUCCESS_LIGHT, RETIRED_ORPHANED_LIGHT_HOVER,
+    RETIRED_TAB_HOVER_GROUND, RETIRED_WARNING_AMBER)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PY = PROJECT_ROOT / "utils" / "config.py"
+
+#: RNV-COLOUR-SYNC, 2026-10-16. Where each colour comes from, as brand_map.json
+#: says. The values are held by tests/test_colours_in_sync.py, against the
+#: register at the pin; what this file holds is the name each one takes.
+BRAND_MAP = json.loads((PROJECT_ROOT / "brand_map.json").read_text(encoding="utf-8"))["colours"]
 
 TEXT_FLOOR = 4.5          # WCAG 1.4.3, normal-size text
 COMPONENT_FLOOR = 3.0     # WCAG 1.4.11, UI components and graphics
@@ -78,8 +95,9 @@ def contrast_ratio(fg: str, bg: str) -> float:
 
 # Every one of these was a hand-written literal before the alignment. A
 # derivative written down is stale the moment its base moves, and nothing
-# flags it -- this repository's old light hover, #c4a458, was a tint of the
-# retired #b19145 and was orphaned the instant the accent changed.
+# flags it -- this repository's old light hover, RETIRED_ORPHANED_LIGHT_HOVER,
+# was a tint of the retired RETIRED_APP_LOCAL_DARK_GOLD and was orphaned the
+# instant the accent changed.
 DERIVED_CONSTANTS = {
     "BRAND_DARK_GOLD_DEEP",
     "BRAND_DARK_GOLD_HOVER",
@@ -152,7 +170,7 @@ def test_dark_hover_tracks_its_source() -> None:
 
 def test_light_hover_moves_away_from_its_ground() -> None:
     """A dark ground takes a lighter hover; a light ground takes a deeper
-    one. The retired #c4a458 went lighter on a light ground -- toward it --
+    one. The retired RETIRED_ORPHANED_LIGHT_HOVER went lighter on a light ground -- toward it --
     which is why white measured 2.3868 on it."""
     light_bg = C.LIGHT_THEME_COLORS["window_bg"]
     assert (relative_luminance(C.BRAND_DARK_GOLD_HOVER)
@@ -180,15 +198,15 @@ def test_rgb_tuple_matches_its_hex(const: str, rgb: str) -> None:
 def test_lighten_shifts_every_channel_equally() -> None:
     """Uniform per-channel is what preserves hue, and it is the method the
     light palettes already used before this pass."""
-    out = C.lighten("#8c7337", -14)
-    a = C._to_rgb("#8c7337")
+    out = C.lighten(EXAMPLE_DARK_GOLD, -14)
+    a = C._to_rgb(EXAMPLE_DARK_GOLD)
     b = C._to_rgb(out)
     assert [x - y for x, y in zip(a, b)] == [14, 14, 14]
 
 
 def test_lighten_clamps_instead_of_wrapping() -> None:
-    assert C.lighten("#ffffff", 40) == "#ffffff"
-    assert C.lighten("#000000", -40) == "#000000"
+    assert C.lighten(EXAMPLE_WHITE, 40) == EXAMPLE_WHITE
+    assert C.lighten(EXAMPLE_BLACK, -40) == EXAMPLE_BLACK
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -213,33 +231,36 @@ _PIN = re.compile(
 # Pairs below the floor on purpose, keyed by the palette that renders them.
 # Both halves are asserted. An exemption for a pairing that does not exist
 # is worse than no exemption: it is a licence waiting for a real defect.
+# RNV-COLOUR-SYNC, 2026-10-16: each half by the constant its palette key
+# paints, where it was written as that constant's hex code, so a brand move
+# carries the exemption with the pairing it describes.
 ACCEPTED: dict[tuple[str, str, str], str] = {
-    ("LIGHT", "#000000", "#333333"):
+    ("LIGHT", C.TRUE_BLACK, C.APP_BORDER):
         "main-window button hover. The main window runs a white/near-black "
         "inverse scheme where the text stays black while the background "
         "darkens. Deliberate, and separate from the gold dialog scheme.",
-    ("DARK", "#000000", "#444444"):
+    ("DARK", C.TRUE_BLACK, C.GREY_44):
         "main-window button pressed, dark. Same inverse scheme mirrored.",
-    ("IMAGE", "#000000", "#444444"):
+    ("IMAGE", C.TRUE_BLACK, C.GREY_44):
         "main-window button pressed, image mode (inherits dark).",
-    ("LIGHT", "#aaaaaa", "#ffffff"):
+    ("LIGHT", C.APP_TEXT_DIM, C.WHITE):
         "disabled control text. WCAG 1.4.3 exempts disabled controls.",
-    ("LIGHT", "#aaaaaa", "#e0e0e0"):
+    ("LIGHT", C.APP_TEXT_DIM, C.APP_PRESSED_LIGHT):
         "disabled control text on a tinted surface. Same exemption.",
-    ("DARK", "#555555", "#333333"):
+    ("DARK", C.GREY_55, C.APP_BORDER):
         "disabled control text, dark. Same exemption.",
-    ("DARK", "#555555", "#2a2a2a"):
+    ("DARK", C.GREY_55, C.APP_CARD):
         "disabled control text on the dark card. Same exemption.",
-    ("IMAGE", "#555555", "#333333"):
+    ("IMAGE", C.GREY_55, C.APP_BORDER):
         "disabled control text, image mode. Same exemption.",
-    ("IMAGE", "#555555", "#2a2a2a"):
+    ("IMAGE", C.GREY_55, C.APP_CARD):
         "disabled control text on the card, image mode. Same exemption.",
-    ("LIGHT", "#666666", "#e0e0e0"):
+    ("LIGHT", C.GREY_66, C.GREY_E0):
         "unselected tab label. Secondary text on an inactive tab; the "
         "selected tab carries the accent and the contrast.",
-    ("DARK", "#888888", "#2a2a2a"):
+    ("DARK", C.GREY_88, C.APP_CARD):
         "unselected tab label, dark. Same reason.",
-    ("IMAGE", "#888888", "#2a2a2a"):
+    ("IMAGE", C.GREY_88, C.APP_CARD):
         "unselected tab label, image mode. Same reason.",
 }
 
@@ -459,18 +480,25 @@ def test_every_exemption_still_applies() -> None:
 # light enough to carry white text at 4.5:1 is too light to BE text on
 # anything but pure white -- the luminance bands do not overlap.
 
-LIGHT_SURFACES = ["#ffffff", "#fafafa", "#f5f5f5", "#f0f0f0", "#eeeeee"]
+# RNV-COLOUR-SYNC, 2026-10-16: the light surfaces, by name. Three the app
+# draws, and two strays RNV-LIGHT-WIRING collapsed onto
+# REGISTER_APP_SURFACE_LIGHT_2 and APP_HOVER_LIGHT: RETIRED_LIGHT_STRAY_FA and
+# RETIRED_LIGHT_STRAY_F0. The app no longer draws the strays; the check keeps
+# them as retired grounds, named in tests/colour_values.py (#53 A, 2026-10-17).
+LIGHT_SURFACES = [C.WHITE, RETIRED_LIGHT_STRAY_FA, C.APP_SURFACE_LIGHT_3,
+                  RETIRED_LIGHT_STRAY_F0,
+                  C.APP_HOVER_LIGHT]
 
 
 def test_fill_gold_carries_white_text() -> None:
-    assert contrast_ratio("#ffffff", C.BRAND_DARK_GOLD) >= TEXT_FLOOR
+    assert contrast_ratio(C.WHITE, C.BRAND_DARK_GOLD) >= TEXT_FLOOR
 
 
 def test_fill_gold_still_carries_black_text() -> None:
     """The register rules black on gold, and the value move must not cost
     that. Black is 4.6226 at the new value -- the margin is thin, which is
     exactly when a check earns its place."""
-    assert contrast_ratio("#000000", C.BRAND_DARK_GOLD) >= TEXT_FLOOR
+    assert contrast_ratio(C.TRUE_BLACK, C.BRAND_DARK_GOLD) >= TEXT_FLOOR
 
 
 def test_text_gold_clears_every_light_surface() -> None:
@@ -518,10 +546,10 @@ def test_tab_hover_ground_is_light_enough_for_gold_text() -> None:
 #: is what core/accessibility.py used, and is half the reason the guard below
 #: passed for thirty days over four live values.
 _RETIRED_PLATFORM: dict[str, str] = {
-    "#4caf50": "Material success",
-    "#8bc34a": "Material success, light",
-    "#ffc107": "Material and Bootstrap warning",
-    "#f44336": "Material error",
+    RETIRED_MATERIAL_SUCCESS: "Material success",
+    RETIRED_MATERIAL_SUCCESS_LIGHT: "Material success, light",
+    RETIRED_WARNING_AMBER: "Material and Bootstrap warning",
+    RETIRED_MATERIAL_ERROR: "Material error",
 }
 
 
@@ -571,7 +599,7 @@ def test_one_status_family_only() -> None:
       1. IT READ ONE FILE. `_config_source()` is utils/config.py. The
          survivors were in core/accessibility.py.
       2. IT SEARCHED FOR HEX. The survivors were int triples --
-         `return (76, 175, 80)` -- so a text search for "#4caf50" could not
+         `return (76, 175, 80)` -- so a text search for RETIRED_MATERIAL_SUCCESS's hex could not
          have found them even in the right file.
 
     They were `get_contrast_rating_color`'s four return values, painted as
@@ -629,7 +657,7 @@ def test_the_rating_scale_is_not_one_set_for_three_grounds() -> None:
                 "rating_poor"):
         assert C.DARK_THEME_COLORS[key] != C.LIGHT_THEME_COLORS[key], (
             f"{key} is the same value in dark and light; no colour clears "
-            f"4.5:1 on both #1a1a1a and #f5f5f5 -- the best possible is "
+            f"4.5:1 on both {C.BRAND_BLACK} and {C.APP_SURFACE_LIGHT_3} -- the best possible is "
             f"3.9954:1, so one of the two grounds is being failed")
 
 
@@ -646,7 +674,7 @@ def test_status_badge_text_clears_its_fill(bg: str, fg: str) -> None:
 
 def test_error_text_is_theme_aware() -> None:
     """The error label used one static colour on both grounds, and no
-    registered red clears #f5f5f5 and #1a1a1a alike. It takes a palette
+    registered red clears APP_SURFACE_LIGHT_3 and BRAND_BLACK alike. It takes a palette
     key now, so each theme gets a value that suits its ground."""
     for name, palette in PALETTES.items():
         assert "status_error_text" in palette, (
@@ -657,16 +685,16 @@ def test_error_text_is_theme_aware() -> None:
 
 
 RETIRED = {
-    "#b19145": "the app-local dark gold",
-    "#c4a458": "the orphaned lighter light-mode hover",
-    "#8a7236": "the hand-written light-mode pressed",
-    "#dcc9a3": "the hand-written dark hover",
-    "#b7a480": "the hand-written dark pressed",
-    "#d0d0d0": "the tab hover ground no gold cleared",
-    "#4caf50": "Material success",
-    "#8bc34a": "Material success, light",
-    "#ffc107": "Material and Bootstrap warning",
-    "#f44336": "Material error",
+    RETIRED_APP_LOCAL_DARK_GOLD: "the app-local dark gold",
+    RETIRED_ORPHANED_LIGHT_HOVER: "the orphaned lighter light-mode hover",
+    RETIRED_HAND_WRITTEN_LIGHT_PRESSED: "the hand-written light-mode pressed",
+    RETIRED_HAND_WRITTEN_DARK_HOVER: "the hand-written dark hover",
+    RETIRED_HAND_WRITTEN_DARK_PRESSED: "the hand-written dark pressed",
+    RETIRED_TAB_HOVER_GROUND: "the tab hover ground no gold cleared",
+    RETIRED_MATERIAL_SUCCESS: "Material success",
+    RETIRED_MATERIAL_SUCCESS_LIGHT: "Material success, light",
+    RETIRED_WARNING_AMBER: "Material and Bootstrap warning",
+    RETIRED_MATERIAL_ERROR: "Material error",
 }
 
 
@@ -674,7 +702,7 @@ def _assigned_string_values() -> list[tuple[int, str]]:
     """Every string this module actually assigns, as (line, value).
 
     Deliberately not a text search. utils/config.py DOCUMENTS the values it
-    retired -- "it replaced the app-local #b19145" -- and a text search
+    retired -- "it replaced the app-local" RETIRED_APP_LOCAL_DARK_GOLD -- and a text search
     cannot tell that sentence from a live constant. Use and mention again:
     the docstring explaining a retirement is the one place the retired value
     belongs. The AST only sees values, never prose.
@@ -711,7 +739,7 @@ def test_retired_values_are_gone() -> None:
 # be asserted by hand.
 #
 # It used to be asserted as an EXEMPTION: light error text measured 4.1528 on
-# #f5f5f5, short of the floor, and the test held that number and failed if it
+# APP_SURFACE_LIGHT_3, short of the floor, and the test held that number and failed if it
 # ever cleared -- with a message telling whoever cleared it to delete the test
 # rather than leave a standing note about a problem that no longer exists.
 #
@@ -720,10 +748,10 @@ def test_retired_values_are_gone() -> None:
 # outlives its problem is a licence waiting for a future defect.
 #
 # RNV-STATUS-FAMILY (2026-09-03): the value is now
-# STATUS_ERROR_TEXT_LIGHT #ae4650 and reads 4.5123 on #f5f5f5. It is
+# STATUS_ERROR_TEXT_LIGHT and reads 4.5123 on APP_SURFACE_LIGHT_3. It is
 # registered rather than computed, because lighten(STATUS_ERROR, -20)
-# against the new base gives #b44753 -- a third answer to a settled
-# question.
+# against the new base gives EXAMPLE_OLD_RULE_ERROR_TEXT_LIGHT -- a third
+# answer to a settled question.
 
 
 def test_dark_error_text_clears_its_panel() -> None:
@@ -746,8 +774,9 @@ def test_light_error_text_is_registered_and_why_that_changed() -> None:
     and argued that a written-down derivative orphans the moment its
     base moves. The argument was right, and it is why this value could
     not be left alone: the base moved on 2026-09-03, and against
-    #c75b64 the formula yields #b44753 -- neither the old #c82131 nor
-    the registered #ae4650. A derivative whose rule no longer produces
+    STATUS_ERROR the formula yields EXAMPLE_OLD_RULE_ERROR_TEXT_LIGHT --
+    neither the old RETIRED_ORPHAN_ERROR_TEXT_LIGHT nor the registered
+    STATUS_ERROR_TEXT_LIGHT. A derivative whose rule no longer produces
     it is not a derivative; it is a coincidence waiting to break.
 
     The register's family rule is a different one and it publishes the
@@ -755,7 +784,9 @@ def test_light_error_text_is_registered_and_why_that_changed() -> None:
     cannot silently change what an error looks like in five apps.
     """
     assert C.LIGHT_THEME_COLORS["status_error_text"] == C.STATUS_ERROR_TEXT_LIGHT
-    assert C.STATUS_ERROR_TEXT_LIGHT == "#ae4650"
+    # RNV-COLOUR-SYNC, 2026-10-16: by the register name brand_map.json writes
+    # it from; tests/test_colours_in_sync.py holds the value.
+    assert BRAND_MAP["STATUS_ERROR_TEXT_LIGHT"] == "STATUS.error-text-light"
     assert C.STATUS_ERROR_TEXT_LIGHT != C.lighten(C.STATUS_ERROR, -20)
     assert C.STATUS_ERROR_TEXT_LIGHT != C.STATUS_ERROR, (
         "the light error text must not be the fill value")
@@ -764,34 +795,41 @@ def test_light_error_text_is_registered_and_why_that_changed() -> None:
 def test_light_error_text_carries_on_the_grounds_it_reaches() -> None:
     """RNV-STATUS-LIGHT-FLOOR -- READ THIS BEFORE WIDENING THE LIST.
 
-    This ran over #ffffff, #f5f5f5, #eeeeee and #e8e8e8, and said: the
-    gold publishes #e8e8e8 as the ground below which it stops carrying
+    This ran over WHITE, APP_SURFACE_LIGHT_3, APP_HOVER_LIGHT and
+    REGISTER_GOLD_TEXT_GROUND_FLOOR, and said: the gold publishes
+    REGISTER_GOLD_TEXT_GROUND_FLOOR as the ground below which it stops carrying
     text, and the error red is derived to the same boundary so the two
-    rules need not be remembered separately. That was true of #c82131,
-    which read 4.6100 there.
+    rules need not be remembered separately. That was true of
+    RETIRED_ORPHAN_ERROR_TEXT_LIGHT, which read 4.6100 there.
 
     The registered replacement does not reach it:
 
-        #ae4650   #f5f5f5 4.5123  #eeeeee 4.2401  #e8e8e8 4.0150
+        RETIRED_REV30_ERROR_TEXT_LIGHT   APP_SURFACE_LIGHT_3 4.5123
+            APP_HOVER_LIGHT 4.2401   REGISTER_GOLD_TEXT_GROUND_FLOOR 4.0150
 
     The cause is in the register's own rule, which walks its light
-    text variants against #f5f5f5 as "the worst light ground". Rev 27
-    put APP hover-light #eeeeee, GOLD_TEXT_GROUND_FLOOR #e8e8e8 and
-    pressed-light #e0e0e0 below it. All three light variants were
+    text variants against APP_SURFACE_LIGHT_3 as "the worst light ground".
+    Rev 27 put APP_HOVER_LIGHT, REGISTER_GOLD_TEXT_GROUND_FLOOR and
+    APP_PRESSED_LIGHT below it. All three light variants were
     walked to the FIRST step that clears -- 4.52, 4.52, 4.51 -- so none
     has margin, and one registered rung down they fail together.
 
     THIS IS AN OPEN QUESTION WITH THE BRAND CHAT, NOT A LOOSENED TEST.
     The list is narrowed to the two grounds the published value reaches
     and this docstring records what was given up. If the register
-    re-walks against #e8e8e8 the answer here is #ae4650 -- moving 3.1,
+    re-walks against REGISTER_GOLD_TEXT_GROUND_FLOOR the answer here is
+    STATUS_ERROR_TEXT_LIGHT -- moving 3.1,
     inside the register's own 8.40 bar, so it stays the same red -- and
     the fix is to restore the two grounds above.
     """
     # Restored at rev 31: the re-walked value reaches all four rungs.
-    # #e0e0e0 is deliberately absent -- BRAND_DARK_GOLD_DEEP fails there
+    # APP_PRESSED_LIGHT is deliberately absent -- BRAND_DARK_GOLD_DEEP fails there
     # too, so it is the boundary for every brand text family, not a gap.
-    for ground in ("#ffffff", "#f5f5f5", "#eeeeee", "#e8e8e8"):
+    # RNV-COLOUR-SYNC, 2026-10-16: the grounds by name.
+    # REGISTER_GOLD_TEXT_GROUND_FLOOR is the register's gold text floor; the
+    # app draws that hex only as the image viewer's ground, IMAGE_CANVAS_LIGHT,
+    # which carries no text.
+    for ground in (C.WHITE, C.APP_SURFACE_LIGHT_3, C.APP_HOVER_LIGHT, REGISTER_GOLD_TEXT_GROUND_FLOOR):
         ratio = contrast_ratio(C.STATUS_ERROR_TEXT_LIGHT, ground)
         assert ratio >= TEXT_FLOOR, \
             f"{C.STATUS_ERROR_TEXT_LIGHT} on {ground} = {ratio:.4f}"
@@ -814,7 +852,7 @@ def test_the_error_fill_still_pairs_with_black() -> None:
 # the stylesheet walker resolves nothing and reports nothing. Reporting
 # nothing reads exactly like reporting no defects.
 #
-# about_dialog had NINE such uses, every one of them text on #f5f5f5, where
+# about_dialog had NINE such uses, every one of them text on APP_SURFACE_LIGHT_3, where
 # the fill gold measures 4.1670. The walker was silent on all nine.
 #
 # The structural rule these tests hold: a helper is named for the ROLE it
@@ -945,7 +983,7 @@ def _golds_in(palette: dict[str, str]) -> dict[str, list[str]]:
 def test_two_golds_per_mode(palette_name: str) -> None:
     """The rule, made machine-checkable.
 
-    A third gold is how this repository ended up with #c4a458 -- a tint of
+    A third gold is how this repository ended up with RETIRED_ORPHANED_LIGHT_HOVER -- a tint of
     a value that had already been retired, orphaned and serving one key,
     with nothing anywhere to flag it. Counting is what catches that; no
     contrast test would, because an orphaned gold can be perfectly legible.

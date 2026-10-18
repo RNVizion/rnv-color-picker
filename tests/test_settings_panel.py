@@ -30,6 +30,16 @@ from PyQt6.QtGui import QColor, QCloseEvent, QShowEvent
 
 from ui.settings_panel import SettingsPanel, ColorHistoryItem
 from utils import config
+from tests.colour_values import (
+    DATA_BLACK, DATA_BLACK_RGB_COMPACT, DATA_BLACK_SHORT, DATA_CERULEAN,
+    DATA_CERULEAN_UPPER, DATA_DARK_ORANGE, DATA_DARK_ORANGE_BARE,
+    DATA_DARK_ORANGE_BARE_UPPER, DATA_DARK_ORANGE_PADDED, DATA_DARK_ORANGE_RGB,
+    DATA_DARK_ORANGE_RGB_UPPER, DATA_DARK_ORANGE_UPPER, DATA_DEEP_BLUE, DATA_GREEN,
+    DATA_OUT_OF_RANGE_RGB, DATA_PALE_BLUE, DATA_RED, DATA_ROSE_BARE_UPPER,
+    DATA_STEEL_BLUE_RGB, DATA_STEEL_BLUE_RGB_SPACED, DATA_TAUPE_RGB, DATA_WHITE,
+    DATA_WHITE_UPPER, DATA_WINE_RGB, EXAMPLE_SIMULATED_SENTINEL_RGB,
+    INVALID_HEX_BAD_DIGITS_SHORT, INVALID_HEX_HISTORY_LABEL, INVALID_HEX_SEVEN_DIGITS,
+    INVALID_HEX_THREE_DIGITS, INVALID_RGB_EMPTY, INVALID_RGB_TWO_SMALL_CHANNELS)
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -114,47 +124,47 @@ class TestColorHistoryItem:
     to match the actual color. Uses cached QColors when available."""
 
     def test_construction_with_red(self, qtbot):
-        item = ColorHistoryItem("#ff0000", "2 mins ago", {"rgb": [255, 0, 0]})
-        assert item.hex_code == "#ff0000"
+        item = ColorHistoryItem(DATA_RED, "2 mins ago", {"rgb": [255, 0, 0]})
+        assert item.hex_code == DATA_RED
         assert item.time_str == "2 mins ago"
         assert item.color_data == {"rgb": [255, 0, 0]}
 
     def test_display_text_combines_hex_and_time(self, qtbot):
-        item = ColorHistoryItem("#abcdef", "yesterday", {"rgb": [0xab, 0xcd, 0xef]})
+        item = ColorHistoryItem(DATA_PALE_BLUE, "yesterday", {"rgb": [0xab, 0xcd, 0xef]})
         # Display text format: "{hex}  -  {time}"
-        assert "#abcdef" in item.text()
+        assert DATA_PALE_BLUE in item.text()
         assert "yesterday" in item.text()
 
     def test_background_color_set_from_rgb(self, qtbot):
-        item = ColorHistoryItem("#00ff00", "now", {"rgb": [0, 255, 0]})
+        item = ColorHistoryItem(DATA_GREEN, "now", {"rgb": [0, 255, 0]})
         bg = item.background().color()
         assert (bg.red(), bg.green(), bg.blue()) == (0, 255, 0)
 
     def test_background_dark_color_uses_light_text(self, qtbot):
         # Black background → text should be near-white for contrast
-        item = ColorHistoryItem("#000000", "now", {"rgb": [0, 0, 0]})
+        item = ColorHistoryItem(DATA_BLACK, "now", {"rgb": [0, 0, 0]})
         fg = item.foreground().color()
         # Light text means R+G+B is high
         assert (fg.red() + fg.green() + fg.blue()) > 600
 
     def test_background_light_color_uses_dark_text(self, qtbot):
         # White background → text should be near-black
-        item = ColorHistoryItem("#ffffff", "now", {"rgb": [255, 255, 255]})
+        item = ColorHistoryItem(DATA_WHITE, "now", {"rgb": [255, 255, 255]})
         fg = item.foreground().color()
         # Dark text means R+G+B is low
         assert (fg.red() + fg.green() + fg.blue()) < 200
 
     def test_missing_rgb_uses_default_black(self, qtbot):
         # color_data without "rgb" key — falls back to [0, 0, 0]
-        item = ColorHistoryItem("#000", "?", {})
+        item = ColorHistoryItem(DATA_BLACK_SHORT, "?", {})
         bg = item.background().color()
         assert (bg.red(), bg.green(), bg.blue()) == (0, 0, 0)
 
     def test_malformed_rgb_handled_gracefully(self, qtbot):
         # Non-list rgb value triggers the `except Exception: pass` path
-        item = ColorHistoryItem("#zzz", "?", {"rgb": "not a list"})
+        item = ColorHistoryItem(INVALID_HEX_HISTORY_LABEL, "?", {"rgb": "not a list"})
         # No crash — item still constructed
-        assert item.hex_code == "#zzz"
+        assert item.hex_code == INVALID_HEX_HISTORY_LABEL
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -1148,7 +1158,7 @@ class TestHarmonyBaseUpdate:
         panel.harmony_g_spin.setValue(100)
         panel.harmony_b_spin.setValue(150)
         ss = panel.harmony_base_preview.styleSheet()
-        assert "rgb(50, 100, 150)" in ss
+        assert DATA_STEEL_BLUE_RGB in ss
 
     def test_update_calls_generate_harmony(self, panel):
         spy = MagicMock(wraps=panel._generate_harmony)
@@ -1300,7 +1310,7 @@ class TestCreateHarmonySwatch:
         # Find the hex label child — should contain the uppercase hex
         labels = swatch.findChildren(QLabel)
         label_texts = [lbl.text() for lbl in labels]
-        assert any("FF0080" in t for t in label_texts)
+        assert any(DATA_ROSE_BARE_UPPER in t for t in label_texts)
 
     def test_base_swatch_labelled_base(self, panel):
         swatch = panel._create_harmony_swatch((0, 255, 0), is_base=True)
@@ -1562,7 +1572,7 @@ class TestUpdateContrastCheck:
     def test_fg_preview_styled_with_fg_rgb(self, panel):
         self._set_fg_bg(panel, (123, 45, 67), (200, 200, 200))
         ss = panel.access_fg_preview.styleSheet()
-        assert "rgb(123, 45, 67)" in ss
+        assert DATA_WINE_RGB in ss
 
     def test_repeated_update_doesnt_corrupt_label_text(self, panel):
         """Regression guard: the source uses `label.text().split(' - ')[0]` to
@@ -1628,7 +1638,7 @@ class TestUpdateBlindnessSim:
              if "background-color" in lbl.styleSheet()),
             ""
         )
-        assert "rgb(42, 84, 168)" in color_box_ss
+        assert EXAMPLE_SIMULATED_SENTINEL_RGB in color_box_ss
 
     def test_repeated_updates_clear_old_swatches(self, panel):
         # Two updates in a row should not double the layout count
@@ -1646,7 +1656,7 @@ class TestUpdateBlindnessSim:
         panel.sim_b.setValue(77)
         panel._update_blindness_sim()
         ss = panel.sim_color_preview.styleSheet()
-        assert "rgb(99, 88, 77)" in ss
+        assert DATA_TAUPE_RGB in ss
 
 
 class TestCopyPasteColorMethods:
@@ -1658,31 +1668,31 @@ class TestCopyPasteColorMethods:
         panel.access_fg_g.setValue(0x88)
         panel.access_fg_b.setValue(0x00)
         panel._copy_fg_color()
-        assert QApplication.clipboard().text() == "#ff8800"
+        assert QApplication.clipboard().text() == DATA_DARK_ORANGE
 
     def test_copy_bg_color_writes_hex_to_clipboard(self, panel):
         panel.access_bg_r.setValue(0x12)
         panel.access_bg_g.setValue(0x34)
         panel.access_bg_b.setValue(0x56)
         panel._copy_bg_color()
-        assert QApplication.clipboard().text() == "#123456"
+        assert QApplication.clipboard().text() == DATA_DEEP_BLUE
 
     def test_copy_sim_color_writes_hex_to_clipboard(self, panel):
         panel.sim_r.setValue(0xAB)
         panel.sim_g.setValue(0xCD)
         panel.sim_b.setValue(0xEF)
         panel._copy_sim_color()
-        assert QApplication.clipboard().text() == "#abcdef"
+        assert QApplication.clipboard().text() == DATA_PALE_BLUE
 
     def test_paste_fg_color_from_hex_clipboard(self, panel):
-        QApplication.clipboard().setText("#ff8800")
+        QApplication.clipboard().setText(DATA_DARK_ORANGE)
         panel._paste_fg_color()
         assert panel.access_fg_r.value() == 255
         assert panel.access_fg_g.value() == 136
         assert panel.access_fg_b.value() == 0
 
     def test_paste_bg_color_from_rgb_clipboard(self, panel):
-        QApplication.clipboard().setText("rgb(50, 100, 150)")
+        QApplication.clipboard().setText(DATA_STEEL_BLUE_RGB)
         panel._paste_bg_color()
         assert panel.access_bg_r.value() == 50
         assert panel.access_bg_g.value() == 100
@@ -1713,22 +1723,22 @@ class TestParseColorText:
     plain comma-separated formats. Returns RGB tuple or None."""
 
     @pytest.mark.parametrize("text,expected", [
-        ("#FF8800", (255, 136, 0)),
-        ("#ff8800", (255, 136, 0)),
-        ("FF8800", (255, 136, 0)),
-        ("ff8800", (255, 136, 0)),
-        ("  #FF8800  ", (255, 136, 0)),  # whitespace stripped
-        ("#000000", (0, 0, 0)),
-        ("#FFFFFF", (255, 255, 255)),
+        (DATA_DARK_ORANGE_UPPER, (255, 136, 0)),
+        (DATA_DARK_ORANGE, (255, 136, 0)),
+        (DATA_DARK_ORANGE_BARE_UPPER, (255, 136, 0)),
+        (DATA_DARK_ORANGE_BARE, (255, 136, 0)),
+        (DATA_DARK_ORANGE_PADDED, (255, 136, 0)),  # whitespace stripped
+        (DATA_BLACK, (0, 0, 0)),
+        (DATA_WHITE_UPPER, (255, 255, 255)),
     ])
     def test_hex_parsing(self, panel, text, expected):
         assert panel._parse_color_text(text) == expected
 
     @pytest.mark.parametrize("text,expected", [
-        ("rgb(255, 136, 0)", (255, 136, 0)),
-        ("RGB(255, 136, 0)", (255, 136, 0)),
-        ("rgb( 50 , 100 , 150 )", (50, 100, 150)),  # whitespace tolerance
-        ("rgb(0,0,0)", (0, 0, 0)),
+        (DATA_DARK_ORANGE_RGB, (255, 136, 0)),
+        (DATA_DARK_ORANGE_RGB_UPPER, (255, 136, 0)),
+        (DATA_STEEL_BLUE_RGB_SPACED, (50, 100, 150)),  # whitespace tolerance
+        (DATA_BLACK_RGB_COMPACT, (0, 0, 0)),
     ])
     def test_rgb_parsing(self, panel, text, expected):
         assert panel._parse_color_text(text) == expected
@@ -1743,7 +1753,7 @@ class TestParseColorText:
 
     def test_rgb_format_clamps_to_255(self, panel):
         # The RGB regex allows >255 but the parser clamps
-        assert panel._parse_color_text("rgb(300, 400, 500)") == (255, 255, 255)
+        assert panel._parse_color_text(DATA_OUT_OF_RANGE_RGB) == (255, 255, 255)
 
     def test_csv_format_clamps_to_255(self, panel):
         assert panel._parse_color_text("999, 1000, 1001") == (255, 255, 255)
@@ -1751,11 +1761,11 @@ class TestParseColorText:
     @pytest.mark.parametrize("text", [
         "",
         "not a color",
-        "#GGG",          # invalid hex chars
-        "#FFF",          # 3-char hex not supported
-        "#FF88000",      # 7 hex chars
-        "rgb()",
-        "rgb(1, 2)",     # only 2 values
+        INVALID_HEX_BAD_DIGITS_SHORT,  # invalid hex chars
+        INVALID_HEX_THREE_DIGITS,  # 3-char hex not supported
+        INVALID_HEX_SEVEN_DIGITS,  # 7 hex chars
+        INVALID_RGB_EMPTY,
+        INVALID_RGB_TWO_SMALL_CHANNELS,  # only 2 values
         "1, 2",          # only 2 values
     ])
     def test_invalid_text_returns_none(self, panel, text):
@@ -2197,11 +2207,11 @@ class TestApplySettings:
 # ═════════════════════════════════════════════════════════════════════════════
 class TestMutedDescriptions:
     """RNV-MUTED-DESCRIPTIONS, ruling 1 of 2026-09-27. The panel's tab
-    descriptions and the harmony captions were `color: gray` -- #808080 in
+    descriptions and the harmony captions were `color: gray` -- RETIRED_CSS_GREY in
     every mode, 4.40:1 on the dark panel and 3.62:1 in light, both under the
     4.5 floor. They are named "muted_text" now, and the panel's own
-    stylesheet draws that name in text_muted: #888888 in dark and image,
-    #666666 in light, the muted text all five applications already paint.
+    stylesheet draws that name in text_muted: GREY_88 in dark and image,
+    GREY_66 in light, the muted text all five applications already paint.
     That stylesheet is rebuilt by update_theme() on every switch, so the
     descriptions follow the mode without anything tracking them."""
 
@@ -2248,9 +2258,9 @@ class TestMutedDescriptions:
                                for w in primary), mode
 
     def test_the_two_values_are_the_ones_the_fleet_already_uses(self):
-        assert config.DARK_THEME_COLORS["text_muted"] == "#888888"
-        assert config.IMAGE_MODE_COLORS["text_muted"] == "#888888"
-        assert config.LIGHT_THEME_COLORS["text_muted"] == "#666666"
+        assert config.DARK_THEME_COLORS["text_muted"] == config.GREY_88
+        assert config.IMAGE_MODE_COLORS["text_muted"] == config.GREY_88
+        assert config.LIGHT_THEME_COLORS["text_muted"] == config.GREY_66
 
     def test_no_label_is_written_in_a_css_grey(self):
         """The literal the ruling retired, anywhere the application EVALUATES a
@@ -2378,7 +2388,7 @@ class TestHarmonyFollowsASwitch:
 
         before = shown()
         assert len(before[0]) == 4 and before[0][0] == (30, 144, 200), before[0]
-        assert before[1][0] == "#1e90c8" and before[2][0] == "#1E90C8", before[1:3]
+        assert before[1][0] == DATA_CERULEAN and before[2][0] == DATA_CERULEAN_UPPER, before[1:3]
         for mode in ("light", "image", "dark"):
             self._switch(panel, mode)
             assert shown() == before, mode

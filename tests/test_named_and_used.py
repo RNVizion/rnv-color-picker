@@ -49,6 +49,8 @@ PALETTE_MODULES = COLOUR_MODULES
 SKIP_DIRS = {"tests", "build", "dist", "docs", "resources", "scripts", "snapshots", "__pycache__"}
 
 from utils.config import DARK_THEME_COLORS, IMAGE_MODE_COLORS, LIGHT_THEME_COLORS  # noqa: E402
+from tests.colour_values import (  # noqa: E402
+    EXAMPLE_CLEAR_RGBA, EXAMPLE_PALE_PINK, EXAMPLE_WHITE_RGBA_230)
 
 PALETTES = {"DARK_THEME_COLORS": DARK_THEME_COLORS, "LIGHT_THEME_COLORS": LIGHT_THEME_COLORS,
             "IMAGE_MODE_COLORS": IMAGE_MODE_COLORS}
@@ -251,8 +253,8 @@ def test_the_sweep_reads_every_spelling():
     seen = {(kind, literal) for _line, kind, literal in _written("probe.py", (
         "from PyQt6.QtGui import QColor\n"
         "from PyQt6.QtCore import Qt\n"
-        "a = 'background-color: #ffcccc; border: 2px solid red;'\n"
-        "b = f'color: rgba(255, 255, 255, 230); padding: {4}px'\n"
+        f"a = 'background-color: {EXAMPLE_PALE_PINK}; border: 2px solid red;'\n"
+        f"b = f'color: {EXAMPLE_WHITE_RGBA_230}; padding: {{4}}px'\n"
         "c = QColor(128, 128, 128)\n"
         "d = Qt.GlobalColor.darkGreen\n"
         "e = QColor('yellow')\n"
@@ -262,7 +264,7 @@ def test_the_sweep_reads_every_spelling():
         "g = {'ground': 'black'}\n"
         "h = Image.new('RGB', (8, 8), 'Gray')\n"
         "c.setAlpha(171)\n"))}
-    assert seen == {("hex", "#ffcccc"), ("name", "border: red"), ("func", "rgba(255, 255, 255, 230)"),
+    assert seen == {("hex", EXAMPLE_PALE_PINK), ("name", "border: red"), ("func", EXAMPLE_WHITE_RGBA_230),
                     ("qcolor", "QColor(128, 128, 128)"), ("global", "Qt.GlobalColor.darkGreen"),
                     ("name", "yellow"), ("tuple", "(0, 0, 0)"), ("tuple", "(255, 255, 255)"),
                     ("list", "[200, 200, 200]"), ("name", "white"), ("name", "black"), ("name", "Gray"),
@@ -270,7 +272,7 @@ def test_the_sweep_reads_every_spelling():
     quiet = _written("probe.py", (
         "from PyQt6.QtGui import QColor\n"
         "from PyQt6.QtCore import Qt\n"
-        "a = 'background: transparent; border: none; color: rgba(0, 0, 0, 0);'\n"
+        f"a = 'background: transparent; border: none; color: {EXAMPLE_CLEAR_RGBA};'\n"
         "b = QColor(0, 0, 0, 0)\n"
         "b.setAlpha(0)\n"
         "b.setAlpha(255)\n"
@@ -278,7 +280,7 @@ def test_the_sweep_reads_every_spelling():
         "d = [int(h[i:i + 2], 16) for i in (0, 2, 4)]\n"
         "margins = (10, 10, 10, 10)\n"
         "sizes = [16, 32, 48]\n"
-        "'''a bare string is prose: color: red, #ffcccc'''\n"
+        f"'''a bare string is prose: color: red, {EXAMPLE_PALE_PINK}'''\n"
         "if d in (5, 10, 20) or d == (0, 0, 0) or a == 'red':\n"
         "    pass\n"
         "for size in [16, 32, 48]:\n"

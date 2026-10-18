@@ -25,6 +25,7 @@ from PyQt6.QtGui import QAction
 
 from ui.color_swatch_widget import ColorSwatchWidget
 from utils import config
+from tests.colour_values import DATA_RED, EXAMPLE_GOLD, EXAMPLE_GOLD_HSL, EXAMPLE_GOLD_RGB
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -91,8 +92,8 @@ class TestConstruction:
         assert swatch.hilbert_idx == 12345
 
     def test_hex_code_computed_from_rgb(self, swatch):
-        # Brand gold (210, 188, 147) → #d2bc93 — must be auto-derived
-        assert swatch.hex_code == "#d2bc93"
+        # Brand gold (210, 188, 147) → EXAMPLE_GOLD — must be auto-derived
+        assert swatch.hex_code == EXAMPLE_GOLD
 
     def test_default_not_locked(self, swatch):
         assert swatch.is_locked is False
@@ -141,7 +142,7 @@ class TestConfigure:
     def test_configure_recomputes_hex_code(self, swatch):
         # Reconfigure to red — hex must follow the new RGB, not the old gold
         swatch.configure(number=1, rgb=(255, 0, 0), hsl=(0, 100, 50), hilbert_idx=1)
-        assert swatch.hex_code == "#ff0000"
+        assert swatch.hex_code == DATA_RED
 
     def test_configure_can_set_locked(self, swatch):
         swatch.configure(number=1, rgb=(0, 0, 0), hsl=(0, 0, 0), hilbert_idx=1, is_locked=True)
@@ -194,15 +195,15 @@ class TestClipboard:
 
     def test_copy_hex_writes_hex_code(self, swatch):
         swatch.copy_hex()
-        assert QApplication.clipboard().text() == "#d2bc93"
+        assert QApplication.clipboard().text() == EXAMPLE_GOLD
 
     def test_copy_rgb_writes_rgb_string(self, swatch):
         swatch.copy_rgb()
-        assert QApplication.clipboard().text() == "rgb(210, 188, 147)"
+        assert QApplication.clipboard().text() == EXAMPLE_GOLD_RGB
 
     def test_copy_hsl_writes_hsl_string(self, swatch):
         swatch.copy_hsl()
-        assert QApplication.clipboard().text() == "hsl(38, 43%, 70%)"
+        assert QApplication.clipboard().text() == EXAMPLE_GOLD_HSL
 
 
 # ═════════════════════════════════════════════════════════════════════════════

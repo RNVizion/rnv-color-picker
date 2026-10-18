@@ -5,10 +5,12 @@ RNV-GOLD-GUARD-FILE-NAMES-RETIRED-VALUES-BY-DESIGN
 That second marker was added 2026-09-12 and it is not decoration. This file's
 RETIRED table names five dead values in order to forbid them, and on the day
 test_one_status_family_only was widened to sweep the whole repository in both
-notations, this file was the single thing it found. The marker is how a sweep
-is told the difference between a value being USED and a value being NAMED --
-the same distinction _code_only() below draws inside a file, drawn one level
-up between files.
+notations, this file was the single thing it found. Since RNV-COLOUR-SYNC #53 A
+(2026-10-17) the five values are written once, in tests/colour_values.py,
+which carries the same marker for the same reason, and the table reads them
+by name. The marker is how a sweep is told the difference between a value
+being USED and a value being NAMED -- the same distinction _code_only() below
+draws inside a file, drawn one level up between files.
 
 A guard rather than a test: this pins the SHAPE of the change, so a later edit
 that reintroduces a Bootstrap value, writes a status colour as a literal
@@ -18,6 +20,7 @@ of those happened and why it matters.
 from __future__ import annotations
 
 import io
+import json
 import re
 import tokenize
 from pathlib import Path
@@ -25,31 +28,41 @@ from pathlib import Path
 import pytest
 
 from utils import config as C
+from tests.colour_values import (
+    RETIRED_BOOTSTRAP_ERROR, RETIRED_BOOTSTRAP_SUCCESS, RETIRED_ORPHAN_ERROR_TEXT,
+    RETIRED_ORPHAN_ERROR_TEXT_LIGHT, RETIRED_WARNING_AMBER)
 
 ROOT = Path(__file__).resolve().parent.parent
 
+#: RNV-COLOUR-SYNC, 2026-10-16. Where each colour comes from, as brand_map.json
+#: says. The values are held by tests/test_colours_in_sync.py, against the
+#: register at the pin; what this file holds is the name each one takes.
+BRAND_MAP = json.loads((ROOT / "brand_map.json").read_text(encoding="utf-8"))["colours"]
+
 RETIRED = {
-    "#28a745": "Bootstrap green, retired -- it and Bootstrap's red collapsed "
-               "to one olive under deuteranopia at about 4 apart",
-    "#ffc107": "Bootstrap amber, retired -- 1.63 on #ffffff and 1.49 on "
-               "#f5f5f5 against a 3:1 fill floor",
-    "#dc3545": "Bootstrap red, retired with its family",
-    "#e56b77": "orphan: derived from #dc3545, which no longer exists",
-    "#c82131": "orphan: derived from #dc3545, which no longer exists",
+    RETIRED_BOOTSTRAP_SUCCESS: "Bootstrap green, retired -- it and Bootstrap's red collapsed "
+                               "to one olive under deuteranopia at about 4 apart",
+    RETIRED_WARNING_AMBER: f"Bootstrap amber, retired -- 1.63 on {C.WHITE} and 1.49 on "
+                           f"{C.APP_SURFACE_LIGHT_3} against a 3:1 fill floor",
+    RETIRED_BOOTSTRAP_ERROR: "Bootstrap red, retired with its family",
+    RETIRED_ORPHAN_ERROR_TEXT: f"orphan: derived from {RETIRED_BOOTSTRAP_ERROR}, which no longer exists",
+    RETIRED_ORPHAN_ERROR_TEXT_LIGHT: f"orphan: derived from {RETIRED_BOOTSTRAP_ERROR}, which no longer exists",
 }
 
+#: Each registered value, by the register name brand_map.json writes it from.
+#: RNV-COLOUR-SYNC, 2026-10-16: each was written here as its hex code.
 REGISTERED = {
-    "STATUS_SUCCESS": "#926c89",
-    "STATUS_ERROR": "#c75b64",
-    "STATUS_SUCCESS_TEXT": "#ad85a3",
-    "STATUS_SUCCESS_TEXT_LIGHT": "#825d79",
+    "STATUS_SUCCESS": "STATUS.success",
+    "STATUS_ERROR": "STATUS.error",
+    "STATUS_SUCCESS_TEXT": "STATUS.success-text",
+    "STATUS_SUCCESS_TEXT_LIGHT": "STATUS.success-text-light",
     # RNV-RATING-SCALE (2026-09-12). The warning text pair, which the family
     # had been missing since it was chosen: success and error each carried a
     # dark text value and a light sibling, warning carried neither.
-    "STATUS_WARNING_TEXT": "#bc8752",
-    "STATUS_WARNING_TEXT_LIGHT": "#8e5e2b",
-    "STATUS_ERROR_TEXT": "#dd6f77",
-    "STATUS_ERROR_TEXT_LIGHT": "#ae4650",
+    "STATUS_WARNING_TEXT": "STATUS.warning-text",
+    "STATUS_WARNING_TEXT_LIGHT": "STATUS.warning-text-light",
+    "STATUS_ERROR_TEXT": "STATUS.error-text",
+    "STATUS_ERROR_TEXT_LIGHT": "STATUS.error-text-light",
 }
 
 #: The fills this application draws. The register holds a third, the warning
@@ -69,7 +82,7 @@ def _code_only(text: str) -> str:
     about what changed, which is the opposite of what the provenance is for.
 
     Why it is fussier than it looks: an earlier version dropped every STRING
-    token. In Python a colour value IS a string literal -- `X = "#926c89"` --
+    token. In Python a colour value IS a string literal -- `STATUS_SUCCESS = "<its hex>"` --
     so that version removed the uses along with the mentions and the sweep
     could never find anything. It passed on every input, including a file that
     had just put a retired value back. This file's own guard-the-guard is what
@@ -141,8 +154,11 @@ def test_every_value_is_the_registered_one(name, value):
     prose beside the thing it counts, which nothing compares. The register hit
     the identical defect in the same week: its PERMANENT comment said "six"
     while the dict held seven. The fix in both places is to stop writing the
-    number down."""
-    assert getattr(C, name) == value
+    number down.
+
+    RNV-COLOUR-SYNC, 2026-10-16: pinned by the register name brand_map.json
+    writes it from; tests/test_colours_in_sync.py holds the value."""
+    assert BRAND_MAP[name] == value
 
 
 @pytest.mark.parametrize("dead", sorted(RETIRED))
@@ -176,7 +192,9 @@ def test_the_error_text_is_named_in_all_three_palettes():
 
 
 @pytest.mark.parametrize("name", FILLS)
-@pytest.mark.parametrize("ground", ["#1a1a1a", "#2a2a2a", "#f5f5f5", "#ffffff"])
+# RNV-COLOUR-SYNC, 2026-10-16: the grounds by name, where they were hex codes.
+@pytest.mark.parametrize("ground", [C.BRAND_BLACK, C.APP_CARD,
+                                    C.APP_SURFACE_LIGHT_3, C.WHITE])
 def test_a_fill_clears_the_fill_floor_and_cannot_carry_text(name, ground):
     """Both halves, because both are load-bearing.
 
@@ -241,8 +259,10 @@ def test_the_two_spellings_did_not_come_back():
 
 
 def test_the_light_text_is_not_computed_from_the_fill():
-    """lighten(STATUS_ERROR, -20) against the current base gives #b44753 --
-    neither the old #c82131 nor the registered #ae4650. A derivative whose
+    """lighten(STATUS_ERROR, -20) against the current base gives
+    EXAMPLE_OLD_RULE_ERROR_TEXT_LIGHT -- neither the old
+    RETIRED_ORPHAN_ERROR_TEXT_LIGHT nor the registered STATUS_ERROR_TEXT_LIGHT.
+    A derivative whose
     rule no longer produces it is not a derivative."""
     assert C.STATUS_ERROR_TEXT_LIGHT != C.lighten(C.STATUS_ERROR, -20)
     src = (ROOT / "utils" / "config.py").read_text(encoding="utf-8-sig")
@@ -256,5 +276,7 @@ def test_this_guard_is_actually_looking():
         assert len(palette) > 40, f"{mode} has only {len(palette)} keys"
     src = (ROOT / "utils" / "config.py").read_text(encoding="utf-8-sig")
     assert len(_code_only(src)) > 5000, "the tokeniser returned almost nothing"
-    assert "#926c89" in _code_only(src), (
+    # RNV-COLOUR-SYNC, 2026-10-16: the success fill by name, where it was
+    # its hex code; the sync writes it into the code as a literal.
+    assert C.STATUS_SUCCESS in _code_only(src), (
         "the code-only sweep cannot see a value that is definitely in the code")

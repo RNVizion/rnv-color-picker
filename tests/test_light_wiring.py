@@ -18,6 +18,9 @@ from pathlib import Path
 import pytest
 
 from utils import config as C
+from tests.colour_values import (
+    REGISTER_APP_SURFACE_LIGHT_2, RETIRED_LIGHT_STRAY_F0, RETIRED_LIGHT_STRAY_F8,
+    RETIRED_LIGHT_STRAY_FA)
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / 'utils/config.py'
@@ -27,10 +30,12 @@ HEX = re.compile(r"#[0-9a-fA-F]{6}$")
 # (hex, key) -> the constant that key must resolve THROUGH, in source.
 # Narrowed to the splits this repository actually holds; the fleet's other
 # split keys are listed below and asserted absent.
-SPLIT = {('#e0e0e0', 'pressed_bg'): 'APP_PRESSED_LIGHT'}
+SPLIT = {(C.APP_PRESSED_LIGHT, 'pressed_bg'): 'APP_PRESSED_LIGHT'}
 SPLIT_ABSENT = ['platform_btn_hover_bg']
 # old hex -> new hex
-COLLAPSE = {'#fafafa': '#fbfbfb', '#f8f8f8': '#fbfbfb', '#f0f0f0': '#eeeeee'}
+COLLAPSE = {RETIRED_LIGHT_STRAY_FA: REGISTER_APP_SURFACE_LIGHT_2,
+            RETIRED_LIGHT_STRAY_F8: REGISTER_APP_SURFACE_LIGHT_2,
+            RETIRED_LIGHT_STRAY_F0: C.APP_HOVER_LIGHT}
 # Hexes that legitimately carry two constant names here, with the role each
 # one plays. A pair listed here is a decision on the record; anything else
 # sharing a hex is a duplicate until someone says otherwise.

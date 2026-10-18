@@ -32,6 +32,10 @@ import xml.etree.ElementTree as ET
 import pytest
 
 from core.palette_formats import PaletteFormats, _HEX_DATA_LINE
+from tests.colour_values import (
+    DATA_BLACK, DATA_BLUE_UPPER, DATA_DARK_ORANGE, DATA_DARK_ORANGE_UPPER, DATA_GREEN,
+    DATA_GREEN_UPPER, DATA_LIGHT_STEEL, DATA_LIGHT_STEEL_SHORT, DATA_PALE_BLUE,
+    DATA_PALE_BLUE_UPPER, DATA_RED, DATA_RED_UPPER)
 
 
 # ---------------------------------------------------------------------------
@@ -376,14 +380,14 @@ class TestJsonImportVariants:
         # Source lines 605-607: hex variant — no rgb but has hex
         path = tmp_path / "x.json"
         path.write_text(json.dumps({
-            "colors": [{"hex": "#FF0000", "weight": 99}]
+            "colors": [{"hex": DATA_RED_UPPER, "weight": 99}]
         }))
         assert PaletteFormats.import_palette(str(path)) == [
             ((255, 0, 0), 99)]
 
     def test_dict_hex_field_uses_default_weight_when_missing(self, tmp_path):
         path = tmp_path / "x.json"
-        path.write_text(json.dumps({"colors": [{"hex": "#00ff00"}]}))
+        path.write_text(json.dumps({"colors": [{"hex": DATA_GREEN}]}))
         result = PaletteFormats.import_palette(str(path))
         assert result == [((0, 255, 0), 50)]
 
@@ -452,7 +456,7 @@ class TestXmlImportVariants:
         path.write_text(
             '<?xml version="1.0"?>\n'
             '<palette><colors>'
-            '<color><hex>#ABCDEF</hex></color>'
+            f'<color><hex>{DATA_PALE_BLUE_UPPER}</hex></color>'
             '</colors></palette>')
         result = PaletteFormats.import_palette(str(path))
         assert result == [((171, 205, 239), 50)]
@@ -484,15 +488,15 @@ class TestCssRoundTrip:
 class TestCssImportEdgeCases:
     def test_finds_hex_colors_in_text(self, tmp_path):
         path = tmp_path / "x.css"
-        path.write_text("body { color: #ff0000; background: #00ff00; }")
+        path.write_text(f"body {{ color: {DATA_RED}; background: {DATA_GREEN}; }}")
         assert PaletteFormats.import_palette(str(path)) == [
             ((255, 0, 0), 50), ((0, 255, 0), 50)]
 
     def test_dedups_repeated_colors(self, tmp_path):
         # Source lines 655-658: seen set
         path = tmp_path / "x.css"
-        path.write_text("a { color: #ff0000; } b { color: #ff0000; } "
-                        "c { color: #ff0000; }")
+        path.write_text(f"a {{ color: {DATA_RED}; }} b {{ color: {DATA_RED}; }} "
+                        f"c {{ color: {DATA_RED}; }}")
         result = PaletteFormats.import_palette(str(path))
         assert result == [((255, 0, 0), 50)]
 
@@ -524,7 +528,7 @@ class TestColorsImportEdgeCases:
             "# Header line 1\n"
             "# Header line 2\n"
             "#\n"
-            "#FF0000 255   0   0  50 # Red\n"
+            f"{DATA_RED_UPPER} 255   0   0  50 # Red\n"
         )
         assert PaletteFormats.import_palette(str(path)) == [
             ((255, 0, 0), 50)]
@@ -533,14 +537,14 @@ class TestColorsImportEdgeCases:
         # If only the hex prefix is present, fallback decodes from it.
         # Source lines 699-708.
         path = tmp_path / "x.colors"
-        path.write_text("#00FF00\n")  # nothing after the hex
+        path.write_text(f"{DATA_GREEN_UPPER}\n")  # nothing after the hex
         assert PaletteFormats.import_palette(str(path)) == [
             ((0, 255, 0), 50)]
 
     def test_fallback_uses_last_token_as_weight_when_parseable(self, tmp_path):
         # Source line 703-705: last token tried as int weight in fallback
         path = tmp_path / "x.colors"
-        path.write_text("#0000FF 99\n")  # only hex + weight, no R G B
+        path.write_text(f"{DATA_BLUE_UPPER} 99\n")  # only hex + weight, no R G B
         result = PaletteFormats.import_palette(str(path))
         assert result == [((0, 0, 255), 99)]
 
@@ -550,7 +554,7 @@ class TestColorsImportEdgeCases:
         path.write_text(
             "Header text\n"
             "more text\n"
-            "#FF0000 255   0   0  50 # Red\n"
+            f"{DATA_RED_UPPER} 255   0   0  50 # Red\n"
             "garbage line\n"
         )
         assert PaletteFormats.import_palette(str(path)) == [
@@ -559,7 +563,7 @@ class TestColorsImportEdgeCases:
     def test_inline_comment_after_data_stripped(self, tmp_path):
         # Source line 689: `rest.split('#', 1)[0]`
         path = tmp_path / "x.colors"
-        path.write_text("#FF0000 255   0   0  77 # an inline comment\n")
+        path.write_text(f"{DATA_RED_UPPER} 255   0   0  77 # an inline comment\n")
         assert PaletteFormats.import_palette(str(path)) == [
             ((255, 0, 0), 77)]
 
@@ -580,7 +584,7 @@ class TestHexRoundTrip:
 class TestHexImportEdgeCases:
     def test_no_weight_defaults_to_50(self, tmp_path):
         path = tmp_path / "x.hex"
-        path.write_text("#ABCDEF\n")
+        path.write_text(f"{DATA_PALE_BLUE_UPPER}\n")
         assert PaletteFormats.import_palette(str(path)) == [
             ((171, 205, 239), 50)]
 
@@ -590,21 +594,21 @@ class TestHexImportEdgeCases:
             "# HEX Color Palette\n"
             "# Format: ...\n"
             "#\n"
-            "#FF8800 75 # Orange\n"
+            f"{DATA_DARK_ORANGE_UPPER} 75 # Orange\n"
         )
         assert PaletteFormats.import_palette(str(path)) == [
             ((255, 136, 0), 75)]
 
     def test_skips_empty_lines(self, tmp_path):
         path = tmp_path / "x.hex"
-        path.write_text("#FF0000 50\n\n\n#00FF00 60\n")
+        path.write_text(f"{DATA_RED_UPPER} 50\n\n\n{DATA_GREEN_UPPER} 60\n")
         assert PaletteFormats.import_palette(str(path)) == [
             ((255, 0, 0), 50), ((0, 255, 0), 60)]
 
     def test_invalid_weight_field_falls_back_to_50(self, tmp_path):
         # Source lines 738-741: int() on non-numeric → except → keeps 50
         path = tmp_path / "x.hex"
-        path.write_text("#ff0000 not_a_number\n")
+        path.write_text(f"{DATA_RED} not_a_number\n")
         assert PaletteFormats.import_palette(str(path)) == [
             ((255, 0, 0), 50)]
 
@@ -715,7 +719,7 @@ class TestTxtRoundTrip:
 class TestTxtImportEdgeCases:
     def test_extracts_hex_pattern(self, tmp_path):
         path = tmp_path / "x.txt"
-        path.write_text("My favourite colors are #ff0000 and #00ff00.")
+        path.write_text(f"My favourite colors are {DATA_RED} and {DATA_GREEN}.")
         result = PaletteFormats.import_palette(str(path))
         assert ((255, 0, 0), 50) in result
         assert ((0, 255, 0), 50) in result
@@ -729,8 +733,8 @@ class TestTxtImportEdgeCases:
         # Source lines 831-836: dedup pass
         path = tmp_path / "x.txt"
         path.write_text(
-            "Red is #ff0000 also written as RGB(255, 0, 0).\n"
-            "Green is #00ff00.\n"
+            f"Red is {DATA_RED} also written as RGB(255, 0, 0).\n"
+            f"Green is {DATA_GREEN}.\n"
         )
         result = PaletteFormats.import_palette(str(path))
         # Red appears twice (hex + RGB) but should be deduped
@@ -808,7 +812,7 @@ class TestAffinityImportEdgeCases:
 
 class TestSvgRoundTrip:
     def test_round_trip_preserves_all_input_colors(self, tmp_path):
-        # SVG export adds a background <rect fill="#FFFFFF"/> as a frame;
+        # SVG export adds a background <rect> filled with SVG_EXPORT_BG as a frame;
         # the importer extracts that too and dedups it with input colors.
         # The contract we test is weaker than for other formats: every
         # input colour must appear in the output (set-membership), but
@@ -828,8 +832,8 @@ class TestSvgImportEdgeCases:
         path.write_text(
             '<?xml version="1.0"?>\n'
             '<svg xmlns="http://www.w3.org/2000/svg">\n'
-            '  <rect fill="#ff0000"/>\n'
-            '  <rect fill="#00ff00"/>\n'
+            f'  <rect fill="{DATA_RED}"/>\n'
+            f'  <rect fill="{DATA_GREEN}"/>\n'
             '</svg>')
         result = PaletteFormats.import_palette(str(path))
         # Source dedups; both unique
@@ -841,19 +845,19 @@ class TestSvgImportEdgeCases:
         path.write_text(
             '<?xml version="1.0"?>\n'
             '<svg xmlns="http://www.w3.org/2000/svg">\n'
-            '  <circle style="fill: #abcdef; stroke: #000000;"/>\n'
+            f'  <circle style="fill: {DATA_PALE_BLUE}; stroke: {DATA_BLACK};"/>\n'
             '</svg>')
         result = PaletteFormats.import_palette(str(path))
         assert ((171, 205, 239), 50) in result
 
     def test_skips_3_char_hex_fills(self, tmp_path):
-        # Source line 937: `len(fill) == 7` filter — #abc is 4 chars, skipped
+        # Source line 937: `len(fill) == 7` filter — DATA_LIGHT_STEEL_SHORT is 4 chars, skipped
         path = tmp_path / "x.svg"
         path.write_text(
             '<?xml version="1.0"?>\n'
             '<svg xmlns="http://www.w3.org/2000/svg">\n'
-            '  <rect fill="#abc"/>\n'
-            '  <rect fill="#aabbcc"/>\n'
+            f'  <rect fill="{DATA_LIGHT_STEEL_SHORT}"/>\n'
+            f'  <rect fill="{DATA_LIGHT_STEEL}"/>\n'
             '</svg>')
         result = PaletteFormats.import_palette(str(path))
         # Only the 7-char form is extracted
@@ -871,9 +875,9 @@ class TestSvgImportEdgeCases:
         path.write_text(
             '<?xml version="1.0"?>\n'
             '<svg xmlns="http://www.w3.org/2000/svg">\n'
-            '  <rect fill="#ff0000"/>\n'
-            '  <rect fill="#ff0000"/>\n'
-            '  <rect fill="#ff0000"/>\n'
+            f'  <rect fill="{DATA_RED}"/>\n'
+            f'  <rect fill="{DATA_RED}"/>\n'
+            f'  <rect fill="{DATA_RED}"/>\n'
             '</svg>')
         result = PaletteFormats.import_palette(str(path))
         assert len(result) == 1
@@ -1098,7 +1102,7 @@ class TestDetectFormat:
     def test_detects_css_by_root_selector(self, tmp_path):
         # Source line 1074
         path = tmp_path / "noext_css"
-        path.write_text(":root { --color: #ff0000; }")
+        path.write_text(f":root {{ --color: {DATA_RED}; }}")
         assert PaletteFormats.detect_format(str(path)) == ".css"
 
     def test_detects_css_by_var_function(self, tmp_path):
@@ -1217,12 +1221,12 @@ class TestHexDataLineRegex:
     `#RRGGBB ...` from comment rows starting with `# Comment ...`."""
 
     def test_matches_six_char_hex_followed_by_space(self):
-        m = _HEX_DATA_LINE.match("#FF0000 50 # comment")
+        m = _HEX_DATA_LINE.match(f"{DATA_RED_UPPER} 50 # comment")
         assert m is not None
-        assert m.group(1) == "#FF0000"
+        assert m.group(1) == DATA_RED_UPPER
 
     def test_matches_three_char_hex(self):
-        m = _HEX_DATA_LINE.match("#abc more text")
+        m = _HEX_DATA_LINE.match(f"{DATA_LIGHT_STEEL_SHORT} more text")
         assert m is not None
 
     def test_does_not_match_pure_comment(self):
@@ -1234,4 +1238,4 @@ class TestHexDataLineRegex:
         assert _HEX_DATA_LINE.match("#FF0000A something") is None
 
     def test_matches_lowercase_hex(self):
-        assert _HEX_DATA_LINE.match("#ff8800 50") is not None
+        assert _HEX_DATA_LINE.match(f"{DATA_DARK_ORANGE} 50") is not None

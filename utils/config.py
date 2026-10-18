@@ -14,6 +14,13 @@ Any hardcoded color in another file is a bug. All colors must come from here.
 
 Python 3.13 optimized - using modern type hints.
 """
+# RNV-COLOUR-SYNC (2026-10-16). Every colour value below whose line ends
+# "# brand: <name>" or "# app-owned" is written by tools/sync_colors.py from
+# brand_map.json: a brand name's value from rnv-brand at the commit pinned in
+# tests/requirements-dev.txt, an app-owned value from the map, with its reason.
+# To change one, change the map and run `python tools/sync_colors.py`. A value
+# edited here is put back by the next sync, and tests/test_colours_in_sync.py
+# fails until then. COLORS.md is the chart of them.
 
 from __future__ import annotations
 
@@ -152,13 +159,13 @@ def translucent_tuple(hex_color: str, alpha: int) -> tuple[int, int, int, int]:
     return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16), _alpha_byte(alpha))
 
 
-BRAND_GOLD: Final[str] = "#d2bc93"
+BRAND_GOLD: Final[str] = "#d2bc93"  # brand: APP.accent
 """Primary brand gold -- dark-mode accents, highlights, tooltips.
 
 Registered brand value. Unchanged by the alignment.
 """
 
-BRAND_DARK_GOLD: Final[str] = "#8c7337"
+BRAND_DARK_GOLD: Final[str] = "#8c7337"  # brand: APP.accent-light-mode
 """Brand dark gold -- light-mode FILLS, borders and pressed states.
 
 Registered brand value. It replaced the app-local #b19145, which did one
@@ -170,7 +177,7 @@ Carries white text at 4.5429 and black at 4.6226. Black stays the ruled
 pairing and the better number.
 """
 
-BRAND_BLUE: Final[str] = "#6f94bc"
+BRAND_BLUE: Final[str] = "#6f94bc"  # brand: PERMANENT.blue
 """Brand blue -- dark-mode TEXT. Registered 2026-09-12 (rnv-brand rev 32).
 
 The register's second hue and the first value in it that is not gold, black
@@ -188,7 +195,7 @@ here. That is the same way round as the golds -- but the LIGHT blue inverts,
 which the golds do not. See BRAND_DARK_BLUE.
 """
 
-BRAND_DARK_BLUE: Final[str] = "#456c91"
+BRAND_DARK_BLUE: Final[str] = "#456c91"  # brand: PERMANENT.dark-blue
 """Brand dark blue -- light-mode TEXT. Registered 2026-09-12.
 
 Darker BECAUSE the ground is lighter, exactly as BRAND_DARK_GOLD is. The pair
@@ -278,24 +285,24 @@ application read it; a name is kept for what uses it."""
 # literals; rewiring those is the grey-ramp derivation pass, and doing it here
 # would have mixed a mechanical substitution into a value change.
 
-TRUE_BLACK: Final[str] = "#000000"
+TRUE_BLACK: Final[str] = "#000000"  # brand: PERMANENT.black
 """engine/brand.py TRUE_BLACK, and APP["window"]. Primary text in light mode,
 and the label on a pressed control in dark. grey(0)."""
 
-WHITE: Final[str] = "#ffffff"
+WHITE: Final[str] = "#ffffff"  # brand: PERMANENT.white
 """engine/brand.py WHITE. Control surface in light mode. grey(15)."""
 
-BRAND_BLACK: Final[str] = "#1a1a1a"
+BRAND_BLACK: Final[str] = "#1a1a1a"  # brand: APP.panel
 """engine/brand.py BRAND_BLACK, and APP["panel"]. Charcoal; a permanent.
 Not on the ink grid (n = 1.53) and not required to be -- it is a surface."""
 
-APP_CARD: Final[str] = "#2a2a2a"
+APP_CARD: Final[str] = "#2a2a2a"  # brand: APP.card
 """engine/brand.py APP["card"]. A surface, not on the grid (n = 2.47)."""
 
-APP_BORDER: Final[str] = "#333333"
+APP_BORDER: Final[str] = "#333333"  # brand: APP.border
 """engine/brand.py APP["border"]. grey(3). An edge, so the grid governs it."""
 
-APP_TEXT: Final[str] = "#dddddd"
+APP_TEXT: Final[str] = "#dddddd"  # brand: APP.text
 """engine/brand.py APP["text"]. grey(13). Primary ink in dark and image mode.
 
 MOVED FROM #e0e0e0 ON 2026-08-28, with the brand rather than after it.
@@ -306,10 +313,10 @@ Contrast falls 0.21 to 0.45 and the floor afterwards is 7.17:1 on the pressed
 plate #444444, the darkest ground it is ever drawn on.
 """
 
-APP_TEXT_DIM: Final[str] = "#aaaaaa"
+APP_TEXT_DIM: Final[str] = "#aaaaaa"  # brand: APP.text-dim
 """engine/brand.py APP["text-dim"]. grey(10)."""
 
-APP_CANVAS: Final[str] = "#0a0a0a"
+APP_CANVAS: Final[str] = "#0a0a0a"  # brand: APP.canvas
 """engine/brand.py APP["canvas"]. The n=-1 rung of the dark surface ladder.
 
 REGISTERED 2026-08-29 in rnv-brand rev 22, app-owned here until then.
@@ -324,7 +331,7 @@ byte is why invert(#0a0a0a) = #f5f5f5 once looked like a light-ground rule and
 was not: the register's canvas inverts to #f5f5f0.
 """
 
-APP_PANEL_HOVER: Final[str] = "#3a3a3a"
+APP_PANEL_HOVER: Final[str] = "#3a3a3a"  # brand: APP.panel-hover
 """engine/brand.py APP["panel-hover"]. The n=+2 rung, and the dark interaction
 plate.
 
@@ -335,7 +342,7 @@ INK grid, which governs inks and EDGES, and a border is an edge. The ladder was
 complete when the question was first asked.
 """
 
-APP_HOVER_LIGHT: Final[str] = "#eeeeee"
+APP_HOVER_LIGHT: Final[str] = "#eeeeee"  # brand: APP.hover-light
 """engine/brand.py APP["hover-light"]. grey(14). The light interaction plate.
 
 REGISTERED 2026-08-29 as #e8e8e8 and MOVED to #eeeeee on 2026-08-30 in rev 23,
@@ -353,7 +360,7 @@ plate. This value is a grid step inside it and gold reads 4.7875 on it.
 # palettes already carried as literals. Nothing here is a new colour.
 # Registered values take the register's key; ramp greys take their byte.
 
-APP_SURFACE_LIGHT_3: Final[str] = "#f5f5f5"
+APP_SURFACE_LIGHT_3: Final[str] = "#f5f5f5"  # brand: APP.surface-light-3
 """engine/brand.py APP["surface-light-3"]. The light window and panel
 ground -- what a dialog sits on in light mode.
 
@@ -363,7 +370,7 @@ rev 27 as the third rung of the light surface ladder; named here under
 the register's key, the way APP_PANEL_HOVER and APP_HOVER_LIGHT are.
 Every key that carries it is a surface, so it is not split."""
 
-APP_PRESSED_LIGHT: Final[str] = "#e0e0e0"
+APP_PRESSED_LIGHT: Final[str] = "#e0e0e0"  # brand: APP.pressed-light
 """engine/brand.py APP["pressed-light"]. The light PRESSED plate -- an
 interaction state, which is why this name goes only on `pressed_bg`.
 
@@ -373,7 +380,7 @@ ramp-step name GREY_E0 below. Wiring a resting ground to a pressed
 state would claim a role for it on the strength of a shared hex --
 the same ruling rnv-text-transformer made for GREY_EE / APP_HOVER_LIGHT."""
 
-GREY_E0: Final[str] = "#e0e0e0"
+GREY_E0: Final[str] = "#e0e0e0"  # app-owned
 """grey(14) on the ramp, #e0e0e0. Static surfaces that share a hex with
 APP_PRESSED_LIGHT without being a pressed state. See the split note
 there. Named by its byte, like every other ramp step."""
@@ -382,14 +389,14 @@ there. Named by its byte, like every other ramp step."""
 # and #dddddd, each feeding one light list key that nothing read. They went
 # with the keys.
 
-GREY_66: Final[str] = "#666666"
+GREY_66: Final[str] = "#666666"  # app-owned
 """grey(6) on the ramp, #666666. Secondary and muted text on light."""
 
-GREY_88: Final[str] = "#888888"
+GREY_88: Final[str] = "#888888"  # app-owned
 """grey(8) on the ramp, #888888. Muted text on dark, a scrollbar handle
 hover on light."""
 
-GREY_55: Final[str] = "#555555"
+GREY_55: Final[str] = "#555555"  # app-owned
 """grey(5) on the ramp, #555555. Disabled text and a checkbox edge on dark."""
 
 # RNV-LIGHT-WIRING (2026-09-06): moved up from below the
@@ -404,12 +411,12 @@ GREY_55: Final[str] = "#555555"
 # was ever used.
 #
 # GREY_CC, light's border grey, was three digits too, and equally invisible.
-GREY_44: Final[str] = "#444444"
-GREY_CC: Final[str] = "#cccccc"
+GREY_44: Final[str] = "#444444"  # app-owned
+GREY_CC: Final[str] = "#cccccc"  # app-owned
 
 
 
-IMAGE_CANVAS_LIGHT: Final[str] = "#e8e8e8"
+IMAGE_CANVAS_LIGHT: Final[str] = "#e8e8e8"  # app-owned
 """APP-OWNED. The image viewer's ground in light mode.
 
 A COINCIDENCE, NOT A MIRROR, and the distinction is the whole reason this
@@ -535,7 +542,7 @@ lives only in a test drifts from the thing it classifies."""
 # because test_one_status_family_only forbids it appearing in this file at
 # all.
 
-STATUS_SUCCESS: Final[str] = "#926c89"
+STATUS_SUCCESS: Final[str] = "#926c89"  # brand: STATUS.success
 """Registered. Fills, badges, and the ground that black is drawn on.
 
 Black on it reads 4.73, so STATUS_SUCCESS_FG stays #000000.
@@ -552,7 +559,7 @@ went, read by nothing. STATUS_SUCCESS_BG is what paints this."""
 # the palettes' `warning` key, which nothing read. The warning TEXT pair
 # below is what the rating scale paints.
 
-STATUS_SUCCESS_TEXT: Final[str] = "#ad85a3"
+STATUS_SUCCESS_TEXT: Final[str] = "#ad85a3"  # brand: STATUS.success-text
 """Registered. Success TEXT on a dark panel: 5.52 on #1a1a1a, 4.55 on #2a2a2a.
 
 The rating scale's `excellent` tier in the dark palette. The register ruled
@@ -560,7 +567,7 @@ on 2026-09-04 that an active label aliases success-text rather than success,
 after finding the same alias in rnv-icon-builder about to fail on adoption
 day."""
 
-STATUS_SUCCESS_TEXT_LIGHT: Final[str] = "#825d79"
+STATUS_SUCCESS_TEXT_LIGHT: Final[str] = "#825d79"  # brand: STATUS.success-text-light
 """Registered. The same text on a light panel: 4.52 on #f5f5f5.
 
 Carried so the light sibling exists before it is needed. Every value the
@@ -572,7 +579,7 @@ RNV-STATUS-LIGHT-FLOOR closed at rev 31: re-walked against #e8e8e8, where
 it now reads 4.52. See STATUS_ERROR_TEXT_LIGHT below for why that ground
 and not #e0e0e0."""
 
-STATUS_WARNING_TEXT: Final[str] = "#bc8752"
+STATUS_WARNING_TEXT: Final[str] = "#bc8752"  # brand: STATUS.warning-text
 """Registered. Warning TEXT on a dark panel: 5.57 on #1a1a1a, 4.59 on #2a2a2a.
 
 ADDED 2026-09-12, AND THE REASON IS WRITTEN FOUR DOCSTRINGS ABOVE. Success and
@@ -587,19 +594,19 @@ The register's warning FILL, #a2703c, cannot do this job: it reads 4.07 on #1a1a
 below the 4.5 text floor. That is the fill/text band split the family header
 above describes, and it is why there are separate values rather than one."""
 
-STATUS_WARNING_TEXT_LIGHT: Final[str] = "#8e5e2b"
+STATUS_WARNING_TEXT_LIGHT: Final[str] = "#8e5e2b"  # brand: STATUS.warning-text-light
 """Registered. The same text on a light panel: 5.08 on #f5f5f5, 4.52 on
 #e8e8e8.
 
 Carried with its dark sibling rather than after it, for the reason above."""
 
-STATUS_ERROR: Final[str] = "#c75b64"
+STATUS_ERROR: Final[str] = "#c75b64"  # brand: STATUS.error
 """Registered. Fills, borders, and the ground that black is drawn on.
 
 Black on it reads 5.11, which passes and is not affected by the text values
 below. WAS #dc3545."""
 
-STATUS_ERROR_TEXT: Final[str] = "#dd6f77"
+STATUS_ERROR_TEXT: Final[str] = "#dd6f77"  # brand: STATUS.error-text
 """Registered. Error TEXT on a dark panel. 5.48 on #1a1a1a, 4.52 on #2a2a2a.
 
 WAS #e56b77, which this file carried as a literal in two palettes. That value
@@ -611,7 +618,7 @@ against 4.5801 on the card -- and is still above the floor.
 Named rather than written out, so the two palettes that carry it move
 together. They previously held it as a bare literal in two places."""
 
-STATUS_ERROR_TEXT_LIGHT: Final[str] = "#ae4650"
+STATUS_ERROR_TEXT_LIGHT: Final[str] = "#ae4650"  # brand: STATUS.error-text-light
 """Registered. The same text on a light panel. 4.51 on #f5f5f5, where the
 undarkened fill reads 3.77.
 
@@ -963,10 +970,10 @@ IMAGE_MENU_BG: Final[str] = translucent(TRUE_BLACK, IMAGE_MENU_ALPHA)
 # These represent the actual black/white reference pair the user is testing
 # contrast against. They must stay black and white regardless of the active
 # theme or the demo loses its meaning.
-CONTRAST_DEMO_BLACK_BG: Final[str] = "#000000"
-CONTRAST_DEMO_WHITE_BG: Final[str] = "#ffffff"
-CONTRAST_DEMO_BLACK_FG: Final[str] = "#000000"
-CONTRAST_DEMO_WHITE_FG: Final[str] = "#ffffff"
+CONTRAST_DEMO_BLACK_BG: Final[str] = "#000000"  # app-owned
+CONTRAST_DEMO_WHITE_BG: Final[str] = "#ffffff"  # app-owned
+CONTRAST_DEMO_BLACK_FG: Final[str] = "#000000"  # app-owned
+CONTRAST_DEMO_WHITE_FG: Final[str] = "#ffffff"  # app-owned
 
 # ── Which ink goes on this ground ──
 #
@@ -1055,8 +1062,8 @@ def contrast_ink_rgb(background: "str | tuple[int, int, int]") -> tuple[int, int
 # High-visibility terminal green on semi-transparent black. Used by the
 # floating debug dimension label during development. Must be readable on
 # any window contents regardless of theme.
-DEBUG_TEXT: Final[str] = "#00ff00"
-DEBUG_BG: Final[str] = "rgba(0, 0, 0, 200)"
+DEBUG_TEXT: Final[str] = "#00ff00"  # app-owned
+DEBUG_BG: Final[str] = "rgba(0, 0, 0, 200)"  # app-owned
 
 # ── Status / feedback colors (universal semantic meaning) ──
 # RNV-STATUS-FAMILY: these are ROLE names over the colour constants
@@ -1069,9 +1076,9 @@ DEBUG_BG: Final[str] = "rgba(0, 0, 0, 200)"
 # test_status_badge_text_clears_its_fill asserts. White would fail
 # on both, at 4.44 and 4.11.
 STATUS_SUCCESS_BG: Final[str] = STATUS_SUCCESS
-STATUS_SUCCESS_FG: Final[str] = "#000000"
+STATUS_SUCCESS_FG: Final[str] = "#000000"  # brand: PERMANENT.black
 STATUS_ERROR_BG:   Final[str] = STATUS_ERROR
-STATUS_ERROR_FG:   Final[str] = "#000000"
+STATUS_ERROR_FG:   Final[str] = "#000000"  # brand: PERMANENT.black
 # RNV-NAMED-AND-USED (2026-10-04): an alias for an active label stood
 # here, on success-text, unreferenced outside this file. It went: a name
 # is kept for what uses it. If this application ever paints a running
@@ -1104,7 +1111,7 @@ OVERLAY_BLACK_HEAVY:  Final[tuple[int, int, int, int]] = translucent_tuple(
 # It was written "yellow" twice in ui/image_viewer.py, once for the cache
 # and once for the road without it. CSS yellow is this value; the same
 # pixels. No register value holds it, so the name is the application's.
-SELECTION_BOX_COLOR: Final[str] = "#ffff00"
+SELECTION_BOX_COLOR: Final[str] = "#ffff00"  # app-owned
 """The image viewer's selection rectangle (CSS yellow)."""
 
 # ── Palette export (printable artifact) ──
@@ -1113,17 +1120,17 @@ SELECTION_BOX_COLOR: Final[str] = "#ffff00"
 # image sheet, which wrote the same two as integer tuples. Theme-
 # independent because an export needs to look the same regardless of
 # which theme was active at export time.
-SVG_EXPORT_BG:     Final[str] = "#ffffff"
+SVG_EXPORT_BG:     Final[str] = "#ffffff"  # app-owned
 """Background fill for palette export (paper white)."""
 
-SVG_EXPORT_STROKE: Final[str] = "#000000"
+SVG_EXPORT_STROKE: Final[str] = "#000000"  # app-owned
 """Stroke color for palette export swatch borders (ink black)."""
 
 # ── Missing-data placeholder ──
 # Default value used when a color history dict entry is missing its 'hex'
 # field. Black is a deliberately wrong-looking sentinel so missing data is
 # visually obvious in the UI rather than silently rendering as a real color.
-MISSING_HEX_PLACEHOLDER: Final[str] = "#000000"
+MISSING_HEX_PLACEHOLDER: Final[str] = "#000000"  # app-owned
 """Placeholder hex when a color entry dict lacks its 'hex' key."""
 
 MISSING_RGB_PLACEHOLDER: Final[tuple[int, int, int]] = _to_rgb(MISSING_HEX_PLACEHOLDER)

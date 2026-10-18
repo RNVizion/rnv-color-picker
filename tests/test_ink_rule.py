@@ -14,6 +14,9 @@ import re
 from pathlib import Path
 
 from utils import config
+from tests.colour_values import (
+    EXAMPLE_BLACK, EXAMPLE_MID_GREY, EXAMPLE_PURE_GREEN, EXAMPLE_PURE_GREEN_SHORT,
+    EXAMPLE_WHITE)
 
 ROOT = Path(__file__).resolve().parent.parent
 RETIRED = ('CONTRAST_ON_DARK', 'CONTRAST_ON_LIGHT', 'SWATCH_BORDER_ON_DARK', 'SWATCH_BORDER_ON_LIGHT', 'PREVIEW_BORDER', 'PREVIEW_BORDER_THIN')
@@ -55,10 +58,10 @@ def _sources():
 def test_the_rule_is_a_real_contrast_measurement():
     """Black on white and white on black, the two ends. If the rule were
     inverted or the luminance formula wrong, these are what break first."""
-    assert config.contrast_ink("#ffffff") == config.TRUE_BLACK
-    assert config.contrast_ink("#000000") == config.WHITE
-    assert round(config.contrast_ratio("#ffffff", "#000000"), 2) == 21.0
-    assert round(config.contrast_ratio("#777777", "#777777"), 2) == 1.0
+    assert config.contrast_ink(EXAMPLE_WHITE) == config.TRUE_BLACK
+    assert config.contrast_ink(EXAMPLE_BLACK) == config.WHITE
+    assert round(config.contrast_ratio(EXAMPLE_WHITE, EXAMPLE_BLACK), 2) == 21.0
+    assert round(config.contrast_ratio(EXAMPLE_MID_GREY, EXAMPLE_MID_GREY), 2) == 1.0
 
 
 def test_the_rule_gets_saturated_colour_right():
@@ -74,8 +77,8 @@ def test_the_rule_gets_saturated_colour_right():
 def test_it_takes_a_hex_string_or_an_rgb_triple():
     """Callers hold both shapes, and a silent TypeError inside an f-string
     renders as an empty colour rather than an exception."""
-    assert config.contrast_ink("#00ff00") == config.contrast_ink((0, 255, 0))
-    assert config.contrast_ink("#0f0") == config.contrast_ink("#00ff00")
+    assert config.contrast_ink(EXAMPLE_PURE_GREEN) == config.contrast_ink((0, 255, 0))
+    assert config.contrast_ink(EXAMPLE_PURE_GREEN_SHORT) == config.contrast_ink(EXAMPLE_PURE_GREEN)
 
 
 def test_the_brand_golds_are_ruled_not_measured():
@@ -116,7 +119,7 @@ def test_the_accessibility_helper_does_not_hold_a_second_copy():
     src = _code_only(
         (ROOT / "core" / "accessibility.py").read_text(encoding="utf-8-sig"))
     assert "0.179" not in src, "a second crossover threshold is back"
-    assert config.contrast_ink("#ffffff") == config.TRUE_BLACK
+    assert config.contrast_ink(EXAMPLE_WHITE) == config.TRUE_BLACK
     from core.accessibility import ColorAccessibility
     assert ColorAccessibility.get_optimal_text_color((255, 255, 255)) == (0, 0, 0)
     assert ColorAccessibility.get_optimal_text_color((0, 0, 0)) == (255, 255, 255)
@@ -181,7 +184,8 @@ def test_every_source_file_is_utf8():
 
 
 def test_no_three_digit_hex_in_the_palette():
-    """Two of the retired constants were "#333" and "#ccc". The census reads
+    """Two of the retired constants were RETIRED_GREY_33_SHORT and
+    RETIRED_GREY_CC_SHORT. The census reads
     six-digit hexes, so a three-digit one is a value the chart cannot see."""
     src = (ROOT / "utils" / "config.py").read_text(encoding="utf-8-sig")
     hits = re.findall(r"""['"]#[0-9a-fA-F]{3}['"]""", src)

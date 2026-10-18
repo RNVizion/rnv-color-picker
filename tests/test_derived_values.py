@@ -2,7 +2,7 @@
 
 A colour here used to be one of two things -- a name, or a literal -- and this
 file adds the third the application always had and never declared.
-rgba(51, 51, 51, 100) is not a colour beside APP_BORDER; it IS APP_BORDER at
+RETIRED_SCROLLBAR_GROOVE_RGBA is not a colour beside APP_BORDER; it IS APP_BORDER at
 alpha 100, and until 2026-09-25 nothing related the two. Now it is written
 translucent(APP_BORDER, SCROLLBAR_BG_ALPHA), and a change to APP_BORDER
 reaches it -- in the palette, and in every stylesheet that paints it.
@@ -11,13 +11,13 @@ THE IMAGE SCROLLBAR NEVER READ THE PALETTE. ThemeManager.SCROLLBAR_IMAGE was a
 fixed string, the one sheet in the file "not built from theme dict", so the
 main window's image scrollbar painted its own literals whatever the palette
 said. Two rulings stopped at that string: RNV-COLLAPSE-505050 (2026-09-02) left
-the handle #505050, and the gold hover (2026-09-12) left it grey --
-rgba(100, 100, 100, 200) while scrollbar_handle_hover said BRAND_GOLD. The
+the handle RETIRED_GREY_50, and the gold hover (2026-09-12) left it grey --
+RETIRED_SCROLLBAR_HOVER_RGBA while scrollbar_handle_hover said BRAND_GOLD. The
 sheet is built from IMAGE_MODE_COLORS now, same geometry, and both rulings
 reach it.
 
 WHAT MOVES A PIXEL: TWO THINGS, BOTH RULED. The image scrollbar handle leaves
-#505050 for GREY_44 at the same alpha, 150; and the main window's image
+RETIRED_GREY_50 for GREY_44 at the same alpha, 150; and the main window's image
 scrollbar hover turns gold, completing the 2026-09-12 ruling. Everything else
 keeps its colour and its alpha byte. test_nothing_moved_that_was_not_ruled
 holds each value to the constant and the byte it is made of.
@@ -34,6 +34,11 @@ from utils.config import (DARK_THEME_COLORS as DARK,
                           IMAGE_MODE_COLORS as IMAGE,
                           ThemeManager,
                           translucent)
+from tests.colour_values import (
+    EXAMPLE_BLACK, EXAMPLE_CHARCOAL, EXAMPLE_CHARCOAL_AT_ED, EXAMPLE_GOLD, EXAMPLE_GREY_44,
+    EXAMPLE_NEAR_BLACK_AT_ED, EXAMPLE_NEAR_BLACK_BARE_UPPER, INVALID_HEX_BAD_DIGITS,
+    INVALID_HEX_EIGHT_DIGIT_BASE, INVALID_HEX_FIVE_DIGITS, RETIRED_GREY_50,
+    RETIRED_SCROLLBAR_HANDLE_RGBA)
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SRC = ROOT / "utils" / "config.py"
@@ -169,20 +174,20 @@ def test_translucent_composes_alpha_first():
     """#AARRGGBB, not #RRGGBBAA. Taking the wrong end gives a real colour and
     the wrong one, which is the failure that does not look like a failure.
     Lower case, whatever case it is given: RNV-LOWER-EIGHT."""
-    assert translucent("#1a1a1a", 0xED) == "#ed1a1a1a"
-    assert translucent("0A0A0A", 0xED) == "#ed0a0a0a"
-    assert decompose(translucent("#d2bc93", 0x33)) == ("#d2bc93", 0x33)
+    assert translucent(EXAMPLE_CHARCOAL, 0xED) == EXAMPLE_CHARCOAL_AT_ED
+    assert translucent(EXAMPLE_NEAR_BLACK_BARE_UPPER, 0xED) == EXAMPLE_NEAR_BLACK_AT_ED
+    assert decompose(translucent(EXAMPLE_GOLD, 0x33)) == (EXAMPLE_GOLD, 0x33)
 
 
 def test_translucent_refuses_what_it_cannot_compose():
     for bad in (-1, 256, 999, 0.5, True):
         try:
-            translucent("#1a1a1a", bad)
+            translucent(EXAMPLE_CHARCOAL, bad)
         except (ValueError, TypeError):
             pass
         else:
             raise AssertionError(f"translucent took alpha {bad!r}")
-    for bad in ("#1a1a1", "#1a1a1a1a", "nonsense", "#gggggg"):
+    for bad in (INVALID_HEX_FIVE_DIGITS, INVALID_HEX_EIGHT_DIGIT_BASE, "nonsense", INVALID_HEX_BAD_DIGITS):
         try:
             translucent(bad, 0xED)
         except ValueError:
@@ -331,7 +336,7 @@ def test_nothing_moved_that_was_not_ruled():
 
     BY NAME, NOT BY HEX, and that is the point of the round. A register move
     is meant to pass straight through these values; a test that pinned
-    '#333333' would fail the first time one did and ask a person to edit it
+    APP_BORDER's hex would fail the first time one did and ask a person to edit it
     by hand -- the job derivation exists to remove. What this DOES catch is a
     value quietly re-made from something else, which the decomposition check
     accepts as long as source and value agree with each other.
@@ -351,7 +356,7 @@ def test_nothing_moved_that_was_not_ruled():
 
 
 def test_the_collapsed_value_is_gone_in_every_spelling():
-    """#505050 in any string spelling -- #rgb, #rrggbb, #aarrggbb, rgb(),
+    """RETIRED_GREY_50 in any string spelling -- #rgb, #rrggbb, #aarrggbb, rgb(),
     rgba() -- or as integers in a tuple or a QColor call. It survived here for
     three weeks after its ruling because every sweep compared six-digit hex."""
     found = []
@@ -359,7 +364,7 @@ def test_the_collapsed_value_is_gone_in_every_spelling():
         bare = _bare_strings(tree)
         for node in ast.walk(tree):
             if (isinstance(node, ast.Constant) and isinstance(node.value, str)
-                    and id(node) not in bare and "#505050" in colours_in(node.value)):
+                    and id(node) not in bare and RETIRED_GREY_50 in colours_in(node.value)):
                 found.append(f"{rel}:{node.lineno}  {node.value[:40]!r}")
             values = None
             if isinstance(node, (ast.Tuple, ast.List)) and len(node.elts) in (3, 4):
@@ -373,8 +378,8 @@ def test_the_collapsed_value_is_gone_in_every_spelling():
                              if isinstance(v, ast.Constant) and type(v.value) is int)
                 if ints == (80, 80, 80):
                     found.append(f"{rel}:{node.lineno}  (80, 80, 80)")
-    assert not found, "#505050 is still here:\n  " + "\n  ".join(found)
-    assert colours_in("rgba(80, 80, 80, 150)") == {"#505050"}, "the decoder is blind"
+    assert not found, f"{RETIRED_GREY_50} is still here:\n  " + "\n  ".join(found)
+    assert colours_in(RETIRED_SCROLLBAR_HANDLE_RGBA) == {RETIRED_GREY_50}, "the decoder is blind"
 
 # RNV-DERIVE-ALPHA
 
@@ -435,7 +440,8 @@ def _lower8_trees():
 def test_eight_digit_hex_is_lower_case():
     """RNV-LOWER-EIGHT, 2026-09-25. The register writes hex in lower case --
     Notation, ruled 2026-08-15, Brand Book decision #19 -- and on 2026-09-25
-    Chris ruled that eight digits are hex too: #ed1a1a1a, never #ED1A1A1A.
+    Chris ruled that eight digits are hex too: APP_PANEL_OVERLAY, never
+    RETIRED_PANEL_OVERLAY_UPPER.
     Qt reads either case, so no pixel moved when this application's helper
     changed.
 
@@ -550,12 +556,12 @@ def test_the_integer_sweep_reads_both_notations():
     probe = ast.parse("A = (0, 0, 0, 50)\n"
                       "class K:\n    B = QColor(68, 68, 68)\n"
                       "def f():\n    c = (0, 0, 0)\n")
-    assert sorted(_int_spelled(probe)) == [("A", "#000000", 50), ("B", "#444444", 255)]
+    assert sorted(_int_spelled(probe)) == [("A", EXAMPLE_BLACK, 50), ("B", EXAMPLE_GREY_44, 255)]
 
 
 def test_every_tuple_constant_is_derived_by_name():
     """RNV-TUPLE-ROUND, 2026-09-26. A colour spelled in integers is a colour
-    every string sweep in the fleet was blind to, and #505050 sat in two of
+    every string sweep in the fleet was blind to, and RETIRED_GREY_50 sat in two of
     them for three weeks after it was ruled away. Each constant here is now
     its helper called on a named base and a named alpha, and it evaluates to
     exactly that pair -- held BY NAME, so a register move passes through."""
@@ -624,10 +630,11 @@ def test_no_named_colour_is_spelled_in_integers():
 
 def test_the_unread_canvas_overlay_stays_removed():
     """RNV-CANVAS-OVERLAY-GONE, ruling 5 of 2026-09-26. APP_CANVAS_OVERLAY --
-    APP_CANVAS at IMAGE_OVERLAY_ALPHA, #ed0a0a0a -- was image mode's
+    APP_CANVAS at IMAGE_OVERLAY_ALPHA, RETIRED_CANVAS_OVERLAY -- was image mode's
     image_viewer_bg, and nothing read it: the viewer reads image_viewer_bg
     only outside image mode, and in image mode paints OVERLAY_BLACK_MEDIUM.
-    A render set it to #ff00ff. No pixel changed in 171 captures of the main
+    A render set it to EXAMPLE_RENDER_PROBE_MAGENTA. No pixel changed in 171
+    captures of the main
     window, Settings and About in all three modes, and no text changed in
     1,635 stylesheet and palette entries, while a control that moved dark's
     image_viewer_bg changed 11 captures and 12 entries. So the constant went,

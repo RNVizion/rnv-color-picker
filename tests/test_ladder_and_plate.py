@@ -2,34 +2,37 @@
 deliberate coincidence.
 
 WHAT THIS PASS DID. rnv-brand rev 22 registered the two ends of the dark
-surface ladder -- APP["canvas"] #0a0a0a and APP["panel-hover"] #3a3a3a -- rev
-23 registered APP["hover-light"] #eeeeee, and rev 24 registered #e8e8e8 as
+surface ladder -- APP["canvas"] APP_CANVAS and APP["panel-hover"] APP_PANEL_HOVER -- rev
+23 registered APP["hover-light"] APP_HOVER_LIGHT, and rev 24 registered
+REGISTER_GOLD_TEXT_GROUND_FLOOR's hex as
 GOLD_TEXT_GROUND_FLOOR. All were app-owned here. No value changed: the pass
 changes provenance and spelling, not pixels.
 
     BRAND_BLACK + n * 0x10,  n in -1..+2
-    #0a0a0a canvas   #1a1a1a panel   #2a2a2a card   #3a3a3a panel-hover
+    APP_CANVAS canvas   BRAND_BLACK panel   APP_CARD card   APP_PANEL_HOVER panel-hover
 
 WHY THE LADDER WAS NOT "TWO-THIRDS SPECIFIED". The register said it was,
-because APP["border"] #333333 is not #3a3a3a and so looked like a missing rung.
-It is not a rung -- #333333 is grey(3) on the INK grid, which governs inks and
+because APP["border"] APP_BORDER is not APP_PANEL_HOVER and so looked like a missing rung.
+It is not a rung -- APP_BORDER is grey(3) on the INK grid, which governs inks and
 EDGES, and a border is an edge. Measured against the wrong family.
 
-WHY THE PLATE IS #eeeeee AND NOT #e8e8e8. #e8e8e8 is the ground
+WHY THE PLATE IS APP_HOVER_LIGHT AND NOT REGISTER_GOLD_TEXT_GROUND_FLOOR.
+REGISTER_GOLD_TEXT_GROUND_FLOOR is the ground
 BRAND_DARK_GOLD_DEEP is calibrated against -- the smallest uniform step that
 clears it is -14, and -13 gives 4.4675 and fails. The hover plate on that value
 would have pinned every hover in the app to the one ground the gold cannot
 afford to lose, with 0.0334 of margin. A boundary is not a plate.
 
 WHY THE OVERLAYS ARE HERE AT ALL. Qt spells a translucent colour #AARRGGBB.
-The 2026-08-29 wiring pass swept for six-digit literals, so #ED000000 never
-matched #000000 and four registered values sat in IMAGE_MODE_COLORS while the
+The 2026-08-29 wiring pass swept for six-digit literals, so APP_WINDOW_OVERLAY never
+matched TRUE_BLACK and four registered values sat in IMAGE_MODE_COLORS while the
 guard reported clean. They are named now, and the sweep normalises both
 lengths.
 """
 from __future__ import annotations
 
 import ast
+import json
 import pathlib
 
 import pytest
@@ -38,19 +41,26 @@ from utils import config as colors
 from utils.config import (DARK_THEME_COLORS as DARK,
                           IMAGE_MODE_COLORS as IMAGE,
                           LIGHT_THEME_COLORS as LIGHT)
+from tests.colour_values import REGISTER_GOLD_TEXT_GROUND_FLOOR
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SRC = ROOT / 'utils/config.py'
+
+#: RNV-COLOUR-SYNC, 2026-10-16. Where each colour comes from, as brand_map.json
+#: says. The values are held by tests/test_colours_in_sync.py, against the
+#: register at the pin; what this file holds is the name each one takes.
+BRAND_MAP = json.loads((ROOT / "brand_map.json").read_text(encoding="utf-8"))["colours"]
 
 GRID_STEP = 0x11
 LADDER_STEP = 0x10
 TEXT_FLOOR = 4.5
 
-#: Constant name -> the APP key it mirrors, and the value both hold.
+#: Constant name -> the APP key it mirrors. RNV-COLOUR-SYNC, 2026-10-16: the
+#: value both held was written here too; it is written from the register now.
 NEW = {
-    'APP_CANVAS': ('canvas', '#0a0a0a'),
-    'APP_PANEL_HOVER': ('panel-hover', '#3a3a3a'),
-    'APP_HOVER_LIGHT': ('hover-light', '#eeeeee'),
+    'APP_CANVAS': 'canvas',
+    'APP_PANEL_HOVER': 'panel-hover',
+    'APP_HOVER_LIGHT': 'hover-light',
 }
 
 #: Overlay constant -> (the six-digit constant it composites, its APP key).
@@ -154,13 +164,15 @@ def test_the_wiring_map_is_not_empty():
 
 def test_the_new_constants_hold_the_registered_values():
     """The local half of the mirror. Runs everywhere, including where
-    engine.brand is not importable -- which is why it is not optional."""
-    drift = {n: getattr(colors, n) for n, (_, v) in NEW.items()
-             if getattr(colors, n) != v}
+    engine.brand is not importable -- which is why it is not optional.
+
+    RNV-COLOUR-SYNC, 2026-10-16: it held each value written out. It holds now
+    that brand_map.json takes each from its APP key; the value is written from
+    there, and tests/test_colours_in_sync.py holds it."""
+    drift = {n: BRAND_MAP.get(n) for n, key in NEW.items()
+             if BRAND_MAP.get(n) != f'APP.{key}'}
     assert not drift, (
-        f'these constants no longer hold their registered values: {drift}\n'
-        f'If the brand moved, update this file in the same commit that updates '
-        f'utils/config.py -- never one without the other.')
+        f'brand_map.json does not take these from their APP keys: {drift}')
 
 
 def test_the_new_constants_match_rnv_brand():
@@ -169,7 +181,7 @@ def test_the_new_constants_match_rnv_brand():
         'engine.brand',
         reason='rnv-brand not importable here; the local pin is doing the work')
     drift = []
-    for name, (key, _) in NEW.items():
+    for name, key in NEW.items():
         theirs, mine = brand.APP[key], getattr(colors, name)
         if mine.lower() != theirs.lower():
             drift.append(f'{name}: ours {mine}, theirs APP[{key!r}] {theirs}')
@@ -216,8 +228,8 @@ def test_the_border_is_an_edge_and_not_a_rung():
 
 def test_the_canvas_is_not_the_web_ground():
     """One byte apart, deliberately. App neutrals are pure grey R = G = B; the
-    web ground #0a0a0f carries a tint the apps do not. That byte is why
-    invert(#0a0a0a) = #f5f5f5 once looked like a light-ground rule and was
+    web ground REGISTER_WEB_BLACK carries a tint the apps do not. That byte is why
+    invert(APP_CANVAS) = APP_SURFACE_LIGHT_3 once looked like a light-ground rule and was
     not."""
     r, g, b = (int(colors.APP_CANVAS.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4))
     assert r == g == b, f'APP_CANVAS {colors.APP_CANVAS} is not a pure grey'
@@ -293,7 +305,7 @@ def test_no_translucent_register_value_is_left_as_a_literal():
 # ------------------------------------------------------------------- the plate
 
 def test_the_plate_is_a_step_on_the_ink_grid():
-    assert colors.APP_HOVER_LIGHT == grey(14) == '#eeeeee'
+    assert colors.APP_HOVER_LIGHT == grey(14)
 
 
 def test_the_plate_carries_gold_with_room_to_spare():
@@ -307,7 +319,7 @@ def test_the_plate_carries_gold_with_room_to_spare():
         f'the plate clears the floor by only {here - TEXT_FLOOR:.4f}. The '
         f'register moved APP["hover-light"] here for margin, not for a pass.')
     assert edge - TEXT_FLOOR < 0.05, (
-        f'#e8e8e8 now clears by {edge - TEXT_FLOOR:.4f}, so it is no longer '
+        f'{colors.IMAGE_CANVAS_LIGHT} now clears by {edge - TEXT_FLOOR:.4f}, so it is no longer '
         f'the knife-edge this ruling was about. Either the gold moved or the '
         f'floor did; re-derive before trusting the value above.')
 
@@ -320,11 +332,11 @@ def test_the_floor_is_not_used_as_a_hover_anywhere():
             if 'hover' not in key or not isinstance(value, str):
                 continue
             looked += 1
-            if value.lower() == '#e8e8e8':
+            if value.lower() == REGISTER_GOLD_TEXT_GROUND_FLOOR:
                 found.append(f'{dict_name}[{key!r}]')
     assert looked >= 8, f'only {looked} hover keys seen -- the sweep is blind'
     assert not found, (
-        f'#e8e8e8 is being used as a hover plate: {found}. It is '
+        f'{REGISTER_GOLD_TEXT_GROUND_FLOOR} is being used as a hover plate: {found}. It is '
         f'GOLD_TEXT_GROUND_FLOOR, not an interaction state.')
 
 

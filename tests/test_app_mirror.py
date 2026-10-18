@@ -1,13 +1,14 @@
 """
 The APP register, mirrored -- and the ink move that made mirroring necessary.
 
-WHY THIS FILE EXISTS. Until 2026-08-28 this app carried #e0e0e0, #1a1a1a,
-#2a2a2a and #333333 as bare hex literals with no constant and no provenance.
+WHY THIS FILE EXISTS. Until 2026-08-28 this app carried the values now named
+GREY_E0, BRAND_BLACK, APP_CARD and APP_BORDER as bare hex literals with no
+constant and no provenance.
 Every one of them is a REGISTERED value in RNVizion/rnv-brand. A registered
 value could have moved upstream and this app would have kept the old one
-silently -- the same failure #c4a458 had, one level down.
+silently -- the same failure RETIRED_ORPHANED_LIGHT_HOVER had, one level down.
 
-It nearly happened. `APP["text"]` moved from #e0e0e0 to #dddddd in
+It nearly happened. `APP["text"]` moved from GREY_E0's hex to APP_TEXT's in
 rnv-brand@68d195e, and nothing here would have noticed.
 
 THE INK GRID, published in the brand beside that move:
@@ -27,6 +28,7 @@ absent, the mirror catches the brand moving. Neither alone is enough.
 from __future__ import annotations
 
 import ast
+import json
 import pathlib
 
 import pytest
@@ -38,24 +40,21 @@ from utils.config import (DARK_THEME_COLORS as DARK, IMAGE_MODE_COLORS as IMAGE,
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SRC = ROOT / 'utils' / 'config.py'
 
+#: RNV-COLOUR-SYNC, 2026-10-16. Where each colour comes from, as brand_map.json
+#: says. The values are held by tests/test_colours_in_sync.py, against the
+#: register at the pin; what this file holds is the name each one takes.
+BRAND_MAP = json.loads((ROOT / "brand_map.json").read_text(encoding="utf-8"))["colours"]
+
 GRID_STEP = 0x11
 
-#: What the brand register held on 2026-08-28, written down so this file still
-#: has an opinion when engine.brand cannot be imported.
-PINNED = {
-    'TRUE_BLACK': '#000000',
-    'WHITE': '#ffffff',
-    'BRAND_BLACK': '#1a1a1a',
-    'APP_CARD': '#2a2a2a',
-    'APP_BORDER': '#333333',
-    'APP_TEXT': '#dddddd',
-    'APP_TEXT_DIM': '#aaaaaa',
-    'APP_CANVAS': '#0a0a0a',
-    'APP_PANEL_HOVER': '#3a3a3a',
-    'APP_HOVER_LIGHT': '#eeeeee',
-    'APP_SURFACE_LIGHT_3': '#f5f5f5',
-    'APP_PRESSED_LIGHT': '#e0e0e0',
-}
+#: The register's neutrals this app names. RNV-COLOUR-SYNC, 2026-10-16: this
+#: was PINNED, what the register held on 2026-08-28, each name with its value
+#: written beside it so this file had an opinion when engine.brand could not
+#: be imported. The values are written into utils/config.py from the
+#: register now, and held there.
+NEUTRALS = ('TRUE_BLACK', 'WHITE', 'BRAND_BLACK', 'APP_CARD', 'APP_BORDER',
+            'APP_TEXT', 'APP_TEXT_DIM', 'APP_CANVAS', 'APP_PANEL_HOVER',
+            'APP_HOVER_LIGHT', 'APP_SURFACE_LIGHT_3', 'APP_PRESSED_LIGHT')
 
 #: Dark-mode ink and edge. These carry APP_TEXT and must reference it by name.
 #: swatch_border_color is an EDGE rather than an ink -- the grid governs both,
@@ -63,7 +62,7 @@ PINNED = {
 INK_KEYS = ('text_primary', 'dialog_btn_text', 'main_btn_text',
             'main_btn_hover_text', 'swatch_border_color')
 
-#: The other half of #e0e0e0's old double life: a LIGHT surface, which the
+#: The other half of GREY_E0's old double life: a LIGHT surface, which the
 #: grid does not govern and which did not move.
 LIGHT_SURFACE_KEYS = ('pressed_bg', 'tab_bg', 'scrollbar_bg')
 
@@ -99,27 +98,31 @@ def test_the_keys_this_file_reads_still_exist():
         assert key in DARK, f'DARK has no {key}'
     for key in LIGHT_SURFACE_KEYS:
         assert key in LIGHT, f'LIGHT has no {key}'
-    for name in PINNED:
+    for name in NEUTRALS:
         assert hasattr(colors, name), f'utils.config has no {name}'
 
 
 # ------------------------------------------------------------------- the value
 
 def test_the_ink_is_a_step_on_the_grid():
-    assert colors.APP_TEXT == grey(13) == '#dddddd', (
+    assert colors.APP_TEXT == grey(13), (
         f'APP_TEXT is {colors.APP_TEXT}, not grey(13). The ink grid admits no '
         f'exceptions -- see rnv-brand engine/brand.py APP.')
 
 
 def test_every_pinned_neutral_is_what_the_register_held():
     """The local half of the mirror. Runs everywhere, including where
-    engine.brand is not importable."""
-    drift = {n: getattr(colors, n) for n, v in PINNED.items()
-             if getattr(colors, n) != v}
-    assert not drift, (
-        f'these constants no longer hold their registered values: {drift}\n'
-        f'If the brand moved, update PINNED here in the same commit that '
-        f'updates utils/config.py -- never one without the other.')
+    engine.brand is not importable.
+
+    RNV-COLOUR-SYNC, 2026-10-16. This held each value written out beside its
+    name, and a brand move meant editing it by hand. Now it holds that
+    brand_map.json takes each neutral from the register; the value is written
+    from there, and tests/test_colours_in_sync.py holds it."""
+    own = {n: BRAND_MAP.get(n) for n in NEUTRALS
+           if not isinstance(BRAND_MAP.get(n), str)}
+    assert not own, (
+        f'these neutrals are not taken from the register: {own}\n'
+        f'Each is a register value; brand_map.json names it as one.')
 
 
 def test_register_values_match_rnv_brand():
@@ -129,7 +132,7 @@ def test_register_values_match_rnv_brand():
         'engine.brand',
         reason='rnv-brand not importable here; the local pin is doing the work')
     drift = []
-    for name in PINNED:
+    for name in NEUTRALS:
         if name.startswith('APP_'):
             theirs = brand.APP[name[4:].lower().replace('_', '-')]
         else:
@@ -174,10 +177,15 @@ def test_image_mode_inherits_the_dark_ink():
 # ------------------------------------------------------------- what did NOT move
 
 def test_the_light_surfaces_did_not_follow_the_ink():
-    """#e0e0e0 was one hex doing two jobs. Only the ink half moved; the light
+    """GREY_E0's hex was one hex doing two jobs. Only the ink half moved; the light
     half is a SURFACE, and the grid does not govern surfaces."""
+    # RNV-COLOUR-SYNC, 2026-10-16: each by the constant it holds, where this
+    # wrote their one hex. The pressed plate is the register's pressed-light;
+    # the tab and the track are GREY_E0, the ramp step that shares its hex.
+    held = {'pressed_bg': colors.APP_PRESSED_LIGHT, 'tab_bg': colors.GREY_E0,
+            'scrollbar_bg': colors.GREY_E0}
     for key in LIGHT_SURFACE_KEYS:
-        assert LIGHT[key] == '#e0e0e0', (
+        assert LIGHT[key] == held[key], (
             f'LIGHT[{key!r}] is {LIGHT[key]}. That is a light surface, not ink '
             f'-- it was deliberately left behind when the ink moved to grey(13).')
 
@@ -185,7 +193,7 @@ def test_the_light_surfaces_did_not_follow_the_ink():
 def test_the_light_ink_is_true_black():
     """Primary text is one role with two mode values: dark is a grey on the
     grid, light is TRUE_BLACK."""
-    assert LIGHT['text_primary'] == colors.TRUE_BLACK == '#000000'
+    assert LIGHT['text_primary'] == colors.TRUE_BLACK
 
 
 # ---------------------------------------------------------------- what it costs
@@ -205,7 +213,8 @@ def _contrast(a: str, b: str) -> float:
 def test_the_ink_clears_the_text_floor_on_every_dark_ground_it_touches():
     """Measured, not assumed. The darkest ground the ink is drawn on is the
     pressed plate; everything else has more room."""
-    grounds = ('#000000', '#1a1a1a', '#2a2a2a', '#333333', '#3a3a3a', '#444444')
+    grounds = (colors.TRUE_BLACK, colors.BRAND_BLACK, colors.APP_CARD,
+               colors.APP_BORDER, colors.APP_PANEL_HOVER, colors.GREY_44)
     worst = min((_contrast(colors.APP_TEXT, g), g) for g in grounds)
     assert worst[0] >= 4.5, (
         f'the ink falls to {worst[0]:.2f}:1 on {worst[1]}, under the 4.5 floor')

@@ -36,6 +36,13 @@ from unittest.mock import MagicMock
 from PyQt6.QtWidgets import QApplication
 
 from utils.clipboard import ClipboardUtils
+from tests.colour_values import (
+    DATA_BLACK, DATA_BLUE_BARE, DATA_BLUE_VIOLET_RGB, DATA_BROWN_RGB,
+    DATA_DARK_NAVY_RGB_COMPACT, DATA_DARK_ORANGE, DATA_DARK_ORANGE_PADDED,
+    DATA_DARK_ORANGE_UPPER, DATA_GREEN_BARE, DATA_ORANGE, DATA_PURPLE, DATA_RED,
+    DATA_RED_BARE, DATA_RED_HSL, DATA_RED_HSV, DATA_RED_RGB, DATA_WHITE,
+    INVALID_HEX_BAD_DIGITS_UPPER, INVALID_HEX_FOUR_DIGITS, INVALID_HSL_BAD_HUE,
+    INVALID_HSV_BAD_HUE, INVALID_RGB_TWO_CHANNELS)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -118,20 +125,20 @@ class TestCopyHexColor:
 
     def test_red_to_hex(self, clip):
         assert clip.copy_hex_color((255, 0, 0)) is True
-        assert _get_clipboard().lower() == "#ff0000"
+        assert _get_clipboard().lower() == DATA_RED
 
     def test_brand_gold_hex(self, clip):
-        # Brand gold is #FFA500
+        # DATA_ORANGE: CSS orange, not the brand gold
         clip.copy_hex_color((255, 165, 0))
-        assert _get_clipboard().lower() == "#ffa500"
+        assert _get_clipboard().lower() == DATA_ORANGE
 
     def test_black_hex(self, clip):
         clip.copy_hex_color((0, 0, 0))
-        assert _get_clipboard().lower() == "#000000"
+        assert _get_clipboard().lower() == DATA_BLACK
 
     def test_white_hex(self, clip):
         clip.copy_hex_color((255, 255, 255))
-        assert _get_clipboard().lower() == "#ffffff"
+        assert _get_clipboard().lower() == DATA_WHITE
 
 
 # =============================================================================
@@ -143,11 +150,11 @@ class TestCopyRgbColor:
 
     def test_red(self, clip):
         clip.copy_rgb_color((255, 0, 0))
-        assert _get_clipboard() == "rgb(255, 0, 0)"
+        assert _get_clipboard() == DATA_RED_RGB
 
     def test_arbitrary_color(self, clip):
         clip.copy_rgb_color((128, 64, 32))
-        assert _get_clipboard() == "rgb(128, 64, 32)"
+        assert _get_clipboard() == DATA_BROWN_RGB
 
 
 # =============================================================================
@@ -225,41 +232,41 @@ class TestParseColorFromClipboard:
         assert clip.try_parse_color_from_clipboard() is None
 
     def test_parse_hex_6_char(self, clip):
-        _set_clipboard("#FF8800")
+        _set_clipboard(DATA_DARK_ORANGE_UPPER)
         result = clip.try_parse_color_from_clipboard()
         assert result == (255, 136, 0)
 
     def test_parse_hex_lowercase(self, clip):
-        _set_clipboard("#ff8800")
+        _set_clipboard(DATA_DARK_ORANGE)
         result = clip.try_parse_color_from_clipboard()
         assert result == (255, 136, 0)
 
     def test_parse_hex_with_whitespace(self, clip):
-        _set_clipboard("  #FF8800  ")
+        _set_clipboard(DATA_DARK_ORANGE_PADDED)
         # Source strips whitespace
         result = clip.try_parse_color_from_clipboard()
         assert result == (255, 136, 0)
 
     def test_parse_rgb_format(self, clip):
-        _set_clipboard("rgb(100, 50, 200)")
+        _set_clipboard(DATA_BLUE_VIOLET_RGB)
         result = clip.try_parse_color_from_clipboard()
         assert result == (100, 50, 200)
 
     def test_parse_rgb_no_spaces(self, clip):
-        _set_clipboard("rgb(10,20,30)")
+        _set_clipboard(DATA_DARK_NAVY_RGB_COMPACT)
         result = clip.try_parse_color_from_clipboard()
         assert result == (10, 20, 30)
 
     def test_parse_hsv_format(self, clip):
         # HSV 0/100%/100% should be red (255, 0, 0) — but we don't depend on
         # exact rounding here; just verify it parses to something
-        _set_clipboard("hsv(0, 100%, 100%)")
+        _set_clipboard(DATA_RED_HSV)
         result = clip.try_parse_color_from_clipboard()
         assert result is not None
         assert all(0 <= c <= 255 for c in result)
 
     def test_parse_hsl_format(self, clip):
-        _set_clipboard("hsl(0, 100%, 50%)")
+        _set_clipboard(DATA_RED_HSL)
         result = clip.try_parse_color_from_clipboard()
         assert result is not None
         assert all(0 <= c <= 255 for c in result)
@@ -270,24 +277,24 @@ class TestParseColorFromClipboard:
 
     def test_malformed_hex_returns_none(self, clip):
         # Wrong length — 5 chars
-        _set_clipboard("#FFAA")
+        _set_clipboard(INVALID_HEX_FOUR_DIGITS)
         assert clip.try_parse_color_from_clipboard() is None
 
     def test_malformed_rgb_returns_none(self, clip):
         # Only two values
-        _set_clipboard("rgb(100, 50)")
+        _set_clipboard(INVALID_RGB_TWO_CHANNELS)
         assert clip.try_parse_color_from_clipboard() is None
 
     def test_malformed_hsv_returns_none(self, clip):
-        _set_clipboard("hsv(bad, 50%, 50%)")
+        _set_clipboard(INVALID_HSV_BAD_HUE)
         assert clip.try_parse_color_from_clipboard() is None
 
     def test_malformed_hsl_returns_none(self, clip):
-        _set_clipboard("hsl(bad, 50%, 50%)")
+        _set_clipboard(INVALID_HSL_BAD_HUE)
         assert clip.try_parse_color_from_clipboard() is None
 
     def test_hex_invalid_chars_returns_none(self, clip):
-        _set_clipboard("#GGGGGG")
+        _set_clipboard(INVALID_HEX_BAD_DIGITS_UPPER)
         assert clip.try_parse_color_from_clipboard() is None
 
 
@@ -307,7 +314,7 @@ class TestCopyColorPalette:
         clip.copy_color_palette([((255, 0, 0), 100)])
         text = _get_clipboard()
         assert "Color Palette:" in text
-        assert "ff0000" in text.lower()
+        assert DATA_RED_BARE in text.lower()
         assert "weight: 100" in text
 
     def test_multi_color(self, clip):
@@ -318,9 +325,9 @@ class TestCopyColorPalette:
         ]
         clip.copy_color_palette(colors)
         text = _get_clipboard()
-        assert "ff0000" in text.lower()
-        assert "00ff00" in text.lower()
-        assert "0000ff" in text.lower()
+        assert DATA_RED_BARE in text.lower()
+        assert DATA_GREEN_BARE in text.lower()
+        assert DATA_BLUE_BARE in text.lower()
         # Each entry is numbered 1, 2, 3
         assert " 1." in text
         assert " 2." in text
@@ -410,13 +417,13 @@ class TestCopyColorAsCSS:
     def test_default_variable_name(self, clip):
         clip.copy_color_as_css((255, 165, 0))
         assert _get_clipboard().startswith("--primary-color:")
-        assert "#ffa500" in _get_clipboard().lower()
+        assert DATA_ORANGE in _get_clipboard().lower()
         assert _get_clipboard().endswith(";")
 
     def test_custom_variable_name(self, clip):
         clip.copy_color_as_css((128, 0, 128), variable_name="brand-purple")
         assert "--brand-purple:" in _get_clipboard()
-        assert "#800080" in _get_clipboard().lower()
+        assert DATA_PURPLE in _get_clipboard().lower()
 
     def test_returns_true(self, clip):
         assert clip.copy_color_as_css((1, 2, 3)) is True
@@ -440,7 +447,7 @@ class TestCopyMultipleFormats:
     def test_contains_color_value(self, clip):
         clip.copy_multiple_formats((128, 64, 32))
         text = _get_clipboard()
-        assert "rgb(128, 64, 32)" in text
+        assert DATA_BROWN_RGB in text
 
     def test_returns_true_on_success(self, clip):
         assert clip.copy_multiple_formats((100, 100, 100)) is True

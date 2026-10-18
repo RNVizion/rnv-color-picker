@@ -48,6 +48,10 @@ from core.color_history import (
     clear_color_history,
 )
 import core.color_history as color_history_module
+from tests.colour_values import (
+    DATA_BLACK, DATA_BLUE, DATA_DARK_NAVY, DATA_GREEN, DATA_GREY_64,
+    DATA_HISTORY_ABSENT_PALE_BLUE, DATA_HISTORY_ABSENT_PINK, DATA_PALE_BLUE, DATA_RED,
+    DATA_RED_UPPER)
 
 
 # ---------------------------------------------------------------------------
@@ -238,14 +242,14 @@ class TestLoadHistory:
     def test_valid_json_populates_history(self, manager):
         payload = {
             "version": "1.0",
-            "colors": [{"hex": "#ff0000", "rgb": [255, 0, 0],
+            "colors": [{"hex": DATA_RED, "rgb": [255, 0, 0],
                         "timestamp": "2024-01-01T00:00:00",
                         "source": "manual", "pick_count": 1}],
         }
         manager.history_file.write_text(json.dumps(payload))
         manager.load_history()
         assert len(manager.history) == 1
-        assert manager.history[0]["hex"] == "#ff0000"
+        assert manager.history[0]["hex"] == DATA_RED
 
     def test_corrupted_json_creates_backup_and_resets(self, manager, tmp_path):
         # Plant a corrupted file
@@ -306,7 +310,7 @@ class TestSaveHistory:
         assert manager.save_history() is False
 
     def test_success_writes_valid_json(self, manager):
-        manager.history = [{"hex": "#abcdef", "rgb": [171, 205, 239],
+        manager.history = [{"hex": DATA_PALE_BLUE, "rgb": [171, 205, 239],
                             "timestamp": "2024-01-01T00:00:00",
                             "source": "manual", "pick_count": 1}]
         assert manager.save_history() is True
@@ -323,7 +327,7 @@ class TestSaveHistory:
             raise OSError("simulated write failure")
         monkeypatch.setattr(json, "dump", fail_dump)
 
-        manager.history = [{"hex": "#000000"}]
+        manager.history = [{"hex": DATA_BLACK}]
         assert manager.save_history() is False
         # No temp file left behind
         temp = manager.history_file.with_suffix(".json.tmp")
@@ -359,7 +363,7 @@ class TestAddColor:
         manager.add_color((0, 0, 255))
         assert len(manager.history) == 3
         # Most recent at the front
-        assert manager.history[0]["hex"] == "#0000ff"
+        assert manager.history[0]["hex"] == DATA_BLUE
 
     def test_pick_count_starts_at_one(self, manager):
         manager.add_color((50, 100, 150))
@@ -389,8 +393,14 @@ class TestAddColorMaxSizeInvariant:
     # the body ran: three runs in three with the CPU shared four ways. That
     # health check is suppressed HERE ONLY. The 200 ms deadline still applies
     # to the body, which the stubbed save keeps near 1 ms.
+    #
+    # #49 A, 2026-10-16. Hypothesis 6.170 added a health check that stops a
+    # test whose smallest example is large (large_base_example). This test's
+    # smallest example is 334 colours on purpose -- the bound above is the
+    # point of it -- so that check is suppressed here too, and here only.
     @settings(max_examples=20, suppress_health_check=[
-        HealthCheck.function_scoped_fixture, HealthCheck.too_slow])
+        HealthCheck.function_scoped_fixture, HealthCheck.too_slow,
+        HealthCheck.large_base_example])
     def test_history_never_exceeds_max_size(self, manager, colors):
         # RNV-DEADLINE 2026-09-12, AND min_size IS THE HALF THAT MATTERS.
         #
@@ -496,7 +506,7 @@ class TestExportHistory:
         with open(out) as f:
             data = json.load(f)
         assert data["color_count"] == 1
-        assert data["colors"][0]["hex"] == "#0a141e"
+        assert data["colors"][0]["hex"] == DATA_DARK_NAVY
 
     def test_export_failure_returns_false(self, manager, tmp_path, monkeypatch):
         # Make open() raise during export
@@ -557,30 +567,30 @@ class TestRemoveColor:
 
     def test_remove_existing_returns_true(self, manager):
         manager.add_color((255, 0, 0))
-        assert manager.remove_color("#ff0000") is True
+        assert manager.remove_color(DATA_RED) is True
         assert manager.history == []
 
     def test_remove_missing_returns_false(self, manager):
         manager.add_color((255, 0, 0))
-        assert manager.remove_color("#abcdef") is False
+        assert manager.remove_color(DATA_HISTORY_ABSENT_PALE_BLUE) is False
         # History untouched
         assert len(manager.history) == 1
 
     def test_remove_is_case_insensitive(self, manager):
         manager.add_color((255, 0, 0))
-        # Mixed-case input should still match #ff0000 stored lowercase
-        assert manager.remove_color("#FF0000") is True
+        # Mixed-case input should still match DATA_RED stored lowercase
+        assert manager.remove_color(DATA_RED_UPPER) is True
 
     def test_remove_only_targeted_entry(self, manager):
         # Multi-color history — only the named one should disappear
         manager.add_color((255, 0, 0))
         manager.add_color((0, 255, 0))
         manager.add_color((0, 0, 255))
-        manager.remove_color("#00ff00")
+        manager.remove_color(DATA_GREEN)
         hexes = [e["hex"] for e in manager.history]
-        assert "#00ff00" not in hexes
-        assert "#ff0000" in hexes
-        assert "#0000ff" in hexes
+        assert DATA_GREEN not in hexes
+        assert DATA_RED in hexes
+        assert DATA_BLUE in hexes
 
 
 class TestGetColorInfo:
@@ -588,23 +598,23 @@ class TestGetColorInfo:
 
     def test_existing_returns_dict_copy(self, manager):
         manager.add_color((100, 100, 100))
-        info = manager.get_color_info("#646464")
+        info = manager.get_color_info(DATA_GREY_64)
         assert info is not None
-        assert info["hex"] == "#646464"
+        assert info["hex"] == DATA_GREY_64
 
     def test_missing_returns_none(self, manager):
         manager.add_color((100, 100, 100))
-        assert manager.get_color_info("#deadbe") is None
+        assert manager.get_color_info(DATA_HISTORY_ABSENT_PINK) is None
 
     def test_case_insensitive_lookup(self, manager):
         manager.add_color((255, 0, 0))
         # Uppercase hex input still finds the lowercase-stored entry
-        assert manager.get_color_info("#FF0000") is not None
+        assert manager.get_color_info(DATA_RED_UPPER) is not None
 
     def test_returned_dict_is_copy_not_reference(self, manager):
         # Mutating the returned dict shouldn't leak into history
         manager.add_color((10, 20, 30))
-        info = manager.get_color_info("#0a141e")
+        info = manager.get_color_info(DATA_DARK_NAVY)
         info["pick_count"] = 9999
         assert manager.history[0]["pick_count"] == 1
 

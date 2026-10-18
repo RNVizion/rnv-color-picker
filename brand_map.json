@@ -1,0 +1,115 @@
+{
+  "about": "Where each colour in utils/config.py comes from. A string is a name in rnv-brand (TABLE.key, or one of its own constants, in engine/brand.py); an object is a value this application owns, with the reason. Edit this file, then run: python tools/sync_colors.py",
+  "app": "RNV Color Picker",
+  "colour_file": "utils/config.py",
+  "palettes": [
+    {
+      "file": "utils/config.py",
+      "dict": "DARK_THEME_COLORS"
+    },
+    {
+      "file": "utils/config.py",
+      "dict": "LIGHT_THEME_COLORS"
+    },
+    {
+      "file": "utils/config.py",
+      "dict": "IMAGE_MODE_COLORS"
+    }
+  ],
+  "colours": {
+    "BRAND_GOLD": "APP.accent",
+    "BRAND_DARK_GOLD": "APP.accent-light-mode",
+    "BRAND_BLUE": "PERMANENT.blue",
+    "BRAND_DARK_BLUE": "PERMANENT.dark-blue",
+    "TRUE_BLACK": "PERMANENT.black",
+    "WHITE": "PERMANENT.white",
+    "BRAND_BLACK": "APP.panel",
+    "APP_CARD": "APP.card",
+    "APP_BORDER": "APP.border",
+    "APP_TEXT": "APP.text",
+    "APP_TEXT_DIM": "APP.text-dim",
+    "APP_CANVAS": "APP.canvas",
+    "APP_PANEL_HOVER": "APP.panel-hover",
+    "APP_HOVER_LIGHT": "APP.hover-light",
+    "APP_SURFACE_LIGHT_3": "APP.surface-light-3",
+    "APP_PRESSED_LIGHT": "APP.pressed-light",
+    "GREY_E0": {
+      "app": "#e0e0e0",
+      "why": "grey(14) on the ramp. Static light surfaces, a tab and a scrollbar track, that share pressed-light's hex without being a pressed state."
+    },
+    "GREY_66": {
+      "app": "#666666",
+      "why": "grey(6) on the register's ink grid, which the register states as a rule and does not name. Secondary and muted text on light."
+    },
+    "GREY_88": {
+      "app": "#888888",
+      "why": "grey(8) on the register's ink grid, which the register states as a rule and does not name. Muted text on dark; a scrollbar handle's hover on light."
+    },
+    "GREY_55": {
+      "app": "#555555",
+      "why": "grey(5) on the register's ink grid, which the register states as a rule and does not name. Disabled text and a checkbox edge on dark."
+    },
+    "GREY_44": {
+      "app": "#444444",
+      "why": "grey(4) on the register's ink grid, which the register states as a rule and does not name. The swatch preview's outline."
+    },
+    "GREY_CC": {
+      "app": "#cccccc",
+      "why": "grey(12) on the register's ink grid, which the register states as a rule and does not name. The light-mode border."
+    },
+    "IMAGE_CANVAS_LIGHT": {
+      "app": "#e8e8e8",
+      "why": "The image viewer's ground in light mode. It shares a hex with the register's gold text floor by coincidence, not by role."
+    },
+    "STATUS_SUCCESS": "STATUS.success",
+    "STATUS_SUCCESS_TEXT": "STATUS.success-text",
+    "STATUS_SUCCESS_TEXT_LIGHT": "STATUS.success-text-light",
+    "STATUS_WARNING_TEXT": "STATUS.warning-text",
+    "STATUS_WARNING_TEXT_LIGHT": "STATUS.warning-text-light",
+    "STATUS_ERROR": "STATUS.error",
+    "STATUS_ERROR_TEXT": "STATUS.error-text",
+    "STATUS_ERROR_TEXT_LIGHT": "STATUS.error-text-light",
+    "CONTRAST_DEMO_BLACK_BG": {
+      "app": "#000000",
+      "why": "Data, not chrome: the black the contrast demo tests against. It stays black whatever the brand does, or the demo loses its meaning."
+    },
+    "CONTRAST_DEMO_WHITE_BG": {
+      "app": "#ffffff",
+      "why": "Data, not chrome: the white the contrast demo tests against."
+    },
+    "CONTRAST_DEMO_BLACK_FG": {
+      "app": "#000000",
+      "why": "Data, not chrome: the contrast demo's black text."
+    },
+    "CONTRAST_DEMO_WHITE_FG": {
+      "app": "#ffffff",
+      "why": "Data, not chrome: the contrast demo's white text."
+    },
+    "DEBUG_TEXT": {
+      "app": "#00ff00",
+      "why": "The debug dimension label's terminal green, readable on anything. A development aid."
+    },
+    "DEBUG_BG": {
+      "app": "rgba(0, 0, 0, 200)",
+      "why": "The debug label's ground, semi-transparent black."
+    },
+    "STATUS_SUCCESS_FG": "PERMANENT.black",
+    "STATUS_ERROR_FG": "PERMANENT.black",
+    "SELECTION_BOX_COLOR": {
+      "app": "#ffff00",
+      "why": "The image viewer's selection rectangle, CSS yellow. No register value holds it."
+    },
+    "SVG_EXPORT_BG": {
+      "app": "#ffffff",
+      "why": "Data, not chrome: an exported palette's paper white. It does not follow the brand's white."
+    },
+    "SVG_EXPORT_STROKE": {
+      "app": "#000000",
+      "why": "Data, not chrome: an exported palette's ink black."
+    },
+    "MISSING_HEX_PLACEHOLDER": {
+      "app": "#000000",
+      "why": "Data: the deliberately wrong-looking black shown when a colour record has no hex."
+    }
+  }
+}

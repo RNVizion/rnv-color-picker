@@ -125,7 +125,8 @@ class TestRgbHexRoundTrip:
 
     @given(short_hex=st.from_regex(r"^#[0-9a-f]{3}$", fullmatch=True))
     def test_three_char_hex_expands_to_six(self, short_hex):
-        # #f00 should become (255, 0, 0); #abc → (0xaa, 0xbb, 0xcc)
+        # EXAMPLE_PURE_RED_SHORT should become (255, 0, 0);
+        # EXAMPLE_LIGHT_STEEL_SHORT → (0xaa, 0xbb, 0xcc)
         result = ColorMath.hex_to_rgb(short_hex)
         # Each channel is the doubled hex digit (0xf*16+0xf=255 for "f")
         for i, ch in enumerate(short_hex[1:]):
