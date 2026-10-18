@@ -30,7 +30,7 @@ from PyQt6.QtGui import QColor, QCloseEvent, QShowEvent
 
 from ui.settings_panel import SettingsPanel, ColorHistoryItem
 from utils import config
-from tests.colour_values import (
+from tests.color_values import (
     DATA_BLACK, DATA_BLACK_RGB_COMPACT, DATA_BLACK_SHORT, DATA_CERULEAN,
     DATA_CERULEAN_UPPER, DATA_DARK_ORANGE, DATA_DARK_ORANGE_BARE,
     DATA_DARK_ORANGE_BARE_UPPER, DATA_DARK_ORANGE_PADDED, DATA_DARK_ORANGE_RGB,
@@ -1312,7 +1312,7 @@ class TestCreateHarmonySwatch:
         label_texts = [lbl.text() for lbl in labels]
         assert any(DATA_ROSE_BARE_UPPER in t for t in label_texts)
 
-    def test_base_swatch_labelled_base(self, panel):
+    def test_base_swatch_labeled_base(self, panel):
         swatch = panel._create_harmony_swatch((0, 255, 0), is_base=True)
         labels = swatch.findChildren(QLabel)
         label_texts = [lbl.text() for lbl in labels]
@@ -1461,9 +1461,9 @@ class TestAccessibilityTabWiring:
             assert isinstance(spin, QSpinBox), f"{name} missing or not QSpinBox"
 
     def test_the_rating_label_follows_a_theme_switch(self, panel):
-        """RNV-RATING-SCALE. The rating colour is a per-mode palette key, so
+        """RNV-RATING-SCALE. The rating color is a per-mode palette key, so
         update_theme has to repaint the label; before this round it painted
-        one colour for three grounds and could not go stale.
+        one color for three grounds and could not go stale.
 
         Asserted through the STYLESHEET rather than the return of a helper:
         what was wrong was the pixels, and the stylesheet is the last thing
@@ -1482,15 +1482,15 @@ class TestAccessibilityTabWiring:
 
     def test_every_rating_tier_is_reachable_from_the_spin_boxes(self, panel):
         """Each tier must be something the widget can actually show. A scale
-        whose middle tiers no input can produce is four colours and two
+        whose middle tiers no input can produce is four colors and two
         outcomes."""
         from core.accessibility import ColorAccessibility
         seen = set()
-        for grey in range(0, 256, 5):
+        for gray in range(0, 256, 5):
             for spin, v in zip((panel.access_fg_r, panel.access_fg_g,
                                 panel.access_fg_b, panel.access_bg_r,
                                 panel.access_bg_g, panel.access_bg_b),
-                               (grey, grey, grey, 255, 255, 255)):
+                               (gray, gray, gray, 255, 255, 255)):
                 spin.setValue(v)
             panel._update_contrast_check()
             style = panel.contrast_ratio_label.styleSheet()
@@ -1593,7 +1593,7 @@ class TestUpdateContrastCheck:
 class TestUpdateBlindnessSim:
     """`_update_blindness_sim` reads sim_r/g/b, runs simulate_colorblindness for
     5 types (Normal/Protanopia/Deuteranopia/Tritanopia/Achromatopsia), and
-    populates the results layout with labelled swatches."""
+    populates the results layout with labeled swatches."""
 
     def test_creates_five_simulation_swatches(self, panel):
         # Set a vivid color and trigger
@@ -1604,7 +1604,7 @@ class TestUpdateBlindnessSim:
         # 5 swatches + 1 stretch = 6 layout items
         assert panel.blindness_results_layout.count() == 6
 
-    def test_swatches_labelled_correctly(self, panel):
+    def test_swatches_labeled_correctly(self, panel):
         panel.sim_r.setValue(128)
         panel.sim_g.setValue(64)
         panel.sim_b.setValue(200)
@@ -2207,11 +2207,11 @@ class TestApplySettings:
 # ═════════════════════════════════════════════════════════════════════════════
 class TestMutedDescriptions:
     """RNV-MUTED-DESCRIPTIONS, ruling 1 of 2026-09-27. The panel's tab
-    descriptions and the harmony captions were `color: gray` -- RETIRED_CSS_GREY in
+    descriptions and the harmony captions were `color: gray` -- RETIRED_CSS_GRAY in
     every mode, 4.40:1 on the dark panel and 3.62:1 in light, both under the
     4.5 floor. They are named "muted_text" now, and the panel's own
-    stylesheet draws that name in text_muted: GREY_88 in dark and image,
-    GREY_66 in light, the muted text all five applications already paint.
+    stylesheet draws that name in text_muted: GRAY_88 in dark and image,
+    GRAY_66 in light, the muted text all five applications already paint.
     That stylesheet is rebuilt by update_theme() on every switch, so the
     descriptions follow the mode without anything tracking them."""
 
@@ -2228,10 +2228,10 @@ class TestMutedDescriptions:
         widget.ensurePolished()
         return widget.palette().color(QPalette.ColorRole.WindowText).name()
 
-    def test_every_description_is_named_and_carries_no_colour_of_its_own(self, panel):
+    def test_every_description_is_named_and_carries_no_color_of_its_own(self, panel):
         labels = self._muted(panel)
         texts = [w.text() for w in labels]
-        # the six tab descriptions, the colour-blindness one and the harmony one
+        # the six tab descriptions, the color-blindness one and the harmony one
         for fragment in ("Click any color", "Save and restore", "Generate harmonious",
                          "Check WCAG", "See how your colors", "Quick reference"):
             assert any(fragment in t for t in texts), (fragment, texts)
@@ -2251,25 +2251,25 @@ class TestMutedDescriptions:
         assert labels, "no description is named muted_text"
         for w in labels:
             assert self._ink(w) == theme["text_muted"].lower(), (mode, w.text()[:40])
-        # and nothing else in the panel took the muted colour by accident
+        # and nothing else in the panel took the muted color by accident
         primary = [w for w in panel.findChildren(QLabel)
                    if w.objectName() != "muted_text" and not w.styleSheet()]
         assert primary and all(self._ink(w) == theme["text_primary"].lower()
                                for w in primary), mode
 
     def test_the_two_values_are_the_ones_the_fleet_already_uses(self):
-        assert config.DARK_THEME_COLORS["text_muted"] == config.GREY_88
-        assert config.IMAGE_MODE_COLORS["text_muted"] == config.GREY_88
-        assert config.LIGHT_THEME_COLORS["text_muted"] == config.GREY_66
+        assert config.DARK_THEME_COLORS["text_muted"] == config.GRAY_88
+        assert config.IMAGE_MODE_COLORS["text_muted"] == config.GRAY_88
+        assert config.LIGHT_THEME_COLORS["text_muted"] == config.GRAY_66
 
-    def test_no_label_is_written_in_a_css_grey(self):
+    def test_no_label_is_written_in_a_css_gray(self):
         """The literal the ruling retired, anywhere the application EVALUATES a
         string. Docstrings and comments may still name it; code may not."""
         import ast
         import pathlib
         import re
         root = pathlib.Path(__file__).resolve().parents[1]
-        css_grey = re.compile(r"color\s*:\s*(gray|grey)\b", re.I)
+        css_gray = re.compile(r"color\s*:\s*(gray|grey)\b", re.I)
         found, files = [], 0
         for path in sorted(root.rglob("*.py")):
             rel = path.relative_to(root)
@@ -2288,9 +2288,9 @@ class TestMutedDescriptions:
                     if isinstance(st, ast.Expr) and isinstance(st.value, ast.Constant)}
             found += [f"{rel}:{node.lineno}" for node in ast.walk(tree)
                       if isinstance(node, ast.Constant) and isinstance(node.value, str)
-                      and id(node) not in docs and css_grey.search(node.value)]
+                      and id(node) not in docs and css_gray.search(node.value)]
         assert files >= 20, f"only {files} files swept -- the walk has gone blind"
-        assert not found, "CSS grey still written as a colour:\n  " + "\n  ".join(found)
+        assert not found, "CSS gray still written as a color:\n  " + "\n  ".join(found)
 
 
 # RNV-HARMONY-SWITCH
@@ -2306,7 +2306,7 @@ class TestHarmonyFollowsASwitch:
     harmony is the spin boxes and the type combo, so what it shows stays the
     same; only the edge follows the mode.
 
-    Each test reads the colour Qt DRAWS -- a pixel grabbed from the swatch --
+    Each test reads the color Qt DRAWS -- a pixel grabbed from the swatch --
     as well as the stylesheet, so a rule that stops reaching the swatch fails
     even while the text of the rule is still there."""
 
@@ -2339,7 +2339,7 @@ class TestHarmonyFollowsASwitch:
 
     @classmethod
     def _boxes(cls, panel):
-        """Each swatch's colour box, in order: the one label fixed at 66 x 50."""
+        """Each swatch's color box, in order: the one label fixed at 66 x 50."""
         from PyQt6.QtCore import QSize
         boxes = []
         for swatch in cls._swatches(panel):
@@ -2353,7 +2353,7 @@ class TestHarmonyFollowsASwitch:
     def _drawn(box):
         """(edge, fill) as Qt draws them: the middle of the left edge, inside
         the border whichever width it is and clear of the rounded corners,
-        and the centre of the box."""
+        and the center of the box."""
         image = box.grab().toImage()
         mid = image.height() // 2
         return (image.pixelColor(1, mid).name(),
@@ -2368,8 +2368,8 @@ class TestHarmonyFollowsASwitch:
             assert self._drawn(base)[0] == gold, (mode, self._drawn(base))
             assert others, mode
             for box in others:
-                assert f"2px solid {config.GREY_44}" in box.styleSheet(), (mode, box.styleSheet())
-                assert self._drawn(box)[0] == config.GREY_44.lower(), (mode, self._drawn(box))
+                assert f"2px solid {config.GRAY_44}" in box.styleSheet(), (mode, box.styleSheet())
+                assert self._drawn(box)[0] == config.GRAY_44.lower(), (mode, self._drawn(box))
 
     def test_a_switch_keeps_the_harmony_on_show(self, panel):
         panel.harmony_type_combo.setCurrentText("Tetradic (Square)")
@@ -2546,8 +2546,8 @@ class TestPanelFollowsASwitch:
         rgb = (panel.harmony_r_spin.value(), panel.harmony_g_spin.value(),
                panel.harmony_b_spin.value())
         image = panel.harmony_base_preview.grab().toImage()
-        centre = image.pixelColor(image.width() // 2, image.height() // 2).name()
-        assert centre == QColor(*rgb).name(), (mode, rgb, centre)
+        center = image.pixelColor(image.width() // 2, image.height() // 2).name()
+        assert center == QColor(*rgb).name(), (mode, rgb, center)
         assert panel.harmony_colors[0] == rgb
 
     def test_apply_after_a_switch_keeps_the_mode(self, qtbot, monkeypatch):
@@ -2587,7 +2587,7 @@ class TestPanelFollowsASwitch:
 
 # RNV-SAVE-APPLIES
 # ═════════════════════════════════════════════════════════════════════════════
-# SAVE APPLIES; APPLY LEAVES THE MODE UNSAVED; THE SESSIONS DIVIDER DRAWS ITS GREY
+# SAVE APPLIES; APPLY LEAVES THE MODE UNSAVED; THE SESSIONS DIVIDER DRAWS ITS GRAY
 # ═════════════════════════════════════════════════════════════════════════════
 class TestSaveAppliesAndTheDivider:
     """RNV-SAVE-APPLIES and RNV-SESSION-DIVIDER, 2026-09-27.
@@ -2684,7 +2684,7 @@ class TestSaveAppliesAndTheDivider:
         assert app.tooltips_enabled is False and app._apply_tooltips.called
         app.debug_label.setVisible.assert_called_with(True)
 
-    def test_the_sessions_divider_draws_its_grey_in_every_mode(self, qtbot):
+    def test_the_sessions_divider_draws_its_gray_in_every_mode(self, qtbot):
         panel = TestPanelFollowsASwitch._build(qtbot, "dark")
         lines = [f for f in panel.findChildren(QFrame) if f.frameShape() == QFrame.Shape.HLine]
         assert len(lines) == 1, len(lines)

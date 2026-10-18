@@ -14,7 +14,7 @@ Strategy: a *hybrid* of two complementary approaches.
      payload-shape assertions.
 
   2. Real start() with qtbot.waitSignal — used only where threading
-     *behaviour* is the system-under-test (WorkerManager.cancel_all on a
+     *behavior* is the system-under-test (WorkerManager.cancel_all on a
      running worker, signal_manager integration after worker completion).
      A FakeSlowWorker fixture sleeps in run() until cancelled, so tests
      can deterministically observe a worker that's actually running.
@@ -549,7 +549,7 @@ class TestPaletteExportWorkerFontFallbacks:
             attempt_log.append(str(path))
             if isinstance(path, str) and "fake.ttf" in path:
                 raise OSError("font corrupted")
-            # Arial / system / load_default internals → real behaviour
+            # Arial / system / load_default internals → real behavior
             return original_truetype(path, size, *args, **kwargs)
         monkeypatch.setattr(ImageFont, "truetype", fake_truetype)
 
@@ -577,7 +577,7 @@ class TestPaletteExportWorkerFontFallbacks:
         def selective_truetype(path, size=10, *args, **kwargs):
             if isinstance(path, str) and "arial" in path.lower():
                 raise OSError("no arial")
-            # All other paths (BytesIO from load_default) → real behaviour
+            # All other paths (BytesIO from load_default) → real behavior
             return original_truetype(path, size, *args, **kwargs)
         monkeypatch.setattr(ImageFont, "truetype", selective_truetype)
 

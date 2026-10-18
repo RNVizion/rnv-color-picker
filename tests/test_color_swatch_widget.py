@@ -25,7 +25,7 @@ from PyQt6.QtGui import QAction
 
 from ui.color_swatch_widget import ColorSwatchWidget
 from utils import config
-from tests.colour_values import DATA_RED, EXAMPLE_GOLD, EXAMPLE_GOLD_HSL, EXAMPLE_GOLD_RGB
+from tests.color_values import DATA_RED, EXAMPLE_GOLD, EXAMPLE_GOLD_HSL, EXAMPLE_GOLD_RGB
 
 
 # ═════════════════════════════════════════════════════════════════════════════

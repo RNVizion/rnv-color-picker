@@ -591,7 +591,7 @@ class AboutDialog(QDialog):
         line = QFrame()
         line.setFrameShape(QFrame.Shape.HLine)
         # RNV-ABOUT-DIVIDER 2026-09-27: Plain, so the line is drawn in the
-        # colour below, as the Sessions divider now is. It was Sunken, and Qt
+        # color below, as the Sessions divider now is. It was Sunken, and Qt
         # draws a sunken line in its own shading -- #9f9f9f and #ffffff in
         # every mode, a white line on the dark dialog -- so border_hover was
         # never drawn.
@@ -606,7 +606,7 @@ class AboutDialog(QDialog):
         same name, for the same fault. For a stylesheet that reads the mode
         when it is built. Set once, it kept the mode the dialog was opened
         in: a switch made with the dialog open left the Close button, the
-        gold headings and the muted text in the old mode's colours.
+        gold headings and the muted text in the old mode's colors.
         _apply_theme() calls every registered sheet() again.
         """
         widget.setStyleSheet(sheet())

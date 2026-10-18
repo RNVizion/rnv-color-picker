@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 
 from utils import config as C
-from tests.colour_values import (
+from tests.color_values import (
     REGISTER_APP_SURFACE_LIGHT_2, RETIRED_LIGHT_STRAY_F0, RETIRED_LIGHT_STRAY_F8,
     RETIRED_LIGHT_STRAY_FA)
 
@@ -116,7 +116,7 @@ def test_the_split_puts_register_names_only_on_role_keys():
             if isinstance(v, ast.Name) and v.id == "APP_PRESSED_LIGHT":
                 assert key == "pressed_bg", (
                     f"{pal_name}[{key!r}] carries APP_PRESSED_LIGHT but is not a "
-                    f"pressed state; a static surface keeps GREY_E0")
+                    f"pressed state; a static surface keeps GRAY_E0")
 
 
 @pytest.mark.parametrize("old,new", sorted(COLLAPSE.items()))
@@ -153,8 +153,8 @@ def test_every_exemption_is_still_there_and_still_needed():
 
 
 def test_one_hex_one_name_unless_it_is_a_declared_split():
-    """A second constant for one colour is either a split with a stated role,
-    or a defect. This is what stops GREY_XX and APP_YY drifting into two
+    """A second constant for one color is either a split with a stated role,
+    or a defect. This is what stops GRAY_XX and APP_YY drifting into two
     names for one thing with nobody having decided that."""
     src = SOURCE.read_text(encoding="utf-8-sig")
     pat = re.compile(r"^([A-Z][A-Z0-9_]+):\s*Final\[str\]\s*=\s*['\"](#[0-9a-fA-F]{6})['\"]", re.M)
@@ -162,7 +162,7 @@ def test_one_hex_one_name_unless_it_is_a_declared_split():
     for name, hexv in pat.findall(src):
         by_hex.setdefault(hexv.lower(), []).append(name)
     allowed_pairs = {
-        frozenset({"APP_PRESSED_LIGHT", "GREY_E0"}),
+        frozenset({"APP_PRESSED_LIGHT", "GRAY_E0"}),
         # pre-existing, documented elsewhere in this module
         frozenset({"WHITE", "CONTRAST_DEMO_WHITE_BG"}),
         frozenset({"TRUE_BLACK", "CONTRAST_DEMO_BLACK_BG"}),

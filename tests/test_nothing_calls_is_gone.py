@@ -27,12 +27,12 @@ safe before they went: nothing in the repository named them but this
 guard and two root-suite tests, which called them to see that they returned
 a string and went with them; and driven through every window, in each mode,
 the application never ran a line of them. The scroll area, the zoom label
-and the colour preview are styled where they are made, from the palette.
+and the color preview are styled where they are made, from the palette.
 No palette entry went with them: every key they read is read elsewhere. The
-import only the colour preview's used, swatch_edge, left the cache.
+import only the color preview's used, swatch_edge, left the cache.
 
-Item 27. swatch_edge() itself, the outline a swatch of any colour would
-take. The colour preview's stylesheet was its one caller in the
+Item 27. swatch_edge() itself, the outline a swatch of any color would
+take. The color preview's stylesheet was its one caller in the
 application, and nothing called that; after item 19 only a test called it,
 tests/test_ink_rule.py's test_the_edge_rule_shares_the_ink_rule, which went
 with it. The rule it applied is better_on(), which contrast_ink() applies
@@ -43,7 +43,7 @@ WHAT THIS GUARD HOLDS.
 1. None of those names is written in the repository's Python again: not in
    the application, not in a test. This file mentions them in order to
    forbid them, and is the one file the sweep leaves out.
-2. The colour module and the cache do not define them.
+2. The color module and the cache do not define them.
 3. Every cached stylesheet function is called by the application, itself or
    through another that is. A test that calls one does not make it used.
 4. The sweeps are looking.
@@ -60,12 +60,12 @@ CACHE = "utils/cache.py"
 FUNCTIONS_GONE = ("get_button_frame_stylesheet", "get_close_button_stylesheet",
                   "get_scroll_area_stylesheet", "get_scrollbar_stylesheet", "get_zoom_label_stylesheet",
                   "get_color_preview_stylesheet")
-COLOURS_GONE = ("BRAND_GOLD_PRESSED", "BRAND_DARK_GOLD_PRESSED", "IMAGE_BUTTON_FRAME_BG",
+COLORS_GONE = ("BRAND_GOLD_PRESSED", "BRAND_DARK_GOLD_PRESSED", "IMAGE_BUTTON_FRAME_BG",
                 "IMAGE_BUTTON_FRAME_ALPHA")
-#: Functions of the colour module.
+#: Functions of the color module.
 CONFIG_FUNCTIONS_GONE = ("swatch_edge",)
 PREFERENCE_GONE = "default_slot_color"
-GONE = FUNCTIONS_GONE + COLOURS_GONE + CONFIG_FUNCTIONS_GONE + (PREFERENCE_GONE,)
+GONE = FUNCTIONS_GONE + COLORS_GONE + CONFIG_FUNCTIONS_GONE + (PREFERENCE_GONE,)
 
 #: The one file that names what went, to forbid it.
 MENTION_ONLY = {pathlib.Path(__file__).name}
@@ -148,13 +148,13 @@ def test_what_went_is_not_written_again():
     found = _named(_python())
     assert not found, (
         "a name removed on 2026-10-05, 2026-10-11 or 2026-10-13 is written again:\n  " + "\n  ".join(found)
-        + "\nThe functions were called by nothing, the colours were read only by them, and the "
+        + "\nThe functions were called by nothing, the colors were read only by them, and the "
           "preference was read by nothing. If one is wanted, it needs a caller or a reader, and a ruling.")
 
 
-def test_the_colour_module_and_the_cache_do_not_define_it():
+def test_the_color_module_and_the_cache_do_not_define_it():
     from utils import cache, config
-    for name in COLOURS_GONE:
+    for name in COLORS_GONE:
         assert not hasattr(config, name), f"utils.config defines {name} again"
         assert name not in config.__all__, f"utils.config exports {name}"
         assert not hasattr(cache, name), f"utils.cache imports {name} again"
@@ -173,7 +173,7 @@ def test_every_cached_stylesheet_function_is_called():
     uncalled = sorted(_uncalled(source, list(_python(app_only=True))))
     assert not uncalled, (
         f"nothing in the application calls StylesheetCache.{', .'.join(n + '()' for n in uncalled)}. "
-        f"A sheet nothing asks for paints nothing, and keeps its colours looking used. Call it, or remove it.")
+        f"A sheet nothing asks for paints nothing, and keeps its colors looking used. Call it, or remove it.")
 
 
 def test_the_sweeps_are_looking():

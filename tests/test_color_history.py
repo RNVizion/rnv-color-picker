@@ -48,8 +48,8 @@ from core.color_history import (
     clear_color_history,
 )
 import core.color_history as color_history_module
-from tests.colour_values import (
-    DATA_BLACK, DATA_BLUE, DATA_DARK_NAVY, DATA_GREEN, DATA_GREY_64,
+from tests.color_values import (
+    DATA_BLACK, DATA_BLUE, DATA_DARK_NAVY, DATA_GREEN, DATA_GRAY_64,
     DATA_HISTORY_ABSENT_PALE_BLUE, DATA_HISTORY_ABSENT_PINK, DATA_PALE_BLUE, DATA_RED,
     DATA_RED_UPPER)
 
@@ -386,7 +386,7 @@ class TestAddColorMaxSizeInvariant:
 
     @given(colors=st.lists(rgb, min_size=334, max_size=400, unique=True))
     # RNV-TOO-SLOW 2026-09-25. min_size=334 is the half of RNV-DEADLINE
-    # that matters, and it costs generation time: 334 to 400 unique colours
+    # that matters, and it costs generation time: 334 to 400 unique colors
     # take about 0.6 s per ten examples on an idle machine. Hypothesis fails a
     # test with FailedHealthCheck (too_slow) when its first ten examples take
     # more than 1.0 s to generate, so a loaded machine failed this one before
@@ -396,7 +396,7 @@ class TestAddColorMaxSizeInvariant:
     #
     # #49 A, 2026-10-16. Hypothesis 6.170 added a health check that stops a
     # test whose smallest example is large (large_base_example). This test's
-    # smallest example is 334 colours on purpose -- the bound above is the
+    # smallest example is 334 colors on purpose -- the bound above is the
     # point of it -- so that check is suppressed here too, and here only.
     @settings(max_examples=20, suppress_health_check=[
         HealthCheck.function_scoped_fixture, HealthCheck.too_slow,
@@ -411,7 +411,7 @@ class TestAddColorMaxSizeInvariant:
         #     1 1 1 1 2 2 2 2 3 3 3 4 4 5 5 7 8 8 10 14
         #
         # -- largest fourteen, ZERO above 333. A trim cannot happen below 334
-        # colours, so no example could exercise the invariant. Proved by
+        # colors, so no example could exercise the invariant. Proved by
         # deleting the trim from add_color entirely: this test stayed GREEN
         # while test_exactly_max_size_after_overfilling caught it. The class
         # docstring says a property test catches this bound "that example
@@ -425,16 +425,16 @@ class TestAddColorMaxSizeInvariant:
         # one run in eight -- and not on its assertion. It raised
         # hypothesis DeadlineExceeded, because add_color() calls
         # save_history() on EVERY call and save_history() rewrites the whole
-        # JSON file. 400 colours is 400 whole-file writes of a list growing
+        # JSON file. 400 colors is 400 whole-file writes of a list growing
         # to 333 entries:
         #
-        #     50 colours    41 ms
-        #    100 colours    95 ms
-        #    200 colours   248 ms   <- already over the deadline
-        #    400 colours   743 ms
+        #     50 colors    41 ms
+        #    100 colors    95 ms
+        #    200 colors   248 ms   <- already over the deadline
+        #    400 colors   743 ms
         #
         # Hypothesis's default deadline is 200 ms PER EXAMPLE and @settings
-        # above does not override it, so any draw above about 170 colours is
+        # above does not override it, so any draw above about 170 colors is
         # over. It re-runs an over-deadline example before reporting, so
         # whether it reports depends on machine load -- which is why it passed
         # alone and under eight fixed seeds, and failed inside a combined
@@ -443,7 +443,7 @@ class TestAddColorMaxSizeInvariant:
         #
         # THE PROPERTY IS THE TRIM, AND THE TRIM IS IN MEMORY. Persistence is
         # TestSaveHistory's job; this test needs add_color's list arithmetic
-        # and nothing else. Stubbing the save takes the same 400 colours from
+        # and nothing else. Stubbing the save takes the same 400 colors from
         # 721 ms to 1.0 ms and leaves the invariant exactly as strong.
         #
         # NOT deadline=None, which is the other obvious fix. That would stop
@@ -466,7 +466,7 @@ class TestAddColorMaxSizeInvariant:
         depend on it. Asserted once, at full size, against the real save --
         so if a future add_color ever moves the trim behind the write, the
         stub stops hiding it. One example rather than twenty: this costs
-        about 700 ms and buys the licence for the fast path above.
+        about 700 ms and buys the license for the fast path above.
         """
         for i in range(ColorHistoryManager.MAX_HISTORY_SIZE + 50):
             manager.add_color(((i // 65536) % 256, (i // 256) % 256, i % 256))
@@ -598,9 +598,9 @@ class TestGetColorInfo:
 
     def test_existing_returns_dict_copy(self, manager):
         manager.add_color((100, 100, 100))
-        info = manager.get_color_info(DATA_GREY_64)
+        info = manager.get_color_info(DATA_GRAY_64)
         assert info is not None
-        assert info["hex"] == DATA_GREY_64
+        assert info["hex"] == DATA_GRAY_64
 
     def test_missing_returns_none(self, manager):
         manager.add_color((100, 100, 100))

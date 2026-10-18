@@ -601,7 +601,7 @@ class TestAboutFollowsASwitch:
                     else label.sizeHint().height())
             assert label.height() >= need, (label.text()[:40], label.height(), need)
 
-    def test_the_divider_draws_its_grey_in_every_mode(self, qtbot, monkeypatch):
+    def test_the_divider_draws_its_gray_in_every_mode(self, qtbot, monkeypatch):
         dlg = self._build(qtbot, monkeypatch, "dark")
         lines = [f for f in dlg.findChildren(QFrame) if f.frameShape() == QFrame.Shape.HLine]
         assert len(lines) == 1, len(lines)

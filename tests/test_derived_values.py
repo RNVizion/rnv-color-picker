@@ -1,8 +1,8 @@
-"""Derived values: a colour that is a named colour AT AN ALPHA.
+"""Derived values: a color that is a named color AT AN ALPHA.
 
-A colour here used to be one of two things -- a name, or a literal -- and this
+A color here used to be one of two things -- a name, or a literal -- and this
 file adds the third the application always had and never declared.
-RETIRED_SCROLLBAR_GROOVE_RGBA is not a colour beside APP_BORDER; it IS APP_BORDER at
+RETIRED_SCROLLBAR_GROOVE_RGBA is not a color beside APP_BORDER; it IS APP_BORDER at
 alpha 100, and until 2026-09-25 nothing related the two. Now it is written
 translucent(APP_BORDER, SCROLLBAR_BG_ALPHA), and a change to APP_BORDER
 reaches it -- in the palette, and in every stylesheet that paints it.
@@ -11,15 +11,15 @@ THE IMAGE SCROLLBAR NEVER READ THE PALETTE. ThemeManager.SCROLLBAR_IMAGE was a
 fixed string, the one sheet in the file "not built from theme dict", so the
 main window's image scrollbar painted its own literals whatever the palette
 said. Two rulings stopped at that string: RNV-COLLAPSE-505050 (2026-09-02) left
-the handle RETIRED_GREY_50, and the gold hover (2026-09-12) left it grey --
+the handle RETIRED_GRAY_50, and the gold hover (2026-09-12) left it gray --
 RETIRED_SCROLLBAR_HOVER_RGBA while scrollbar_handle_hover said BRAND_GOLD. The
 sheet is built from IMAGE_MODE_COLORS now, same geometry, and both rulings
 reach it.
 
 WHAT MOVES A PIXEL: TWO THINGS, BOTH RULED. The image scrollbar handle leaves
-RETIRED_GREY_50 for GREY_44 at the same alpha, 150; and the main window's image
+RETIRED_GRAY_50 for GRAY_44 at the same alpha, 150; and the main window's image
 scrollbar hover turns gold, completing the 2026-09-12 ruling. Everything else
-keeps its colour and its alpha byte. test_nothing_moved_that_was_not_ruled
+keeps its color and its alpha byte. test_nothing_moved_that_was_not_ruled
 holds each value to the constant and the byte it is made of.
 """
 from __future__ import annotations
@@ -34,10 +34,10 @@ from utils.config import (DARK_THEME_COLORS as DARK,
                           IMAGE_MODE_COLORS as IMAGE,
                           ThemeManager,
                           translucent)
-from tests.colour_values import (
-    EXAMPLE_BLACK, EXAMPLE_CHARCOAL, EXAMPLE_CHARCOAL_AT_ED, EXAMPLE_GOLD, EXAMPLE_GREY_44,
+from tests.color_values import (
+    EXAMPLE_BLACK, EXAMPLE_CHARCOAL, EXAMPLE_CHARCOAL_AT_ED, EXAMPLE_GOLD, EXAMPLE_GRAY_44,
     EXAMPLE_NEAR_BLACK_AT_ED, EXAMPLE_NEAR_BLACK_BARE_UPPER, INVALID_HEX_BAD_DIGITS,
-    INVALID_HEX_EIGHT_DIGIT_BASE, INVALID_HEX_FIVE_DIGITS, RETIRED_GREY_50,
+    INVALID_HEX_EIGHT_DIGIT_BASE, INVALID_HEX_FIVE_DIGITS, RETIRED_GRAY_50,
     RETIRED_SCROLLBAR_HANDLE_RGBA)
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -55,7 +55,7 @@ ALPHAS = {
     "IMAGE_MENU_ALPHA": 0xC8,
 }
 
-#: What each derived value is MADE OF: the constant its colour comes from, and
+#: What each derived value is MADE OF: the constant its color comes from, and
 #: its alpha byte. By NAME, not by hex -- see test_nothing_moved_that_was_not_ruled.
 MADE_OF = {
     "APP_WINDOW_OVERLAY": ("TRUE_BLACK", 0xED),
@@ -63,7 +63,7 @@ MADE_OF = {
     "IMAGE_MENU_BG": ("TRUE_BLACK", 0xC8),
     "IMAGE_MODE_COLORS['checkbox_bg']": ("TRUE_BLACK", 0x64),
     "IMAGE_MODE_COLORS['scrollbar_bg']": ("APP_BORDER", 0x64),
-    "IMAGE_MODE_COLORS['scrollbar_handle']": ("GREY_44", 0x96),  # ruled
+    "IMAGE_MODE_COLORS['scrollbar_handle']": ("GRAY_44", 0x96),  # ruled
 }
 
 #: Diagnostic, and so excluded by rule: the debug overlay must read on any
@@ -100,8 +100,8 @@ def _parts_of(spelled: str) -> tuple[str, int]:
                                          else int(a))
 
 
-def colours_in(text: str) -> set[str]:
-    """Every colour in a string, as #rrggbb. #AARRGGBB is alpha FIRST."""
+def colors_in(text: str) -> set[str]:
+    """Every color in a string, as #rrggbb. #AARRGGBB is alpha FIRST."""
     found = set()
     for m in _HEX.finditer(text):
         h = m.group(0)[1:].lower()
@@ -171,7 +171,7 @@ def _derived():
 # ------------------------------------------------------------ guard the guard
 
 def test_translucent_composes_alpha_first():
-    """#AARRGGBB, not #RRGGBBAA. Taking the wrong end gives a real colour and
+    """#AARRGGBB, not #RRGGBBAA. Taking the wrong end gives a real color and
     the wrong one, which is the failure that does not look like a failure.
     Lower case, whatever case it is given: RNV-LOWER-EIGHT."""
     assert translucent(EXAMPLE_CHARCOAL, 0xED) == EXAMPLE_CHARCOAL_AT_ED
@@ -230,7 +230,7 @@ def test_every_derived_value_names_constants_that_exist():
                            f"utils.config does not define")
         if isinstance(base, ast.Name) and hasattr(colors, base.id):
             if not re.fullmatch(r"#[0-9a-fA-F]{6}", str(getattr(colors, base.id))):
-                bad.append(f"{where}: the base {base.id} is not a six-digit colour")
+                bad.append(f"{where}: the base {base.id} is not a six-digit color")
         if isinstance(alpha, ast.Name) and alpha.id not in ALPHAS:
             bad.append(f"{where}: the alpha {alpha.id} is not a declared "
                        f"composite alpha")
@@ -253,8 +253,8 @@ def test_every_derived_value_decomposes_to_its_base_and_its_alpha():
 
 def test_no_composed_literal_is_left_in_the_application():
     """The completeness half. Every EVALUATED string in the application's own
-    source that spells a named colour at an alpha. Docstrings are mentions;
-    alpha 0 is not a colour; a base no constant names has no row to follow;
+    source that spells a named color at an alpha. Docstrings are mentions;
+    alpha 0 is not a color; a base no constant names has no row to follow;
     and the diagnostic overlay is excluded by rule."""
     named = {v.lower() for n, v in vars(colors).items()
              if n.isupper() and isinstance(v, str)
@@ -305,7 +305,7 @@ def test_the_diagnostic_overlay_stays_outside_the_brand():
 def test_the_image_scrollbar_sheet_is_built_from_the_palette():
     """SCROLLBAR_IMAGE paints the main window's image scrollbar. It is read
     from IMAGE_MODE_COLORS now, so the rulings that land in the palette reach
-    the screen: the handle is GREY_44, and the hover is the gold."""
+    the screen: the handle is GRAY_44, and the hover is the gold."""
     sheet = ThemeManager.SCROLLBAR_IMAGE
     handle = re.findall(r"QScrollBar::handle:vertical\s*\{\s*background-color:\s*([^;]+);", sheet)
     hover = re.findall(r"QScrollBar::handle:vertical:hover\s*\{\s*background-color:\s*([^;]+);", sheet)
@@ -313,25 +313,25 @@ def test_the_image_scrollbar_sheet_is_built_from_the_palette():
     assert handle == [IMAGE["scrollbar_handle"]], handle
     assert hover == [IMAGE["scrollbar_handle_hover"]] == [colors.BRAND_GOLD], hover
     assert groove == [IMAGE["scrollbar_bg"]], groove
-    # and it carries no colour of its own any more
-    literals = [c for c in colours_in(sheet)
+    # and it carries no color of its own any more
+    literals = [c for c in colors_in(sheet)
                 if c not in {decompose(IMAGE["scrollbar_bg"])[0],
                              decompose(IMAGE["scrollbar_handle"])[0],
                              colors.BRAND_GOLD}]
-    assert not literals, f"SCROLLBAR_IMAGE still spells its own colours: {literals}"
+    assert not literals, f"SCROLLBAR_IMAGE still spells its own colors: {literals}"
 
 
 # --------------------------------------------------- what moved, and what not
 
-def test_the_scrollbar_handle_is_grey_44_at_150():
+def test_the_scrollbar_handle_is_gray_44_at_150():
     """RNV-COLLAPSE-505050, closed here 2026-09-25."""
     assert decompose(IMAGE["scrollbar_handle"]) == (
-        colors.GREY_44, colors.SCROLLBAR_HANDLE_ALPHA)
+        colors.GRAY_44, colors.SCROLLBAR_HANDLE_ALPHA)
     assert colors.SCROLLBAR_HANDLE_ALPHA == 150
 
 
 def test_nothing_moved_that_was_not_ruled():
-    """Each derived value, held to what it is MADE OF: the constant its colour
+    """Each derived value, held to what it is MADE OF: the constant its color
     comes from and its alpha byte.
 
     BY NAME, NOT BY HEX, and that is the point of the round. A register move
@@ -356,7 +356,7 @@ def test_nothing_moved_that_was_not_ruled():
 
 
 def test_the_collapsed_value_is_gone_in_every_spelling():
-    """RETIRED_GREY_50 in any string spelling -- #rgb, #rrggbb, #aarrggbb, rgb(),
+    """RETIRED_GRAY_50 in any string spelling -- #rgb, #rrggbb, #aarrggbb, rgb(),
     rgba() -- or as integers in a tuple or a QColor call. It survived here for
     three weeks after its ruling because every sweep compared six-digit hex."""
     found = []
@@ -364,7 +364,7 @@ def test_the_collapsed_value_is_gone_in_every_spelling():
         bare = _bare_strings(tree)
         for node in ast.walk(tree):
             if (isinstance(node, ast.Constant) and isinstance(node.value, str)
-                    and id(node) not in bare and RETIRED_GREY_50 in colours_in(node.value)):
+                    and id(node) not in bare and RETIRED_GRAY_50 in colors_in(node.value)):
                 found.append(f"{rel}:{node.lineno}  {node.value[:40]!r}")
             values = None
             if isinstance(node, (ast.Tuple, ast.List)) and len(node.elts) in (3, 4):
@@ -378,8 +378,8 @@ def test_the_collapsed_value_is_gone_in_every_spelling():
                              if isinstance(v, ast.Constant) and type(v.value) is int)
                 if ints == (80, 80, 80):
                     found.append(f"{rel}:{node.lineno}  (80, 80, 80)")
-    assert not found, f"{RETIRED_GREY_50} is still here:\n  " + "\n  ".join(found)
-    assert colours_in(RETIRED_SCROLLBAR_HANDLE_RGBA) == {RETIRED_GREY_50}, "the decoder is blind"
+    assert not found, f"{RETIRED_GRAY_50} is still here:\n  " + "\n  ".join(found)
+    assert colors_in(RETIRED_SCROLLBAR_HANDLE_RGBA) == {RETIRED_GRAY_50}, "the decoder is blind"
 
 # RNV-DERIVE-ALPHA
 
@@ -389,14 +389,14 @@ def test_the_collapsed_value_is_gone_in_every_spelling():
 LOWER8_MODULES = ('utils.config',)
 #: Found when this was written; below the floor, the sweep has gone blind.
 #: 10 until RNV-NAMED-AND-USED (2026-10-04), when image mode's unread
-#: scroll_area_bg override went. 9 until 2026-10-05, when the frame colour
+#: scroll_area_bg override went. 9 until 2026-10-05, when the frame color
 #: only an uncalled stylesheet function read went.
 LOWER8_FLOOR = 8
 LOWER8_FILES = 25
 
 
 def _lower8_values():
-    """(where, value) for every eight-digit hex string the colour modules
+    """(where, value) for every eight-digit hex string the color modules
     build -- their constants, the dicts they hold, and their classes' dicts
     -- as they EVALUATE, which is what a derived value is."""
     import importlib
@@ -446,7 +446,7 @@ def test_eight_digit_hex_is_lower_case():
     changed.
 
     Both halves: every eight-digit value the application BUILDS, as its
-    colour modules evaluate, and every eight-digit literal it WRITES in code.
+    color modules evaluate, and every eight-digit literal it WRITES in code.
     Docstrings are prose, and a sentence that names an upper-case value as
     history keeps its case."""
     built = list(_lower8_values())
@@ -469,7 +469,7 @@ def test_eight_digit_hex_is_lower_case():
     assert not written, "written in upper case:\n  " + "\n  ".join(written)
 
 
-# ------------------------------------------------- colours spelled in integers
+# ------------------------------------------------- colors spelled in integers
 
 import importlib as _importlib
 
@@ -492,7 +492,7 @@ _WRAP = None
 
 def _int_spelled(tree):
     """(name, #rrggbb, alpha) for every module- or class-level constant whose
-    value spells a colour in integers: a tuple or list of three or four int
+    value spells a color in integers: a tuple or list of three or four int
     literals, or QColor/QPen/QBrush called with them. Locals inside functions
     are state, not constants, and are not read."""
     bodies = [tree.body] + [n.body for n in ast.walk(tree) if isinstance(n, ast.ClassDef)]
@@ -556,12 +556,12 @@ def test_the_integer_sweep_reads_both_notations():
     probe = ast.parse("A = (0, 0, 0, 50)\n"
                       "class K:\n    B = QColor(68, 68, 68)\n"
                       "def f():\n    c = (0, 0, 0)\n")
-    assert sorted(_int_spelled(probe)) == [("A", EXAMPLE_BLACK, 50), ("B", EXAMPLE_GREY_44, 255)]
+    assert sorted(_int_spelled(probe)) == [("A", EXAMPLE_BLACK, 50), ("B", EXAMPLE_GRAY_44, 255)]
 
 
 def test_every_tuple_constant_is_derived_by_name():
-    """RNV-TUPLE-ROUND, 2026-09-26. A colour spelled in integers is a colour
-    every string sweep in the fleet was blind to, and RETIRED_GREY_50 sat in two of
+    """RNV-TUPLE-ROUND, 2026-09-26. A color spelled in integers is a color
+    every string sweep in the fleet was blind to, and RETIRED_GRAY_50 sat in two of
     them for three weeks after it was ruled away. Each constant here is now
     its helper called on a named base and a named alpha, and it evaluates to
     exactly that pair -- held BY NAME, so a register move passes through."""
@@ -604,10 +604,10 @@ def test_the_tuple_alphas_are_the_declared_bytes():
             f"{name} is {value!r}, declared {byte:#x}")
 
 
-def test_no_named_colour_is_spelled_in_integers():
+def test_no_named_color_is_spelled_in_integers():
     """The completeness half. Every module- or class-level constant in the
-    application that spells a NAMED colour in integers. Alpha 0 draws no
-    colour; a base no constant names has no row to follow; and INT_DATA is
+    application that spells a NAMED color in integers. Alpha 0 draws no
+    color; a base no constant names has no row to follow; and INT_DATA is
     data a person starts from, each with its reason."""
     bases = _importlib.import_module(TUPLE_BASES_MODULE)
     named = {v.lower() for n, v in vars(bases).items()
@@ -621,7 +621,7 @@ def test_no_named_colour_is_spelled_in_integers():
                 continue
             strays.append(f"{rel}: {name} = {rgb} at alpha {alpha}")
     assert files >= TUPLE_FILES, f"only {files} files swept -- the walk has gone blind"
-    assert not strays, ("named colours still spelled in integers, where no "
+    assert not strays, ("named colors still spelled in integers, where no "
                         "register move reaches them:\n  " + "\n  ".join(strays))
 
 
@@ -642,7 +642,7 @@ def test_the_unread_canvas_overlay_stays_removed():
     image_viewer_bg through the splat, and does not read it.
 
     Gone from the module and named nowhere in the application. An override
-    brought back is a colour on no element: decide it, do not inherit it."""
+    brought back is a color on no element: decide it, do not inherit it."""
     assert not hasattr(colors, "APP_CANVAS_OVERLAY"), "APP_CANVAS_OVERLAY is back"
     assert "APP_CANVAS_OVERLAY" not in colors.APP_PROVENANCE
     assert IMAGE["image_viewer_bg"] == DARK["image_viewer_bg"], (

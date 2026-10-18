@@ -26,7 +26,7 @@ from utils.signal_manager import SignalConnectionManager
 from utils.config import (
     prefers_dark_ink,
     BRAND_GOLD, BRAND_DARK_GOLD, BRAND_DARK_GOLD_DEEP,
-    GREY_44,
+    GRAY_44,
     CONTRAST_DEMO_BLACK_BG, CONTRAST_DEMO_WHITE_BG,
     CONTRAST_DEMO_BLACK_FG, CONTRAST_DEMO_WHITE_FG,
     STATUS_SUCCESS_BG, STATUS_SUCCESS_FG,
@@ -736,7 +736,7 @@ class SettingsPanel(QDialog):
         self.harmony_base_preview.setFixedSize(60, 60)
         self.harmony_base_preview.setStyleSheet(f"""
             background-color: {self._get_accent()};
-            border: 2px solid {GREY_44};
+            border: 2px solid {GRAY_44};
             border-radius: 4px;
         """)
         base_layout.addWidget(self.harmony_base_preview)
@@ -828,7 +828,7 @@ class SettingsPanel(QDialog):
         # harmony. RNV-PANEL-SWITCH (2), 2026-09-27: this called
         # _generate_harmony() alone, so the preview kept the placeholder it
         # was built with -- the mode's gold -- while the inputs said 191,
-        # 145, 69, until one of them moved. The colour-blindness preview is
+        # 145, 69, until one of them moved. The color-blindness preview is
         # painted from its inputs the same way, at the end of its own tab.
         self._update_harmony_base()
         
@@ -842,7 +842,7 @@ class SettingsPanel(QDialog):
         
         self.harmony_base_preview.setStyleSheet(f"""
             background-color: rgb({r}, {g}, {b});
-            border: 2px solid {GREY_44};
+            border: 2px solid {GRAY_44};
             border-radius: 4px;
         """)
         
@@ -925,7 +925,7 @@ class SettingsPanel(QDialog):
         # Color box
         color_box = QLabel()
         color_box.setFixedSize(66, 50)
-        border = f"3px solid {self._get_accent()}" if is_base else f"2px solid {GREY_44}"
+        border = f"3px solid {self._get_accent()}" if is_base else f"2px solid {GRAY_44}"
         color_box.setStyleSheet(f"""
             background-color: rgb({rgb[0]}, {rgb[1]}, {rgb[2]});
             border: {border};
@@ -1064,7 +1064,7 @@ class SettingsPanel(QDialog):
             color: {CONTRAST_DEMO_WHITE_FG};
             font-size: 24px;
             font-weight: bold;
-            border: 2px solid {GREY_44};
+            border: 2px solid {GRAY_44};
             border-radius: 4px;
         """)
         fg_layout.addWidget(self.access_fg_preview)
@@ -1119,7 +1119,7 @@ class SettingsPanel(QDialog):
         self.access_bg_preview.setFixedSize(80, 60)
         self.access_bg_preview.setStyleSheet(f"""
             background-color: {CONTRAST_DEMO_WHITE_BG};
-            border: 2px solid {GREY_44};
+            border: 2px solid {GRAY_44};
             border-radius: 4px;
         """)
         bg_layout.addWidget(self.access_bg_preview)
@@ -1158,7 +1158,7 @@ class SettingsPanel(QDialog):
             background-color: {CONTRAST_DEMO_WHITE_BG};
             color: {CONTRAST_DEMO_BLACK_FG};
             font-size: 14px;
-            border: 2px solid {GREY_44};
+            border: 2px solid {GRAY_44};
             border-radius: 4px;
         """)
         preview_layout.addWidget(self.access_preview_box)
@@ -1208,7 +1208,7 @@ class SettingsPanel(QDialog):
         
         self.sim_color_preview = QLabel()
         self.sim_color_preview.setFixedSize(40, 30)
-        self.sim_color_preview.setStyleSheet(f"background-color: {self._get_accent()}; border: 1px solid {GREY_44};")
+        self.sim_color_preview.setStyleSheet(f"background-color: {self._get_accent()}; border: 1px solid {GRAY_44};")
         sim_color_layout.addWidget(self.sim_color_preview)
         
         self.sim_r = QSpinBox()
@@ -1279,13 +1279,13 @@ class SettingsPanel(QDialog):
             color: rgb({bg[0]}, {bg[1]}, {bg[2]});
             font-size: 24px;
             font-weight: bold;
-            border: 2px solid {GREY_44};
+            border: 2px solid {GRAY_44};
             border-radius: 4px;
         """)
         
         self.access_bg_preview.setStyleSheet(f"""
             background-color: rgb({bg[0]}, {bg[1]}, {bg[2]});
-            border: 2px solid {GREY_44};
+            border: 2px solid {GRAY_44};
             border-radius: 4px;
         """)
         
@@ -1293,7 +1293,7 @@ class SettingsPanel(QDialog):
             background-color: rgb({bg[0]}, {bg[1]}, {bg[2]});
             color: rgb({fg[0]}, {fg[1]}, {fg[2]});
             font-size: 14px;
-            border: 2px solid {GREY_44};
+            border: 2px solid {GRAY_44};
             border-radius: 4px;
         """)
         
@@ -1301,9 +1301,9 @@ class SettingsPanel(QDialog):
         result = ColorAccessibility.check_contrast(fg, bg)
         
         # Update ratio display
-        # RNV-RATING-SCALE: the tier is logic and the colour is the palette's.
+        # RNV-RATING-SCALE: the tier is logic and the color is the palette's.
         # Read from the ACTIVE theme, because this label failed the 4.5 text
-        # floor in light mode for as long as the colour was a constant.
+        # floor in light mode for as long as the color was a constant.
         rating_color = self._get_theme()[
             ColorAccessibility.get_contrast_rating_key(result.ratio)]
         self.contrast_ratio_label.setText(f"Contrast Ratio: {result.ratio:.2f}:1  ({result.rating_text})")
@@ -1351,7 +1351,7 @@ class SettingsPanel(QDialog):
         # Update color preview
         self.sim_color_preview.setStyleSheet(f"""
             background-color: rgb({rgb[0]}, {rgb[1]}, {rgb[2]});
-            border: 1px solid {GREY_44};
+            border: 1px solid {GRAY_44};
         """)
         
         # Clear existing results
@@ -1382,7 +1382,7 @@ class SettingsPanel(QDialog):
             color_box.setFixedSize(76, 50)
             color_box.setStyleSheet(f"""
                 background-color: rgb({sim_rgb[0]}, {sim_rgb[1]}, {sim_rgb[2]});
-                border: 2px solid {GREY_44};
+                border: 2px solid {GRAY_44};
                 border-radius: 4px;
             """)
             swatch_layout.addWidget(color_box)
@@ -1821,7 +1821,7 @@ class SettingsPanel(QDialog):
         _get_accent_text(), _get_theme() -- when it is built. Set once, it
         kept the mode the panel was opened in: a switch made with the panel
         open left the headers, the key plates and the tip in the old mode's
-        colours until the panel was opened again. update_theme() calls every
+        colors until the panel was opened again. update_theme() calls every
         registered sheet() again, so each reads the mode the app is in.
         For widgets that live as long as the panel.
         """
@@ -1845,7 +1845,7 @@ class SettingsPanel(QDialog):
         line = QFrame()
         line.setFrameShape(QFrame.Shape.HLine)
         # RNV-SESSION-DIVIDER 2026-09-27: Plain, so the line is drawn in the
-        # colour below. It was Sunken, and Qt draws a sunken line in its own
+        # color below. It was Sunken, and Qt draws a sunken line in its own
         # shading -- #9f9f9f, #efefef and #ffffff in every mode, a white line
         # on the dark panel -- so border_hover was never drawn.
         line.setFrameShadow(QFrame.Shadow.Plain)
@@ -2106,8 +2106,8 @@ class SettingsPanel(QDialog):
         # RNV-RATING-SCALE 2026-09-12: repaint the contrast-rating label.
         # It reads a PER-MODE palette key now, and this method is the only
         # thing that runs on a theme switch -- so without this the label kept
-        # the previous mode's colour until the user happened to move a spin
-        # box. While the colour was mode-blind a stale value was still the
+        # the previous mode's color until the user happened to move a spin
+        # box. While the color was mode-blind a stale value was still the
         # right value, which is why nothing needed this before and why the
         # need arrives in the same change that makes it per-mode.
         #

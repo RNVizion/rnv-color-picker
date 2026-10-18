@@ -6,13 +6,13 @@ the import side is largely untested. This file closes that gap with three
 complementary strategies:
 
   1. Round-trip tests. Build a known palette → export → import →
-     assert it survived. This is the primary defence against silent
+     assert it survived. This is the primary defense against silent
      format breakage. For lossy formats (HSV/HSL float rounding,
      CSS weight discarding), the round-trip is relaxed accordingly.
 
   2. Format-specific branch tests. Variants the round-trip can't reach:
      JSON's three top-level shapes, XML's hex-element fallback, CSS's
-     dedup behaviour, binary header validation, and the dozen graceful
+     dedup behavior, binary header validation, and the dozen graceful
      failure paths that swallow exceptions and return an empty list.
 
   3. Hand-crafted minimal fixtures for binary formats. ASE/ACO/Procreate
@@ -32,7 +32,7 @@ import xml.etree.ElementTree as ET
 import pytest
 
 from core.palette_formats import PaletteFormats, _HEX_DATA_LINE
-from tests.colour_values import (
+from tests.color_values import (
     DATA_BLACK, DATA_BLUE_UPPER, DATA_DARK_ORANGE, DATA_DARK_ORANGE_UPPER, DATA_GREEN,
     DATA_GREEN_UPPER, DATA_LIGHT_STEEL, DATA_LIGHT_STEEL_SHORT, DATA_PALE_BLUE,
     DATA_PALE_BLUE_UPPER, DATA_RED, DATA_RED_UPPER)
@@ -44,7 +44,7 @@ from tests.colour_values import (
 
 
 # Anchor palette used by most round-trip tests. Mix of pure primaries,
-# greyscale, and an off-axis colour so HSV/HSL round-trip stress tests
+# grayscale, and an off-axis color so HSV/HSL round-trip stress tests
 # don't trivially pass on (255, 0, 0) alone.
 SAMPLE_PALETTE = [
     ((255, 0, 0), 50),
@@ -468,13 +468,13 @@ class TestXmlImportVariants:
 
 
 # ===========================================================================
-# CSS — text-based, weight not preserved, dedup behaviour
+# CSS — text-based, weight not preserved, dedup behavior
 # ===========================================================================
 
 
 class TestCssRoundTrip:
     def test_round_trip_preserves_unique_rgbs(self, tmp_path):
-        # CSS importer dedups; sample palette has all-unique colours so
+        # CSS importer dedups; sample palette has all-unique colors so
         # each appears once in the output.
         path = str(tmp_path / "p.css")
         PaletteFormats.export_palette(path, SAMPLE_PALETTE)
@@ -719,7 +719,7 @@ class TestTxtRoundTrip:
 class TestTxtImportEdgeCases:
     def test_extracts_hex_pattern(self, tmp_path):
         path = tmp_path / "x.txt"
-        path.write_text(f"My favourite colors are {DATA_RED} and {DATA_GREEN}.")
+        path.write_text(f"My favorite colors are {DATA_RED} and {DATA_GREEN}.")
         result = PaletteFormats.import_palette(str(path))
         assert ((255, 0, 0), 50) in result
         assert ((0, 255, 0), 50) in result
@@ -757,7 +757,7 @@ class TestTxtImportEdgeCases:
 
 class TestAffinityRoundTrip:
     def test_round_trip_within_one_per_channel(self, tmp_path):
-        # Float quantisation → channel-of-1 tolerance
+        # Float quantization → channel-of-1 tolerance
         path = str(tmp_path / "p.afpalette")
         PaletteFormats.export_palette(path, SAMPLE_PALETTE)
         out = PaletteFormats.import_palette(path)
@@ -815,7 +815,7 @@ class TestSvgRoundTrip:
         # SVG export adds a background <rect> filled with SVG_EXPORT_BG as a frame;
         # the importer extracts that too and dedups it with input colors.
         # The contract we test is weaker than for other formats: every
-        # input colour must appear in the output (set-membership), but
+        # input color must appear in the output (set-membership), but
         # the output may include extras (the BG frame) and may be in a
         # different order (BG appears first).
         path = str(tmp_path / "p.svg")

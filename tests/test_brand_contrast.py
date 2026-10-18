@@ -4,30 +4,30 @@ RNV Color Picker — Brand contrast and derivation guards
 RNV-GOLD-GUARD-FILE-NAMES-RETIRED-VALUES-BY-DESIGN
 
 That marker tells any value-sweeping tool to skip this file. Its whole
-purpose is to name retired colours -- RETIRED_APP_LOCAL_DARK_GOLD,
+purpose is to name retired colors -- RETIRED_APP_LOCAL_DARK_GOLD,
 RETIRED_ORPHANED_LIGHT_HOVER, RETIRED_MATERIAL_SUCCESS -- and assert they
-never come back. Since RNV-COLOUR-SYNC #53 A (2026-10-17) their values are
-written once, in tests/colour_values.py, which carries the same marker for
+never come back. Since RNV-COLOR-SYNC #53 A (2026-10-17) their values are
+written once, in tests/color_values.py, which carries the same marker for
 the same reason, and this file reads them by name. A sweep that rewrites
 those mentions turns the guard into "BRAND_DARK_GOLD must never equal
 BRAND_DARK_GOLD", which passes forever and protects nothing. Use and mention
 are different things, and the file that states a rule about a value must
 never be searched for that value.
 
-These tests do not check that colours have particular values. They check
+These tests do not check that colors have particular values. They check
 what a value test cannot see:
 
-  1. Every constant labelled "derived" is genuinely computed from its
+  1. Every constant labeled "derived" is genuinely computed from its
      source, checked by parsing the source rather than comparing at
      runtime. A literal that happens to equal lighten(BRAND_DARK_GOLD, -14)
      is indistinguishable from the real thing once imported -- and it is
-     exactly what breaks the next time the source colour moves. This
+     exactly what breaks the next time the source color moves. This
      repository shipped SIX such literals before this pass.
 
   2. Every foreground/background pair the app actually renders clears the
      WCAG floor, resolved against the real background in scope and against
      the palette that actually renders it. In almost every defect of this
-     kind both colours are individually correct and the pairing fails, so
+     kind both colors are individually correct and the pairing fails, so
      a value census reports the repository clean.
 
 The exemption list is asserted in BOTH directions. An unexpected failure
@@ -48,7 +48,7 @@ from pathlib import Path
 import pytest
 
 from utils import config as C
-from tests.colour_values import (
+from tests.color_values import (
     EXAMPLE_BLACK, EXAMPLE_DARK_GOLD, EXAMPLE_WHITE, REGISTER_GOLD_TEXT_GROUND_FLOOR,
     RETIRED_APP_LOCAL_DARK_GOLD, RETIRED_HAND_WRITTEN_DARK_HOVER,
     RETIRED_HAND_WRITTEN_DARK_PRESSED, RETIRED_HAND_WRITTEN_LIGHT_PRESSED,
@@ -60,10 +60,10 @@ from tests.colour_values import (
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PY = PROJECT_ROOT / "utils" / "config.py"
 
-#: RNV-COLOUR-SYNC, 2026-10-16. Where each colour comes from, as brand_map.json
-#: says. The values are held by tests/test_colours_in_sync.py, against the
+#: RNV-COLOR-SYNC, 2026-10-16. Where each color comes from, as brand_map.json
+#: says. The values are held by tests/test_colors_in_sync.py, against the
 #: register at the pin; what this file holds is the name each one takes.
-BRAND_MAP = json.loads((PROJECT_ROOT / "brand_map.json").read_text(encoding="utf-8"))["colours"]
+BRAND_MAP = json.loads((PROJECT_ROOT / "brand_map.json").read_text(encoding="utf-8"))["colors"]
 
 TEXT_FLOOR = 4.5          # WCAG 1.4.3, normal-size text
 COMPONENT_FLOOR = 3.0     # WCAG 1.4.11, UI components and graphics
@@ -106,7 +106,7 @@ DERIVED_CONSTANTS = {
 }
 
 # Registered brand values. These must be literals: the register is the
-# source, so a registered colour cannot be computed from something else.
+# source, so a registered color cannot be computed from something else.
 REGISTERED_CONSTANTS = {
     "BRAND_GOLD",
     "BRAND_DARK_GOLD",
@@ -144,7 +144,7 @@ def test_derived_constant_is_not_a_literal(name: str) -> None:
     assert isinstance(node, (ast.Call, ast.Name)), (
         f"{name} is documented as derived but is assigned a literal "
         f"({ast.dump(node)[:70]}). Written down, it stops tracking the "
-        f"colour it came from, and the next time that colour moves this "
+        f"color it came from, and the next time that color moves this "
         f"one silently does not.")
 
 
@@ -154,7 +154,7 @@ def test_registered_constant_is_a_literal(name: str) -> None:
     assert name in assigns, f"{name} missing from utils/config.py"
     node = assigns[name]
     assert isinstance(node, ast.Constant) and isinstance(node.value, str), (
-        f"{name} is a registered brand colour and must be written down. "
+        f"{name} is a registered brand color and must be written down. "
         f"Deriving it would make the register depend on the app instead "
         f"of the other way round.")
 
@@ -230,8 +230,8 @@ _PIN = re.compile(
 
 # Pairs below the floor on purpose, keyed by the palette that renders them.
 # Both halves are asserted. An exemption for a pairing that does not exist
-# is worse than no exemption: it is a licence waiting for a real defect.
-# RNV-COLOUR-SYNC, 2026-10-16: each half by the constant its palette key
+# is worse than no exemption: it is a license waiting for a real defect.
+# RNV-COLOR-SYNC, 2026-10-16: each half by the constant its palette key
 # paints, where it was written as that constant's hex code, so a brand move
 # carries the exemption with the pairing it describes.
 ACCEPTED: dict[tuple[str, str, str], str] = {
@@ -239,28 +239,28 @@ ACCEPTED: dict[tuple[str, str, str], str] = {
         "main-window button hover. The main window runs a white/near-black "
         "inverse scheme where the text stays black while the background "
         "darkens. Deliberate, and separate from the gold dialog scheme.",
-    ("DARK", C.TRUE_BLACK, C.GREY_44):
+    ("DARK", C.TRUE_BLACK, C.GRAY_44):
         "main-window button pressed, dark. Same inverse scheme mirrored.",
-    ("IMAGE", C.TRUE_BLACK, C.GREY_44):
+    ("IMAGE", C.TRUE_BLACK, C.GRAY_44):
         "main-window button pressed, image mode (inherits dark).",
     ("LIGHT", C.APP_TEXT_DIM, C.WHITE):
         "disabled control text. WCAG 1.4.3 exempts disabled controls.",
     ("LIGHT", C.APP_TEXT_DIM, C.APP_PRESSED_LIGHT):
         "disabled control text on a tinted surface. Same exemption.",
-    ("DARK", C.GREY_55, C.APP_BORDER):
+    ("DARK", C.GRAY_55, C.APP_BORDER):
         "disabled control text, dark. Same exemption.",
-    ("DARK", C.GREY_55, C.APP_CARD):
+    ("DARK", C.GRAY_55, C.APP_CARD):
         "disabled control text on the dark card. Same exemption.",
-    ("IMAGE", C.GREY_55, C.APP_BORDER):
+    ("IMAGE", C.GRAY_55, C.APP_BORDER):
         "disabled control text, image mode. Same exemption.",
-    ("IMAGE", C.GREY_55, C.APP_CARD):
+    ("IMAGE", C.GRAY_55, C.APP_CARD):
         "disabled control text on the card, image mode. Same exemption.",
-    ("LIGHT", C.GREY_66, C.GREY_E0):
+    ("LIGHT", C.GRAY_66, C.GRAY_E0):
         "unselected tab label. Secondary text on an inactive tab; the "
         "selected tab carries the accent and the contrast.",
-    ("DARK", C.GREY_88, C.APP_CARD):
+    ("DARK", C.GRAY_88, C.APP_CARD):
         "unselected tab label, dark. Same reason.",
-    ("IMAGE", C.GREY_88, C.APP_CARD):
+    ("IMAGE", C.GRAY_88, C.APP_CARD):
         "unselected tab label, image mode. Same reason.",
 }
 
@@ -293,7 +293,7 @@ def _rules(src: str) -> list[tuple[str, str]]:
     return out
 
 
-def _normalise(hex_color: str) -> str:
+def _normalize(hex_color: str) -> str:
     h = hex_color.lstrip("#")
     if len(h) == 3:
         h = "".join(c * 2 for c in h)
@@ -308,17 +308,17 @@ def _resolve(token: str, palette: dict[str, str],
              pins: dict[str, str]) -> str | None:
     token = token.strip().rstrip(";").strip()
     if _HEX.fullmatch(token):
-        return _normalise(token)
+        return _normalize(token)
     m = _LOOKUP.fullmatch(token)
     if m:
         var, key = m.groups()
         source = PALETTES[pins[var]] if var in pins else palette
         v = source.get(key)
-        return _normalise(v) if isinstance(v, str) and _HEX.fullmatch(v) else None
+        return _normalize(v) if isinstance(v, str) and _HEX.fullmatch(v) else None
     m = re.fullmatch(r"\{\s*([A-Z_][A-Z0-9_]*)\s*\}", token)
     if m:
         v = getattr(C, m.group(1), None)
-        return _normalise(v) if isinstance(v, str) and _HEX.fullmatch(v) else None
+        return _normalize(v) if isinstance(v, str) and _HEX.fullmatch(v) else None
     return None
 
 
@@ -352,7 +352,7 @@ def _palette_can_render(body: str, palette: dict[str, str],
 # is copied in UNTRACKED during rehearsal and COMMITTED in real use, so
 # git ls-files saw it only in the real run.
 # RNV-FLEET-FLOOR 2026-09-11: one marker every scanner in this
-# fleet honours, so a delivery script is skipped whatever it is
+# fleet honors, so a delivery script is skipped whatever it is
 # called. Such a script QUOTES the code it replaces, which reads
 # to a sweep exactly like a live call site.
 DELIVERY_MARKER = "RNV-DELIVERY-SCRIPT-DO-NOT-SWEEP"
@@ -480,11 +480,11 @@ def test_every_exemption_still_applies() -> None:
 # light enough to carry white text at 4.5:1 is too light to BE text on
 # anything but pure white -- the luminance bands do not overlap.
 
-# RNV-COLOUR-SYNC, 2026-10-16: the light surfaces, by name. Three the app
+# RNV-COLOR-SYNC, 2026-10-16: the light surfaces, by name. Three the app
 # draws, and two strays RNV-LIGHT-WIRING collapsed onto
 # REGISTER_APP_SURFACE_LIGHT_2 and APP_HOVER_LIGHT: RETIRED_LIGHT_STRAY_FA and
 # RETIRED_LIGHT_STRAY_F0. The app no longer draws the strays; the check keeps
-# them as retired grounds, named in tests/colour_values.py (#53 A, 2026-10-17).
+# them as retired grounds, named in tests/color_values.py (#53 A, 2026-10-17).
 LIGHT_SURFACES = [C.WHITE, RETIRED_LIGHT_STRAY_FA, C.APP_SURFACE_LIGHT_3,
                   RETIRED_LIGHT_STRAY_F0,
                   C.APP_HOVER_LIGHT]
@@ -542,7 +542,7 @@ def test_tab_hover_ground_is_light_enough_for_gold_text() -> None:
 # ══════════════════════════════════════════════════════════════════════════
 
 #: The retired platform values, in BOTH notations this repository has ever
-#: spelled a colour in. The hex form is what the palettes use; the int triple
+#: spelled a color in. The hex form is what the palettes use; the int triple
 #: is what core/accessibility.py used, and is half the reason the guard below
 #: passed for thirty days over four live values.
 _RETIRED_PLATFORM: dict[str, str] = {
@@ -572,7 +572,7 @@ def _app_sources():
         yield path, text
 
 
-def _colour_triples(tree):
+def _color_triples(tree):
     """Every (r, g, b) literal of ints in 0-255, as a hex string.
 
     A two-element tuple is a size and anything with a float is a ratio; the
@@ -621,11 +621,11 @@ def test_one_status_family_only() -> None:
                     and node.value.lower() in _RETIRED_PLATFORM):
                 found.append(f"  {rel}:{node.lineno}: {node.value} "
                              f"({_RETIRED_PLATFORM[node.value.lower()]})")
-        for node, hexv in _colour_triples(tree):
+        for node, hexv in _color_triples(tree):
             if hexv in _RETIRED_PLATFORM:
                 found.append(f"  {rel}:{node.lineno}: {hexv} as an int triple "
                              f"({_RETIRED_PLATFORM[hexv]})")
-    assert not found, ("retired platform status colours are still live:\n"
+    assert not found, ("retired platform status colors are still live:\n"
                        + "\n".join(sorted(found)))
 
 
@@ -635,7 +635,7 @@ def test_the_rating_scale_is_a_palette_key_in_every_mode() -> None:
 
     The Material values this replaced were one set for three grounds. In
     light mode they read 2.55, 1.93, 1.50 and 3.38 -- the panel that grades
-    a user's colours against WCAG painting its own verdict below the floor.
+    a user's colors against WCAG painting its own verdict below the floor.
     """
     from core.accessibility import ColorAccessibility
     # RNV-NAMED-AND-USED (2026-10-04): the settings panel paints dialog_bg.
@@ -651,12 +651,12 @@ def test_the_rating_scale_is_a_palette_key_in_every_mode() -> None:
 
 
 def test_the_rating_scale_is_not_one_set_for_three_grounds() -> None:
-    """The defect was mode-blindness, not the particular colours. If dark and
+    """The defect was mode-blindness, not the particular colors. If dark and
     light ever agree on a tier again, the thing that broke has come back."""
     for key in ("rating_excellent", "rating_good", "rating_fair",
                 "rating_poor"):
         assert C.DARK_THEME_COLORS[key] != C.LIGHT_THEME_COLORS[key], (
-            f"{key} is the same value in dark and light; no colour clears "
+            f"{key} is the same value in dark and light; no color clears "
             f"4.5:1 on both {C.BRAND_BLACK} and {C.APP_SURFACE_LIGHT_3} -- the best possible is "
             f"3.9954:1, so one of the two grounds is being failed")
 
@@ -666,14 +666,14 @@ def test_the_rating_scale_is_not_one_set_for_three_grounds() -> None:
     ("STATUS_ERROR_BG", "STATUS_ERROR_FG"),
 ])
 def test_status_badge_text_clears_its_fill(bg: str, fg: str) -> None:
-    """These are a real pair -- background and colour on the same label.
+    """These are a real pair -- background and color on the same label.
     White fails on both Bootstrap fills (3.13 and 4.53 borderline); black
     clears both."""
     assert contrast_ratio(getattr(C, fg), getattr(C, bg)) >= TEXT_FLOOR
 
 
 def test_error_text_is_theme_aware() -> None:
-    """The error label used one static colour on both grounds, and no
+    """The error label used one static color on both grounds, and no
     registered red clears APP_SURFACE_LIGHT_3 and BRAND_BLACK alike. It takes a palette
     key now, so each theme gets a value that suits its ground."""
     for name, palette in PALETTES.items():
@@ -733,7 +733,7 @@ def test_retired_values_are_gone() -> None:
 # THE PAIRING THE WALKER CANNOT SEE
 # ══════════════════════════════════════════════════════════════════════════
 #
-# The error label sets a colour and no background of its own -- it inherits
+# The error label sets a color and no background of its own -- it inherits
 # the panel it sits on. The stylesheet walker only records a pair when both
 # halves appear in one rule, so this pairing is invisible to it and has to
 # be asserted by hand.
@@ -745,7 +745,7 @@ def test_retired_values_are_gone() -> None:
 #
 # That happened on 2026-08-24, and the exemption was deleted then --
 # doing as the old test instructed is the point: an exemption that
-# outlives its problem is a licence waiting for a future defect.
+# outlives its problem is a license waiting for a future defect.
 #
 # RNV-STATUS-FAMILY (2026-09-03): the value is now
 # STATUS_ERROR_TEXT_LIGHT and reads 4.5123 on APP_SURFACE_LIGHT_3. It is
@@ -770,7 +770,7 @@ def test_light_error_text_clears_its_panel() -> None:
 def test_light_error_text_is_registered_and_why_that_changed() -> None:
     """This replaces test_light_error_text_is_derived_not_written.
 
-    That test asserted the value equalled lighten(STATUS_ERROR, -20)
+    That test asserted the value equaled lighten(STATUS_ERROR, -20)
     and argued that a written-down derivative orphans the moment its
     base moves. The argument was right, and it is why this value could
     not be left alone: the base moved on 2026-09-03, and against
@@ -784,8 +784,8 @@ def test_light_error_text_is_registered_and_why_that_changed() -> None:
     cannot silently change what an error looks like in five apps.
     """
     assert C.LIGHT_THEME_COLORS["status_error_text"] == C.STATUS_ERROR_TEXT_LIGHT
-    # RNV-COLOUR-SYNC, 2026-10-16: by the register name brand_map.json writes
-    # it from; tests/test_colours_in_sync.py holds the value.
+    # RNV-COLOR-SYNC, 2026-10-16: by the register name brand_map.json writes
+    # it from; tests/test_colors_in_sync.py holds the value.
     assert BRAND_MAP["STATUS_ERROR_TEXT_LIGHT"] == "STATUS.error-text-light"
     assert C.STATUS_ERROR_TEXT_LIGHT != C.lighten(C.STATUS_ERROR, -20)
     assert C.STATUS_ERROR_TEXT_LIGHT != C.STATUS_ERROR, (
@@ -825,7 +825,7 @@ def test_light_error_text_carries_on_the_grounds_it_reaches() -> None:
     # Restored at rev 31: the re-walked value reaches all four rungs.
     # APP_PRESSED_LIGHT is deliberately absent -- BRAND_DARK_GOLD_DEEP fails there
     # too, so it is the boundary for every brand text family, not a gap.
-    # RNV-COLOUR-SYNC, 2026-10-16: the grounds by name.
+    # RNV-COLOR-SYNC, 2026-10-16: the grounds by name.
     # REGISTER_GOLD_TEXT_GROUND_FLOOR is the register's gold text floor; the
     # app draws that hex only as the image viewer's ground, IMAGE_CANVAS_LIGHT,
     # which carries no text.
@@ -909,7 +909,7 @@ def test_the_helper_scan_finds_helpers() -> None:
 
 
 def test_no_accent_helper_crosses_its_role() -> None:
-    """A fill helper must never colour text, and vice versa."""
+    """A fill helper must never color text, and vice versa."""
     wrong = [(f, ln, h, role) for f, ln, h, role in _helper_uses()
              if ACCENT_HELPERS[h] == "TEXT" and role != "TEXT"
              or ACCENT_HELPERS[h] == "FILL" and role == "TEXT"]
@@ -1009,7 +1009,7 @@ def test_the_registered_gold_is_one_of_the_two(palette_name: str) -> None:
 
 
 def _hue_chroma_top(value: str) -> tuple[float | None, int, int]:
-    """The hue in degrees (None for a grey), the chroma, and the top channel."""
+    """The hue in degrees (None for a gray), the chroma, and the top channel."""
     r, g, b = C._to_rgb(value)
     hi, lo = max(r, g, b), min(r, g, b)
     if hi == lo:
@@ -1025,10 +1025,10 @@ def _hue_chroma_top(value: str) -> tuple[float | None, int, int]:
 
 
 #: RNV-ACCENT-READ-2026-10-16. A hand-written gold is found by THIS APP'S
-#: accent: a colour within 20 degrees of the hue of BRAND_GOLD or
-#: BRAND_DARK_GOLD, read from the colour file. It was found by the shape of a
+#: accent: a color within 20 degrees of the hue of BRAND_GOLD or
+#: BRAND_DARK_GOLD, read from the color file. It was found by the shape of a
 #: gold, red > green > blue, which finds nothing once the brand's accent is
-#: another colour, and the test below would pass by looking at nothing. At
+#: another color, and the test below would pass by looking at nothing. At
 #: today's golds the two tests find the same values, in every palette.
 _ACCENT_HUES = tuple(_hue_chroma_top(v)[0] for v in (C.BRAND_GOLD, C.BRAND_DARK_GOLD))
 _ACCENT_HUE_WINDOW = 20
@@ -1077,7 +1077,7 @@ def test_the_stray_gold_check_is_looking() -> None:
     """A negative check needs a companion proving it is still looking.
 
     RNV-ACCENT-READ-2026-10-16. The check above must see the accent itself as
-    a gold, or it would pass whatever colour the accent became.
+    a gold, or it would pass whatever color the accent became.
     """
     for name in ("BRAND_GOLD", "BRAND_DARK_GOLD"):
         hue, chroma, top = _hue_chroma_top(getattr(C, name).lower())

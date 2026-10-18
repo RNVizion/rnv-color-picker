@@ -19,7 +19,7 @@ MENTION_ONLY = {pathlib.Path(__file__).name}
 
 # A changelog records what a past release shipped. Rewriting it would turn a
 # true statement false, so it keeps the retired name on purpose -- and the
-# exemption is asserted live below, so it cannot rot into a blanket licence.
+# exemption is asserted live below, so it cannot rot into a blanket license.
 HISTORY_FILES = {"CHANGELOG.md"}
 
 TEXT_SUFFIXES = {".py", ".md", ".txt", ".toml", ".yml", ".yaml", ".ini",
@@ -105,7 +105,7 @@ def test_the_history_exemption_is_load_bearing():
     """Asserted in BOTH directions.
 
     CHANGELOG.md is skipped by the sweep above. If it ever stops naming the
-    retired path, the exemption is dead weight -- and dead weight is a licence
+    retired path, the exemption is dead weight -- and dead weight is a license
     waiting for a future defect, so this fails rather than passing quietly.
     """
     changelog = REPO / "CHANGELOG.md"

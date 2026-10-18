@@ -22,14 +22,14 @@ import pathlib
 import pytest
 
 from utils import config as C
-from tests.colour_values import (
+from tests.color_values import (
     EXAMPLE_BLACK, EXAMPLE_WHITE, REGISTER_APP_SURFACE_LIGHT_2,
     REGISTER_GOLD_TEXT_GROUND_FLOOR)
 
-#: RNV-COLOUR-SYNC, 2026-10-16. Where each colour comes from, as brand_map.json
-#: says. The values are held by tests/test_colours_in_sync.py, against the
+#: RNV-COLOR-SYNC, 2026-10-16. Where each color comes from, as brand_map.json
+#: says. The values are held by tests/test_colors_in_sync.py, against the
 #: register at the pin; what this file holds is the name each one takes.
-BRAND_MAP = json.loads((pathlib.Path(__file__).resolve().parents[1] / "brand_map.json").read_text(encoding="utf-8"))["colours"]
+BRAND_MAP = json.loads((pathlib.Path(__file__).resolve().parents[1] / "brand_map.json").read_text(encoding="utf-8"))["colors"]
 
 TEXT_FLOOR = 4.5
 
@@ -70,8 +70,8 @@ def test_the_light_values_are_the_re_walked_ones(name, value):
     against APP_SURFACE_LIGHT_3; rev 31 holds these, walked against
     REGISTER_GOLD_TEXT_GROUND_FLOOR.
 
-    RNV-COLOUR-SYNC, 2026-10-16: pinned by the register name brand_map.json
-    writes it from; tests/test_colours_in_sync.py holds the value."""
+    RNV-COLOR-SYNC, 2026-10-16: pinned by the register name brand_map.json
+    writes it from; tests/test_colors_in_sync.py holds the value."""
     assert BRAND_MAP[name] == value
 
 

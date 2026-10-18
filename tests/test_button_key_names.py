@@ -25,7 +25,7 @@ MAIN = ("main_btn_bg", "main_btn_text", "main_btn_border", "main_btn_hover_bg",
         "main_btn_hover_text", "main_btn_pressed_bg", "main_btn_pressed_text")
 
 #: The sixteen dialog values, pinned. A rename that moves one is not a rename.
-#: RNV-COLOUR-SYNC, 2026-10-16: each key by the constant it paints, where it
+#: RNV-COLOR-SYNC, 2026-10-16: each key by the constant it paints, where it
 #: was written as that constant's hex code, so a brand move needs no edit here.
 PINNED_DIALOG = {
     "dark": {"dialog_btn_bg": "APP_CARD", "dialog_btn_text": "APP_TEXT",
@@ -35,7 +35,7 @@ PINNED_DIALOG = {
     "light": {"dialog_btn_bg": "WHITE", "dialog_btn_text": "TRUE_BLACK",
               "dialog_btn_hover_bg": "APP_HOVER_LIGHT", "dialog_btn_hover_text": "BRAND_DARK_GOLD_DEEP",
               "dialog_btn_hover_border": "BRAND_DARK_GOLD", "dialog_btn_pressed_bg": "BRAND_DARK_GOLD",
-              "dialog_btn_pressed_text": "WHITE", "dialog_btn_border": "GREY_CC"},
+              "dialog_btn_pressed_text": "WHITE", "dialog_btn_border": "GRAY_CC"},
 }
 
 #: The main family is not touched by this pass, and saying so is the point:
@@ -43,11 +43,11 @@ PINNED_DIALOG = {
 PINNED_MAIN = {
     "dark": {"main_btn_bg": "BRAND_BLACK", "main_btn_text": "APP_TEXT",
              "main_btn_border": "APP_BORDER", "main_btn_hover_bg": "APP_BORDER",
-             "main_btn_hover_text": "APP_TEXT", "main_btn_pressed_bg": "GREY_44",
+             "main_btn_hover_text": "APP_TEXT", "main_btn_pressed_bg": "GRAY_44",
              "main_btn_pressed_text": "TRUE_BLACK"},
     "light": {"main_btn_bg": "WHITE", "main_btn_text": "TRUE_BLACK",
-              "main_btn_border": "GREY_CC", "main_btn_hover_bg": "APP_BORDER",
-              "main_btn_hover_text": "TRUE_BLACK", "main_btn_pressed_bg": "GREY_44",
+              "main_btn_border": "GRAY_CC", "main_btn_hover_bg": "APP_BORDER",
+              "main_btn_hover_text": "TRUE_BLACK", "main_btn_pressed_bg": "GRAY_44",
               "main_btn_pressed_text": "WHITE"},
 }
 

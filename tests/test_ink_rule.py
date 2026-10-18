@@ -14,8 +14,8 @@ import re
 from pathlib import Path
 
 from utils import config
-from tests.colour_values import (
-    EXAMPLE_BLACK, EXAMPLE_MID_GREY, EXAMPLE_PURE_GREEN, EXAMPLE_PURE_GREEN_SHORT,
+from tests.color_values import (
+    EXAMPLE_BLACK, EXAMPLE_MID_GRAY, EXAMPLE_PURE_GREEN, EXAMPLE_PURE_GREEN_SHORT,
     EXAMPLE_WHITE)
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -29,8 +29,8 @@ def _code_only(text: str) -> str:
     Written after the first version of this guard failed on its own
     explanation. A guard that sweeps for the thing it forbids must be able to
     tell a use from a mention, and every previous attempt at that in this
-    programme did it by excluding files, which stops working the moment a
-    third file has a legitimate reason to say the word. Tokenising is the
+    program did it by excluding files, which stops working the moment a
+    third file has a legitimate reason to say the word. Tokenizing is the
     version that does not need a list."""
     import io
     import tokenize
@@ -61,10 +61,10 @@ def test_the_rule_is_a_real_contrast_measurement():
     assert config.contrast_ink(EXAMPLE_WHITE) == config.TRUE_BLACK
     assert config.contrast_ink(EXAMPLE_BLACK) == config.WHITE
     assert round(config.contrast_ratio(EXAMPLE_WHITE, EXAMPLE_BLACK), 2) == 21.0
-    assert round(config.contrast_ratio(EXAMPLE_MID_GREY, EXAMPLE_MID_GREY), 2) == 1.0
+    assert round(config.contrast_ratio(EXAMPLE_MID_GRAY, EXAMPLE_MID_GRAY), 2) == 1.0
 
 
-def test_the_rule_gets_saturated_colour_right():
+def test_the_rule_gets_saturated_color_right():
     """The case the mean got wrong. Pure green is a LIGHT ground -- it is 71%
     of the luminance of white -- and the mean called it dark because it only
     looked at how many channels were lit."""
@@ -76,7 +76,7 @@ def test_the_rule_gets_saturated_colour_right():
 
 def test_it_takes_a_hex_string_or_an_rgb_triple():
     """Callers hold both shapes, and a silent TypeError inside an f-string
-    renders as an empty colour rather than an exception."""
+    renders as an empty color rather than an exception."""
     assert config.contrast_ink(EXAMPLE_PURE_GREEN) == config.contrast_ink((0, 255, 0))
     assert config.contrast_ink(EXAMPLE_PURE_GREEN_SHORT) == config.contrast_ink(EXAMPLE_PURE_GREEN)
 
@@ -86,7 +86,7 @@ def test_the_brand_golds_are_ruled_not_measured():
 
     Dark gold measures 4.54 white against 4.62 black -- close enough that the
     arithmetic would flip it, which is exactly why the palettes name the
-    colour outright instead of asking the rule. This test states the margin
+    color outright instead of asking the rule. This test states the margin
     so that a later 'cleanup' that routes them through contrast_ink() has to
     argue with a number.
 
@@ -131,7 +131,7 @@ def test_no_call_site_measures_brightness_by_hand():
 
     Matches the two shapes that were actually here -- a mean of the three
     channels, and the ITU-R 601 weights -- rather than any arithmetic, so it
-    stays readable and does not fire on unrelated maths."""
+    stays readable and does not fire on unrelated math."""
     mean = re.compile(r"sum \( colou?r \) / 3|\( r \+ g \+ b \) / 3")
     luma = re.compile(r"\* 299\b|\* 587\b|\* 114\b")
     strays = []
@@ -184,8 +184,8 @@ def test_every_source_file_is_utf8():
 
 
 def test_no_three_digit_hex_in_the_palette():
-    """Two of the retired constants were RETIRED_GREY_33_SHORT and
-    RETIRED_GREY_CC_SHORT. The census reads
+    """Two of the retired constants were RETIRED_GRAY_33_SHORT and
+    RETIRED_GRAY_CC_SHORT. The census reads
     six-digit hexes, so a three-digit one is a value the chart cannot see."""
     src = (ROOT / "utils" / "config.py").read_text(encoding="utf-8-sig")
     hits = re.findall(r"""['"]#[0-9a-fA-F]{3}['"]""", src)

@@ -54,7 +54,7 @@ def _int_rejects(s: str) -> bool:
 
         int() strips surrounding whitespace     '0 ', ' 5', '1\xa0'
         int() accepts a leading sign            '+5'
-        int() honours PEP 515 underscores       '5_0'
+        int() honors PEP 515 underscores       '5_0'
         isdigit() accepts superscripts          '\xb2', which int() rejects
 
     The first four were handed to tests asserting rejection, so the suite
@@ -598,7 +598,7 @@ def test_int_parseable_strings_are_accepted(text):
     """These are valid input, not garbage, and the app is right to take them.
 
     is_valid_rgb coerces with int() inside a try/except -- that is its
-    documented behaviour, and rnv-color-mixer and
+    documented behavior, and rnv-color-mixer and
     rnv-color-palette-manager share the implementation. Pinning it here
     means a future 'tidy-up' of the filter has to argue with a test rather
     than quietly reintroduce the bug.

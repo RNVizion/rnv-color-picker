@@ -1,7 +1,7 @@
 {
-  "about": "Where each colour in utils/config.py comes from. A string is a name in rnv-brand (TABLE.key, or one of its own constants, in engine/brand.py); an object is a value this application owns, with the reason. Edit this file, then run: python tools/sync_colors.py",
+  "about": "Where each color in utils/config.py comes from. A string is a name in rnv-brand (TABLE.key, or one of its own constants, in engine/brand.py); an object is a value this application owns, with the reason. Edit this file, then run: python tools/sync_colors.py",
   "app": "RNV Color Picker",
-  "colour_file": "utils/config.py",
+  "color_file": "utils/config.py",
   "palettes": [
     {
       "file": "utils/config.py",
@@ -16,7 +16,7 @@
       "dict": "IMAGE_MODE_COLORS"
     }
   ],
-  "colours": {
+  "colors": {
     "BRAND_GOLD": "APP.accent",
     "BRAND_DARK_GOLD": "APP.accent-light-mode",
     "BRAND_BLUE": "PERMANENT.blue",
@@ -33,29 +33,29 @@
     "APP_HOVER_LIGHT": "APP.hover-light",
     "APP_SURFACE_LIGHT_3": "APP.surface-light-3",
     "APP_PRESSED_LIGHT": "APP.pressed-light",
-    "GREY_E0": {
+    "GRAY_E0": {
       "app": "#e0e0e0",
-      "why": "grey(14) on the ramp. Static light surfaces, a tab and a scrollbar track, that share pressed-light's hex without being a pressed state."
+      "why": "gray(14) on the ramp. Static light surfaces, a tab and a scrollbar track, that share pressed-light's hex without being a pressed state."
     },
-    "GREY_66": {
+    "GRAY_66": {
       "app": "#666666",
-      "why": "grey(6) on the register's ink grid, which the register states as a rule and does not name. Secondary and muted text on light."
+      "why": "gray(6) on the register's ink grid, which the register states as a rule and does not name. Secondary and muted text on light."
     },
-    "GREY_88": {
+    "GRAY_88": {
       "app": "#888888",
-      "why": "grey(8) on the register's ink grid, which the register states as a rule and does not name. Muted text on dark; a scrollbar handle's hover on light."
+      "why": "gray(8) on the register's ink grid, which the register states as a rule and does not name. Muted text on dark; a scrollbar handle's hover on light."
     },
-    "GREY_55": {
+    "GRAY_55": {
       "app": "#555555",
-      "why": "grey(5) on the register's ink grid, which the register states as a rule and does not name. Disabled text and a checkbox edge on dark."
+      "why": "gray(5) on the register's ink grid, which the register states as a rule and does not name. Disabled text and a checkbox edge on dark."
     },
-    "GREY_44": {
+    "GRAY_44": {
       "app": "#444444",
-      "why": "grey(4) on the register's ink grid, which the register states as a rule and does not name. The swatch preview's outline."
+      "why": "gray(4) on the register's ink grid, which the register states as a rule and does not name. The swatch preview's outline."
     },
-    "GREY_CC": {
+    "GRAY_CC": {
       "app": "#cccccc",
-      "why": "grey(12) on the register's ink grid, which the register states as a rule and does not name. The light-mode border."
+      "why": "gray(12) on the register's ink grid, which the register states as a rule and does not name. The light-mode border."
     },
     "IMAGE_CANVAS_LIGHT": {
       "app": "#e8e8e8",
@@ -109,7 +109,7 @@
     },
     "MISSING_HEX_PLACEHOLDER": {
       "app": "#000000",
-      "why": "Data: the deliberately wrong-looking black shown when a colour record has no hex."
+      "why": "Data: the deliberately wrong-looking black shown when a color record has no hex."
     }
   }
 }

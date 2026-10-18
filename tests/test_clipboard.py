@@ -36,7 +36,7 @@ from unittest.mock import MagicMock
 from PyQt6.QtWidgets import QApplication
 
 from utils.clipboard import ClipboardUtils
-from tests.colour_values import (
+from tests.color_values import (
     DATA_BLACK, DATA_BLUE_BARE, DATA_BLUE_VIOLET_RGB, DATA_BROWN_RGB,
     DATA_DARK_NAVY_RGB_COMPACT, DATA_DARK_ORANGE, DATA_DARK_ORANGE_PADDED,
     DATA_DARK_ORANGE_UPPER, DATA_GREEN_BARE, DATA_ORANGE, DATA_PURPLE, DATA_RED,

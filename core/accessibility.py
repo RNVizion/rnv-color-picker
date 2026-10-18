@@ -244,7 +244,7 @@ class ColorAccessibility:
         # different one. It now asks the palette module, which compares the
         # two ratios outright instead of rounding the crossover.
         #
-        # The two agree on 16,772,703 of the 16,777,216 sRGB colours. The
+        # The two agree on 16,772,703 of the 16,777,216 sRGB colors. The
         # 4,513 that differ all sit inside luminance 0.17900 to 0.17913,
         # where both inks land within 0.01 of 4.5:1 and neither is visibly
         # better than the other.
@@ -313,10 +313,10 @@ class ColorAccessibility:
         
         return best_color
     
-    #: The four rating tiers, as PALETTE KEYS rather than colours.
+    #: The four rating tiers, as PALETTE KEYS rather than colors.
     #:
-    #: A constant names a colour and a key names a role -- ruled 2026-09-02.
-    #: "The colour of the Good tier" is a role, and it is a role whose answer
+    #: A constant names a color and a key names a role -- ruled 2026-09-02.
+    #: "The color of the Good tier" is a role, and it is a role whose answer
     #: differs per mode, which is why it cannot live in this module at all.
     #: This module owns WHICH TIER a ratio falls in; utils/config.py owns what
     #: each tier looks like on the ground it is drawn on.
@@ -329,7 +329,7 @@ class ColorAccessibility:
 
         The thresholds are WCAG's and are unchanged: 7.0 AAA, 4.5 AA, 3.0 AA
         for large text only, below that a failure. What changed on 2026-09-12
-        is that this returns the NAME of the tier instead of a colour.
+        is that this returns the NAME of the tier instead of a color.
 
         Args:
             ratio: Contrast ratio
@@ -358,7 +358,7 @@ class ColorAccessibility:
         (255,193,7), (244,67,54) -- the same four whatever mode the app was
         in. Against the light panel #f5f5f5 they read 2.55, 1.93, 1.50 and
         3.38 against a 4.5 text floor, so the panel that grades a user's
-        colours against WCAG painted its own verdict below the floor in
+        colors against WCAG painted its own verdict below the floor in
         every light-mode tier. The amber read 1.50:1.
 
         `theme` is OPTIONAL so that the old one-argument call still works;

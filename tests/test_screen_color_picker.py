@@ -108,7 +108,7 @@ def picker(qtbot):
 
 class TestConstruction:
     """`__init__` sets a frameless, top-most, translucent widget with mouse
-    tracking + cross cursor; initialises screenshot=None, current_color=
+    tracking + cross cursor; initializes screenshot=None, current_color=
     (0,0,0), magnifier_size=140, zoom_factor=8; wires the QTimer through the
     signal_manager; populates cached colors."""
 

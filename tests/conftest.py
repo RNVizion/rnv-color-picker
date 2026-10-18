@@ -1,7 +1,7 @@
-# RNV-DERIVE-ALPHA, 2026-09-25 -- every colour this application writes
+# RNV-DERIVE-ALPHA, 2026-09-25 -- every color this application writes
 # at an alpha is DERIVED, translucent(BASE, ALPHA), so a change to a base
 # reaches every alpha form of it. The main window's image scrollbar now
-# reads IMAGE_MODE_COLORS, so its handle is GREY_44 (RNV-COLLAPSE-505050)
+# reads IMAGE_MODE_COLORS, so its handle is GRAY_44 (RNV-COLLAPSE-505050)
 # and its hover the gold (2026-09-12), both by ruling.
 # tests/test_derived_values.py holds it.
 # RNV-DEADLINE-AND-PIN, 2026-09-12 -- the MAX_HISTORY_SIZE property test

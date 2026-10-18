@@ -5,15 +5,15 @@ RNV-GOLD-GUARD-FILE-NAMES-RETIRED-VALUES-BY-DESIGN
 That second marker was added 2026-09-12 and it is not decoration. This file's
 RETIRED table names five dead values in order to forbid them, and on the day
 test_one_status_family_only was widened to sweep the whole repository in both
-notations, this file was the single thing it found. Since RNV-COLOUR-SYNC #53 A
-(2026-10-17) the five values are written once, in tests/colour_values.py,
+notations, this file was the single thing it found. Since RNV-COLOR-SYNC #53 A
+(2026-10-17) the five values are written once, in tests/color_values.py,
 which carries the same marker for the same reason, and the table reads them
 by name. The marker is how a sweep is told the difference between a value
 being USED and a value being NAMED -- the same distinction _code_only() below
 draws inside a file, drawn one level up between files.
 
 A guard rather than a test: this pins the SHAPE of the change, so a later edit
-that reintroduces a Bootstrap value, writes a status colour as a literal
+that reintroduces a Bootstrap value, writes a status color as a literal
 again, or points a fill at a text job, fails here with a message saying which
 of those happened and why it matters.
 """
@@ -28,16 +28,16 @@ from pathlib import Path
 import pytest
 
 from utils import config as C
-from tests.colour_values import (
+from tests.color_values import (
     RETIRED_BOOTSTRAP_ERROR, RETIRED_BOOTSTRAP_SUCCESS, RETIRED_ORPHAN_ERROR_TEXT,
     RETIRED_ORPHAN_ERROR_TEXT_LIGHT, RETIRED_WARNING_AMBER)
 
 ROOT = Path(__file__).resolve().parent.parent
 
-#: RNV-COLOUR-SYNC, 2026-10-16. Where each colour comes from, as brand_map.json
-#: says. The values are held by tests/test_colours_in_sync.py, against the
+#: RNV-COLOR-SYNC, 2026-10-16. Where each color comes from, as brand_map.json
+#: says. The values are held by tests/test_colors_in_sync.py, against the
 #: register at the pin; what this file holds is the name each one takes.
-BRAND_MAP = json.loads((ROOT / "brand_map.json").read_text(encoding="utf-8"))["colours"]
+BRAND_MAP = json.loads((ROOT / "brand_map.json").read_text(encoding="utf-8"))["colors"]
 
 RETIRED = {
     RETIRED_BOOTSTRAP_SUCCESS: "Bootstrap green, retired -- it and Bootstrap's red collapsed "
@@ -50,7 +50,7 @@ RETIRED = {
 }
 
 #: Each registered value, by the register name brand_map.json writes it from.
-#: RNV-COLOUR-SYNC, 2026-10-16: each was written here as its hex code.
+#: RNV-COLOR-SYNC, 2026-10-16: each was written here as its hex code.
 REGISTERED = {
     "STATUS_SUCCESS": "STATUS.success",
     "STATUS_ERROR": "STATUS.error",
@@ -82,7 +82,7 @@ def _code_only(text: str) -> str:
     about what changed, which is the opposite of what the provenance is for.
 
     Why it is fussier than it looks: an earlier version dropped every STRING
-    token. In Python a colour value IS a string literal -- `STATUS_SUCCESS = "<its hex>"` --
+    token. In Python a color value IS a string literal -- `STATUS_SUCCESS = "<its hex>"` --
     so that version removed the uses along with the mentions and the sweep
     could never find anything. It passed on every input, including a file that
     had just put a retired value back. This file's own guard-the-guard is what
@@ -146,18 +146,18 @@ PALETTES = {
 @pytest.mark.parametrize("name,value", sorted(REGISTERED.items()))
 def test_every_value_is_the_registered_one(name, value):
     """Pinned by value, not by relationship. A test asserting only that these
-    differ from each other would pass on wrong colours.
+    differ from each other would pass on wrong colors.
 
     RENAMED 2026-09-12 from test_the_five_values_are_the_registered_ones. It
-    was parametrised over REGISTERED and had been running over SEVEN since
+    was parametrized over REGISTERED and had been running over SEVEN since
     2026-09-03, so the name had been wrong for nine days -- a count written in
     prose beside the thing it counts, which nothing compares. The register hit
     the identical defect in the same week: its PERMANENT comment said "six"
     while the dict held seven. The fix in both places is to stop writing the
     number down.
 
-    RNV-COLOUR-SYNC, 2026-10-16: pinned by the register name brand_map.json
-    writes it from; tests/test_colours_in_sync.py holds the value."""
+    RNV-COLOR-SYNC, 2026-10-16: pinned by the register name brand_map.json
+    writes it from; tests/test_colors_in_sync.py holds the value."""
     assert BRAND_MAP[name] == value
 
 
@@ -180,7 +180,7 @@ def test_no_retired_value_is_in_any_palette(dead):
 # semantic keys to the fills by name. The keys went: no line of this
 # application looked one up. What it paints from the family is the badges,
 # the error text and the rating scale, each held below; and
-# tests/test_named_and_used.py fails for any palette colour nothing reads.
+# tests/test_named_and_used.py fails for any palette color nothing reads.
 
 
 def test_the_error_text_is_named_in_all_three_palettes():
@@ -192,7 +192,7 @@ def test_the_error_text_is_named_in_all_three_palettes():
 
 
 @pytest.mark.parametrize("name", FILLS)
-# RNV-COLOUR-SYNC, 2026-10-16: the grounds by name, where they were hex codes.
+# RNV-COLOR-SYNC, 2026-10-16: the grounds by name, where they were hex codes.
 @pytest.mark.parametrize("ground", [C.BRAND_BLACK, C.APP_CARD,
                                     C.APP_SURFACE_LIGHT_3, C.WHITE])
 def test_a_fill_clears_the_fill_floor_and_cannot_carry_text(name, ground):
@@ -236,8 +236,8 @@ def test_the_badges_still_pair_with_black():
         assert contrast(getattr(C, fg), getattr(C, bg)) >= TEXT_FLOOR
 
 
-def test_the_role_aliases_point_at_the_colour_constants():
-    """The naming rule: a constant names a COLOUR, an alias names a ROLE.
+def test_the_role_aliases_point_at_the_color_constants():
+    """The naming rule: a constant names a COLOR, an alias names a ROLE.
 
     STATUS_ERROR_BG was already this shape. STATUS_SUCCESS_BG held its own
     copy of the green instead, and so did an alias for an active label,
@@ -249,7 +249,7 @@ def test_the_role_aliases_point_at_the_colour_constants():
 
 
 def test_the_two_spellings_did_not_come_back():
-    """The register recorded that this one colour was derived independently
+    """The register recorded that this one color was derived independently
     under TWO identifiers across three applications -- STATUS_ERROR_LIGHT here
     and in the transformer, STATUS_ERROR_TEXT_LIGHT in the palette manager.
     One name now."""
@@ -275,8 +275,8 @@ def test_this_guard_is_actually_looking():
     for mode, palette in PALETTES.items():
         assert len(palette) > 40, f"{mode} has only {len(palette)} keys"
     src = (ROOT / "utils" / "config.py").read_text(encoding="utf-8-sig")
-    assert len(_code_only(src)) > 5000, "the tokeniser returned almost nothing"
-    # RNV-COLOUR-SYNC, 2026-10-16: the success fill by name, where it was
+    assert len(_code_only(src)) > 5000, "the tokenizer returned almost nothing"
+    # RNV-COLOR-SYNC, 2026-10-16: the success fill by name, where it was
     # its hex code; the sync writes it into the code as a literal.
     assert C.STATUS_SUCCESS in _code_only(src), (
         "the code-only sweep cannot see a value that is definitely in the code")

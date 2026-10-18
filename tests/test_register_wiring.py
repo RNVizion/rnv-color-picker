@@ -37,14 +37,14 @@ from utils.config import (DARK_THEME_COLORS as DARK,
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SRC = ROOT / 'utils/config.py'
 
-#: RNV-COLOUR-SYNC, 2026-10-16. Where each colour comes from, as brand_map.json
-#: says. The values are held by tests/test_colours_in_sync.py, against the
+#: RNV-COLOR-SYNC, 2026-10-16. Where each color comes from, as brand_map.json
+#: says. The values are held by tests/test_colors_in_sync.py, against the
 #: register at the pin; what this file holds is the name each one takes.
-BRAND_MAP = json.loads((ROOT / "brand_map.json").read_text(encoding="utf-8"))["colours"]
+BRAND_MAP = json.loads((ROOT / "brand_map.json").read_text(encoding="utf-8"))["colors"]
 
 #: The register, as this app mirrors it. Value-keyed, because the substitution
 #: was value-keyed: any dark entry holding one of these must now name it.
-#: RNV-COLOUR-SYNC, 2026-10-16: each value read from the constant, where it
+#: RNV-COLOR-SYNC, 2026-10-16: each value read from the constant, where it
 #: was written out, so the sweep looks for what the register holds today.
 REGISTERED = {name: getattr(colors, name) for name in (
     'TRUE_BLACK', 'BRAND_BLACK', 'APP_CARD', 'APP_BORDER', 'APP_CANVAS',
@@ -105,13 +105,13 @@ def test_no_registered_value_is_spelled_as_a_literal_in_dark():
             if not isinstance(key, ast.Constant):
                 continue
             if isinstance(value, ast.Constant) and isinstance(value.value, str):
-                # Qt spells a translucent colour #AARRGGBB. This sweep compared
+                # Qt spells a translucent color #AARRGGBB. This sweep compared
                 # whole strings, so an eight-digit spelling of a registered
                 # value never matched a six-digit register entry --
                 # IMAGE_MODE_COLORS kept four of them (APP_WINDOW_OVERLAY twice,
                 # RETIRED_CANVAS_OVERLAY, APP_PANEL_OVERLAY) while this test
                 # reported clean and the
-                # pass it guards claimed completeness. Both lengths normalise
+                # pass it guards claimed completeness. Both lengths normalize
                 # to the RGB half now.
                 spelled = value.value.lower()
                 rgb = '#' + spelled[3:] if len(spelled) == 9 else spelled
@@ -168,7 +168,7 @@ def test_the_light_palettes_reference_only_what_the_register_has_ruled():
     while the light half was entirely unruled. rnv-brand rev 23 ruled one value
     of it -- APP["hover-light"] -- so the test becomes an allowlist rather than
     a prohibition. The light LADDER is still unruled: nine surfaces inside three
-    grid steps, and which of them are real distinctions is a judgement the
+    grid steps, and which of them are real distinctions is a judgment the
     register has not made.
 
     THE EARLIER FORM COULD NOT HAVE CAUGHT THIS PASS. It flagged names found in
@@ -190,7 +190,7 @@ def test_the_light_palettes_reference_only_what_the_register_has_ruled():
 
 def test_the_ruled_light_value_is_actually_wired():
     """The allowlist permits; this requires. An allowlist entry nothing uses is
-    a licence with no subject -- the same shape as a dead exemption."""
+    a license with no subject -- the same shape as a dead exemption."""
     used = set()
     for node in _dicts(LIGHT_DICTS).values():
         for value in node.values:

@@ -87,17 +87,17 @@ from utils.settings_manager import SettingsManager
 from utils.error_handler    import ErrorHandler
 from utils import config
 from utils import file_utils as fu  # module-level functions
-from tests.colour_values import (
-    DATA_BLACK_SHORT, DATA_GREY_64, DATA_HISTORY_ABSENT_PINK, DATA_MEDIUM_PURPLE_RGB,
+from tests.color_values import (
+    DATA_BLACK_SHORT, DATA_GRAY_64, DATA_HISTORY_ABSENT_PINK, DATA_MEDIUM_PURPLE_RGB,
     DATA_RED, DATA_RED_UPPER, DATA_WHITE_SHORT, EXAMPLE_BLACK, EXAMPLE_CACHE_FILL_KEY,
     EXAMPLE_CACHE_REPEAT_KEY, EXAMPLE_GOLD, EXAMPLE_PURE_RED, EXAMPLE_PURE_RED_SHORT,
     EXAMPLE_PURE_RED_UPPER, EXAMPLE_WHITE, INVALID_HEX_WORD)
 
-#: RNV-COLOUR-SYNC, 2026-10-17 (#52 A). Where each colour comes from, as
-#: brand_map.json says. The values are held by tests/test_colours_in_sync.py,
+#: RNV-COLOR-SYNC, 2026-10-17 (#52 A). Where each color comes from, as
+#: brand_map.json says. The values are held by tests/test_colors_in_sync.py,
 #: against the register at the pin; what this suite holds is the name each
 #: one takes.
-BRAND_MAP = json.loads(Path(_ROOT, "brand_map.json").read_text(encoding="utf-8"))["colours"]
+BRAND_MAP = json.loads(Path(_ROOT, "brand_map.json").read_text(encoding="utf-8"))["colors"]
 
 # ── Optional imports — guarded so tests skip cleanly if a module fails ────────
 try:
@@ -179,13 +179,13 @@ try:
 except Exception:
     WidgetPool = None; _WIDGET_POOL_OK = False
 
-# ANSI colour helpers
+# ANSI color helpers
 _G="\033[92m"; _R="\033[91m"; _Y="\033[93m"; _C="\033[96m"; _B="\033[1m"; _X="\033[0m"
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Global ColorHistoryManager safety patch
 # ColorHistoryManager._setup_history_path() writes to AppData/Library/.config
-# and load_history() reads from there. Neutralise both so the test never
+# and load_history() reads from there. Neutralize both so the test never
 # touches real user data and never crashes on missing dirs.
 # ══════════════════════════════════════════════════════════════════════════════
 _HIST_TMP  = tempfile.mkdtemp()
@@ -472,9 +472,9 @@ class TestColorHistoryManager(unittest.TestCase):
 
     def test_get_color_info_existing(self):
         self.h.add_color((100,100,100))
-        info = self.h.get_color_info(DATA_GREY_64)
+        info = self.h.get_color_info(DATA_GRAY_64)
         self.assertIsNotNone(info)
-        self.assertEqual(info["hex"], DATA_GREY_64)
+        self.assertEqual(info["hex"], DATA_GRAY_64)
 
     def test_get_color_info_missing(self):
         self.assertIsNone(self.h.get_color_info(INVALID_HEX_WORD))
@@ -573,7 +573,7 @@ class TestPaletteFormats(unittest.TestCase):
         self.assertEqual(len(PaletteFormats.import_palette(path)), 0)
 
     def test_hex_import_short_form(self):
-        """`DATA_WHITE_SHORT` 3-char shorthand is recognised and expanded."""
+        """`DATA_WHITE_SHORT` 3-char shorthand is recognized and expanded."""
         path = os.path.join(self.tmp, "short.hex")
         with open(path, "w") as f:
             f.write(f"# Test\n{DATA_WHITE_SHORT} 100\n{DATA_BLACK_SHORT}\n")
@@ -1010,9 +1010,9 @@ class TestAccessibility(unittest.TestCase):
         four Material values it returned for thirty days while a guard in
         tests/ asserted they were gone. It could not have failed.
 
-        What is asserted now: the colour is the ACTIVE THEME's value for the
+        What is asserted now: the color is the ACTIVE THEME's value for the
         tier, and the two modes disagree. The second half is the one that
-        matters -- the defect was one set of colours for three grounds.
+        matters -- the defect was one set of colors for three grounds.
         """
         from utils.config import DARK_THEME_COLORS, LIGHT_THEME_COLORS
 

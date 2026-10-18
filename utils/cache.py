@@ -97,7 +97,7 @@ class ColorCache:
         """
         # RNV-INK-RULE (2026-09-02): was ITU-R BT.601 perceived brightness,
         # which is a photographic weighting, not a contrast measurement. It
-        # put white on a mid grey that reads 5.32:1 in black and 3.95:1 in
+        # put white on a mid gray that reads 5.32:1 in black and 3.95:1 in
         # white. One rule now, stated in utils/config.py.
         return contrast_ink_rgb(rgb)
     
@@ -173,7 +173,7 @@ class QColorCache:
         if cls.LOCK_BORDER is None:
             cls.LOCK_BORDER = QColor(BRAND_GOLD)
             # RNV-NAMED-AND-USED (2026-10-04): were QColor(0, 0, 0) and
-            # QColor(255, 255, 255). The same two colours, by name.
+            # QColor(255, 255, 255). The same two colors, by name.
             cls.BLACK = QColor(TRUE_BLACK)
             cls.WHITE = QColor(WHITE)
             cls.TRANSPARENT = QColor(0, 0, 0, 0)
@@ -375,11 +375,11 @@ class StylesheetCache:
     
     @classmethod
     def get_description_stylesheet(cls) -> str:
-        """Get cached description label stylesheet: its size, not its colour.
+        """Get cached description label stylesheet: its size, not its color.
 
         RNV-MUTED-DESCRIPTIONS, 2026-09-27 (ruling 1). This carried
         "color: gray" -- #808080 in every mode, under the text floor on the
-        dark panel and in light. The colour is the palette's text_muted now,
+        dark panel and in light. The color is the palette's text_muted now,
         drawn by the settings panel's own stylesheet on every label named
         "muted_text", which is rebuilt on each theme switch."""
         key = ('static', 'description')
@@ -456,7 +456,7 @@ class StylesheetCache:
     def get_error_stylesheet(cls, color: str = STATUS_ERROR_BG) -> str:
         """Get cached error message stylesheet.
 
-        Takes the colour rather than baking one in: this label
+        Takes the color rather than baking one in: this label
         renders on the light panel (#f5f5f5) and the dark panel
         (#1a1a1a), and no single red clears both.
         """

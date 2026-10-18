@@ -749,7 +749,7 @@ class PaletteFormats:
     def _import_hex(path: str) -> list[tuple[tuple[int, int, int], int]]:
         """Import HEX text format.
 
-        Recognises data lines that begin with `#RRGGBB` (or `#RGB`) followed by
+        Recognizes data lines that begin with `#RRGGBB` (or `#RGB`) followed by
         a non-hex character. Lines that look like `# Header text` or `#` alone
         are treated as comments and skipped. Optional weight after the hex
         defaults to 50; trailing `# Comment` text is ignored.

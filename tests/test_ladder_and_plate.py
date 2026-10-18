@@ -13,7 +13,7 @@ changes provenance and spelling, not pixels.
 
 WHY THE LADDER WAS NOT "TWO-THIRDS SPECIFIED". The register said it was,
 because APP["border"] APP_BORDER is not APP_PANEL_HOVER and so looked like a missing rung.
-It is not a rung -- APP_BORDER is grey(3) on the INK grid, which governs inks and
+It is not a rung -- APP_BORDER is gray(3) on the INK grid, which governs inks and
 EDGES, and a border is an edge. Measured against the wrong family.
 
 WHY THE PLATE IS APP_HOVER_LIGHT AND NOT REGISTER_GOLD_TEXT_GROUND_FLOOR.
@@ -23,10 +23,10 @@ clears it is -14, and -13 gives 4.4675 and fails. The hover plate on that value
 would have pinned every hover in the app to the one ground the gold cannot
 afford to lose, with 0.0334 of margin. A boundary is not a plate.
 
-WHY THE OVERLAYS ARE HERE AT ALL. Qt spells a translucent colour #AARRGGBB.
+WHY THE OVERLAYS ARE HERE AT ALL. Qt spells a translucent color #AARRGGBB.
 The 2026-08-29 wiring pass swept for six-digit literals, so APP_WINDOW_OVERLAY never
 matched TRUE_BLACK and four registered values sat in IMAGE_MODE_COLORS while the
-guard reported clean. They are named now, and the sweep normalises both
+guard reported clean. They are named now, and the sweep normalizes both
 lengths.
 """
 from __future__ import annotations
@@ -41,21 +41,21 @@ from utils import config as colors
 from utils.config import (DARK_THEME_COLORS as DARK,
                           IMAGE_MODE_COLORS as IMAGE,
                           LIGHT_THEME_COLORS as LIGHT)
-from tests.colour_values import REGISTER_GOLD_TEXT_GROUND_FLOOR
+from tests.color_values import REGISTER_GOLD_TEXT_GROUND_FLOOR
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SRC = ROOT / 'utils/config.py'
 
-#: RNV-COLOUR-SYNC, 2026-10-16. Where each colour comes from, as brand_map.json
-#: says. The values are held by tests/test_colours_in_sync.py, against the
+#: RNV-COLOR-SYNC, 2026-10-16. Where each color comes from, as brand_map.json
+#: says. The values are held by tests/test_colors_in_sync.py, against the
 #: register at the pin; what this file holds is the name each one takes.
-BRAND_MAP = json.loads((ROOT / "brand_map.json").read_text(encoding="utf-8"))["colours"]
+BRAND_MAP = json.loads((ROOT / "brand_map.json").read_text(encoding="utf-8"))["colors"]
 
 GRID_STEP = 0x11
 LADDER_STEP = 0x10
 TEXT_FLOOR = 4.5
 
-#: Constant name -> the APP key it mirrors. RNV-COLOUR-SYNC, 2026-10-16: the
+#: Constant name -> the APP key it mirrors. RNV-COLOR-SYNC, 2026-10-16: the
 #: value both held was written here too; it is written from the register now.
 NEW = {
     'APP_CANVAS': 'canvas',
@@ -103,7 +103,7 @@ COINCIDENT = {
 }
 
 
-def grey(n: int) -> str:
+def gray(n: int) -> str:
     v = n * GRID_STEP
     return '#%02x%02x%02x' % (v, v, v)
 
@@ -166,9 +166,9 @@ def test_the_new_constants_hold_the_registered_values():
     """The local half of the mirror. Runs everywhere, including where
     engine.brand is not importable -- which is why it is not optional.
 
-    RNV-COLOUR-SYNC, 2026-10-16: it held each value written out. It holds now
+    RNV-COLOR-SYNC, 2026-10-16: it held each value written out. It holds now
     that brand_map.json takes each from its APP key; the value is written from
-    there, and tests/test_colours_in_sync.py holds it."""
+    there, and tests/test_colors_in_sync.py holds it."""
     drift = {n: BRAND_MAP.get(n) for n, key in NEW.items()
              if BRAND_MAP.get(n) != f'APP.{key}'}
     assert not drift, (
@@ -220,19 +220,19 @@ def test_the_dark_rungs_are_exact_steps_on_the_ladder():
 
 def test_the_border_is_an_edge_and_not_a_rung():
     """The distinction that made the ladder look incomplete."""
-    assert colors.APP_BORDER == grey(3)
+    assert colors.APP_BORDER == gray(3)
     base = int(colors.BRAND_BLACK.lstrip('#'), 16)
     rungs = {base + n * (LADDER_STEP * 0x010101) for n in range(-1, 3)}
     assert int(colors.APP_BORDER.lstrip('#'), 16) not in rungs
 
 
 def test_the_canvas_is_not_the_web_ground():
-    """One byte apart, deliberately. App neutrals are pure grey R = G = B; the
+    """One byte apart, deliberately. App neutrals are pure gray R = G = B; the
     web ground REGISTER_WEB_BLACK carries a tint the apps do not. That byte is why
     invert(APP_CANVAS) = APP_SURFACE_LIGHT_3 once looked like a light-ground rule and was
     not."""
     r, g, b = (int(colors.APP_CANVAS.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4))
-    assert r == g == b, f'APP_CANVAS {colors.APP_CANVAS} is not a pure grey'
+    assert r == g == b, f'APP_CANVAS {colors.APP_CANVAS} is not a pure gray'
     brand = pytest.importorskip('engine.brand', reason='rnv-brand not importable')
     assert colors.APP_CANVAS.lower() != brand.WEB_BLACK.lower()
 
@@ -252,7 +252,7 @@ def test_every_overlay_is_its_base_at_the_declared_alpha():
         assert int(overlay[1:3], 16) == colors.IMAGE_OVERLAY_ALPHA, (
             f'{name} composites at {overlay[1:3]}, not IMAGE_OVERLAY_ALPHA')
         assert overlay[3:].lower() == base[1:].lower(), (
-            f'{name} is {overlay}, whose colour half is not {base_name} '
+            f'{name} is {overlay}, whose color half is not {base_name} '
             f'{base}. An overlay that stops tracking its base is the exact '
             f'drift this naming exists to prevent.')
 
@@ -305,7 +305,7 @@ def test_no_translucent_register_value_is_left_as_a_literal():
 # ------------------------------------------------------------------- the plate
 
 def test_the_plate_is_a_step_on_the_ink_grid():
-    assert colors.APP_HOVER_LIGHT == grey(14)
+    assert colors.APP_HOVER_LIGHT == gray(14)
 
 
 def test_the_plate_carries_gold_with_room_to_spare():
@@ -344,7 +344,7 @@ def test_the_floor_is_not_used_as_a_hover_anywhere():
 
 def test_every_coincidence_still_coincides():
     """A named coincidence that no longer shares a value is a dead exemption,
-    and a dead exemption is a licence waiting for a defect: it would let a
+    and a dead exemption is a license waiting for a defect: it would let a
     genuinely misclassified value hide behind it."""
     brand = pytest.importorskip('engine.brand', reason='rnv-brand not importable')
     stale = []

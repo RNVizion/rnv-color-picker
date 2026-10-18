@@ -1,9 +1,9 @@
-"""Every colour value the tests need that is not one of the application's own.
+"""Every color value the tests need that is not one of the application's own.
 
-RNV-COLOUR-SYNC (#53 A), 2026-10-17. The application's colours, brand and its
+RNV-COLOR-SYNC (#53 A), 2026-10-17. The application's colors, brand and its
 own, are named in utils/config.py and a test reads them from there. Every
-other colour value a test or the root suite writes is named here, once, with
-why, grouped by kind. tests/test_colour_values.py holds this file: no colour
+other color value a test or the root suite writes is named here, once, with
+why, grouped by kind. tests/test_color_values.py holds this file: no color
 value is written anywhere else, each name says what kind it is and why, each
 is used, and each REGISTER_ value is the brand's at the pin.
 
@@ -12,11 +12,11 @@ RNV-GOLD-GUARD-FILE-NAMES-RETIRED-VALUES-BY-DESIGN
     names the retired Material and Bootstrap values in order to forbid them.
 RNV-COLLAPSE-GUARD
     test_collapse_252525's sweep skips files carrying this, and this file names
-    the collapsed RETIRED_GREY_25, the guard's OLD_HEX.
+    the collapsed RETIRED_GRAY_25, the guard's OLD_HEX.
 """
 
 # ---------------------------------------------------------------------------
-# Examples: samples given to a helper or to the colour maths
+# Examples: samples given to a helper or to the color math
 # ---------------------------------------------------------------------------
 
 EXAMPLE_BLACK = "#000000"
@@ -26,7 +26,7 @@ EXAMPLE_WHITE = "#ffffff"
 """Pure white handed to or returned by a conversion, contrast or clamp helper."""
 
 EXAMPLE_PURE_RED = "#ff0000"
-"""(255, 0, 0) as rgb_to_hex writes it, and a hex any colour cache can parse."""
+"""(255, 0, 0) as rgb_to_hex writes it, and a hex any color cache can parse."""
 
 EXAMPLE_PURE_RED_UPPER = "#FF0000"
 """The same red in upper case: hex_to_rgb must read either case."""
@@ -43,8 +43,8 @@ EXAMPLE_PURE_GREEN = "#00ff00"
 EXAMPLE_PURE_GREEN_SHORT = "#0f0"
 """The same green in three digits: the ink rule takes either length."""
 
-EXAMPLE_MID_GREY = "#777777"
-"""A grey measured against itself, which must give 1:1."""
+EXAMPLE_MID_GRAY = "#777777"
+"""A gray measured against itself, which must give 1:1."""
 
 EXAMPLE_GOLD = "#d2bc93"
 """A gold sample whose channels, (210, 188, 147), the same test writes as a
@@ -75,11 +75,11 @@ EXAMPLE_NEAR_BLACK_BARE_UPPER = "0A0A0A"
 EXAMPLE_NEAR_BLACK_AT_ED = "#ed0a0a0a"
 """translucent(EXAMPLE_NEAR_BLACK_BARE_UPPER, 0xED), which comes back lower case."""
 
-EXAMPLE_GREY_44 = "#444444"
+EXAMPLE_GRAY_44 = "#444444"
 """What the integer sweep reads from its probe's QColor(68, 68, 68)."""
 
 EXAMPLE_CLEAR_RGBA = "rgba(0, 0, 0, 0)"
-"""Black at alpha 0: clear, not a colour, which the named-and-used sweep must not
+"""Black at alpha 0: clear, not a color, which the named-and-used sweep must not
 report."""
 
 EXAMPLE_PALE_PINK = "#ffcccc"
@@ -108,14 +108,14 @@ EXAMPLE_RENDER_PROBE_MAGENTA = "#ff00ff"
 to show that no pixel changed."""
 
 EXAMPLE_HAND_EDIT = "#123456"
-"""A value tests/test_colours_in_sync.py writes into the colour file's text as a
+"""A value tests/test_colors_in_sync.py writes into the color file's text as a
 hand edit, for the sync to put back."""
 
 EXAMPLE_HAND_EDIT_FALLBACK = "#654321"
 """The hand edit to use when the line already holds EXAMPLE_HAND_EDIT."""
 
 EXAMPLE_MOVED_ACCENT = "#6f94bc"
-"""Where tests/test_colours_in_sync.py moves the brand's accent to see the move
+"""Where tests/test_colors_in_sync.py moves the brand's accent to see the move
 reach one line. Any value but the accent will do."""
 
 EXAMPLE_MOVED_ACCENT_FALLBACK = "#456c91"
@@ -183,7 +183,7 @@ DATA_WHITE_UPPER = "#FFFFFF"
 """White in upper case, for the panel's parser."""
 
 DATA_PALE_BLUE = "#abcdef"
-"""A user's (171, 205, 239): a history entry, the panel's copied colour."""
+"""A user's (171, 205, 239): a history entry, the panel's copied color."""
 
 DATA_PALE_BLUE_UPPER = "#ABCDEF"
 """The same pale blue in upper case, alone on a .hex file's line."""
@@ -192,10 +192,10 @@ DATA_LIGHT_STEEL = "#aabbcc"
 """A user's (170, 187, 204) as an SVG palette file's six-digit fill."""
 
 DATA_LIGHT_STEEL_SHORT = "#abc"
-"""The same colour in three digits: an SVG fill the importer skips, and the
+"""The same color in three digits: an SVG fill the importer skips, and the
 start of a palette file's line."""
 
-DATA_GREY_64 = "#646464"
+DATA_GRAY_64 = "#646464"
 """A user's (100, 100, 100) in the history."""
 
 DATA_DARK_NAVY = "#0a141e"
@@ -206,7 +206,7 @@ DATA_DARK_NAVY_RGB_COMPACT = "rgb(10,20,30)"
 
 DATA_ORANGE = "#ffa500"
 """A user's (255, 165, 0), CSS orange, as the clipboard holds it. Not a brand
-colour."""
+color."""
 
 DATA_PURPLE = "#800080"
 """A user's (128, 0, 128), CSS purple, copied as a CSS custom property."""
@@ -266,7 +266,7 @@ DATA_CERULEAN_UPPER = "#1E90C8"
 """The same harmony base as the panel labels it, upper case."""
 
 DATA_ROSE_BARE_UPPER = "FF0080"
-"""A harmony colour (255, 0, 128) as its swatch label shows it, without the hash."""
+"""A harmony color (255, 0, 128) as its swatch label shows it, without the hash."""
 
 DATA_HISTORY_ABSENT_PINK = "#deadbe"
 """A hex the history does not hold, for a lookup or removal that must miss."""
@@ -278,11 +278,11 @@ DATA_HISTORY_ABSENT_PALE_BLUE = "#abcdef"
 # Retired: values the application no longer uses, kept so a test can say so
 # ---------------------------------------------------------------------------
 
-RETIRED_GREY_25 = "#252525"
+RETIRED_GRAY_25 = "#252525"
 """RNV-COLLAPSE-252525: on neither ladder nor grid, collapsed onto APP_CARD."""
 
-RETIRED_GREY_50 = "#505050"
-"""RNV-COLLAPSE-505050: the image scrollbar handle, ruled onto GREY_44."""
+RETIRED_GRAY_50 = "#505050"
+"""RNV-COLLAPSE-505050: the image scrollbar handle, ruled onto GRAY_44."""
 
 RETIRED_SCROLLBAR_HANDLE_RGBA = "rgba(80, 80, 80, 150)"
 """The image scrollbar handle as it was written before RNV-COLLAPSE-505050."""
@@ -294,7 +294,7 @@ translucent(APP_BORDER, SCROLLBAR_BG_ALPHA) now."""
 
 RETIRED_SCROLLBAR_HOVER_RGBA = "rgba(100, 100, 100, 200)"
 """The image scrollbar handle's hover as the fixed SCROLLBAR_IMAGE sheet wrote it
-until RNV-DERIVE-ALPHA: grey, while the palette's hover said BRAND_GOLD."""
+until RNV-DERIVE-ALPHA: gray, while the palette's hover said BRAND_GOLD."""
 
 RETIRED_CANVAS_OVERLAY = "#ed0a0a0a"
 """APP_CANVAS at IMAGE_OVERLAY_ALPHA: the canvas overlay, image mode's
@@ -305,14 +305,14 @@ RETIRED_PANEL_OVERLAY_UPPER = "#ED1A1A1A"
 """APP_PANEL_OVERLAY as translucent() spelled it until RNV-LOWER-EIGHT
 (2026-09-25): eight digits in upper case."""
 
-RETIRED_GREY_33_SHORT = "#333"
-"""A retired constant's three-digit grey(3), a spelling a six-digit census cannot
-see. APP_BORDER holds grey(3) in six digits."""
+RETIRED_GRAY_33_SHORT = "#333"
+"""A retired constant's three-digit gray(3), a spelling a six-digit census cannot
+see. APP_BORDER holds gray(3) in six digits."""
 
-RETIRED_GREY_CC_SHORT = "#ccc"
-"""GREY_CC as it was once spelled, in three digits."""
+RETIRED_GRAY_CC_SHORT = "#ccc"
+"""GRAY_CC as it was once spelled, in three digits."""
 
-RETIRED_CSS_GREY = "#808080"
+RETIRED_CSS_GRAY = "#808080"
 """CSS gray, what `color: gray` drew on the panel's descriptions until
 RNV-MUTED-DESCRIPTIONS (2026-09-27): 4.40:1 on the dark panel and 3.62:1 in
 light, both under the 4.5 floor."""
@@ -405,7 +405,7 @@ REGISTER_APP_SURFACE_LIGHT_2 = "#fbfbfb"
 
 REGISTER_WEB_BLACK = "#0a0a0f"
 """The register's web ground: APP_CANVAS's lightness with the blue channel lifted.
-App neutrals are pure grey; this carries a tint the apps do not."""
+App neutrals are pure gray; this carries a tint the apps do not."""
 
 # ---------------------------------------------------------------------------
 # Invalid: written wrongly on purpose, for a test that refuses it
@@ -440,7 +440,7 @@ INVALID_HEX_SEVEN_DIGITS = "#FF88000"
 """Hex of the wrong length, seven digits."""
 
 INVALID_HEX_EIGHT_DIGIT_BASE = "#1a1a1a1a"
-"""Eight digits: a colour with an alpha to Qt, but not the six-digit base
+"""Eight digits: a color with an alpha to Qt, but not the six-digit base
 translucent() takes."""
 
 INVALID_HEX_BAD_DIGITS = "#gggggg"
@@ -453,7 +453,7 @@ INVALID_HEX_BAD_DIGITS_SHORT = "#GGG"
 """Three characters that are not hex digits."""
 
 INVALID_HEX_HISTORY_LABEL = "#zzz"
-"""A history item's hex label that is not a colour, given with a malformed rgb."""
+"""A history item's hex label that is not a color, given with a malformed rgb."""
 
 INVALID_HEX_WORD = "#nonexistent"
 """A word written as a hex code, for a history lookup that must miss."""
@@ -465,5 +465,5 @@ REGISTER_REFS = {
     "REGISTER_APP_SURFACE_LIGHT_2": "APP.surface-light-2",
     "REGISTER_WEB_BLACK": "WEB_BLACK",
 }
-"""Each REGISTER_ value's name in the brand; tests/test_colour_values.py holds
+"""Each REGISTER_ value's name in the brand; tests/test_color_values.py holds
 the value to the brand at the pin."""
