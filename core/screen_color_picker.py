@@ -16,7 +16,7 @@ from utils.logger import Logger
 from utils.error_handler import ErrorHandler
 from utils.signal_manager import SignalConnectionManager
 from utils.cache import QColorCache
-from utils.config import (
+from utils.colors import (
     BRAND_GOLD, BRAND_GOLD_RGB,
     OVERLAY_BLACK_LIGHT, OVERLAY_BLACK_HEAVY,
 )

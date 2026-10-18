@@ -86,6 +86,7 @@ from utils.session_manager  import SessionManager
 from utils.settings_manager import SettingsManager
 from utils.error_handler    import ErrorHandler
 from utils import config
+from utils import colors
 from utils import file_utils as fu  # module-level functions
 from tests.color_values import (
     DATA_BLACK_SHORT, DATA_GRAY_64, DATA_HISTORY_ABSENT_PINK, DATA_MEDIUM_PURPLE_RGB,
@@ -609,13 +610,13 @@ class TestPaletteFormats(unittest.TestCase):
         self.assertIn("<svg", content)
 
     def test_svg_uses_export_constants(self):
-        """SVG export should pull SVG_EXPORT_BG and SVG_EXPORT_STROKE from config constants."""
+        """SVG export should pull SVG_EXPORT_BG and SVG_EXPORT_STROKE from utils/colors.py."""
         # Use a unique filename ending in .svg so the export dispatcher picks _export_svg
         path = os.path.join(self.tmp, "svg_constants_check.svg")
         PaletteFormats.export_palette(path, self.TEST_PAL)
         content = open(path, encoding="utf-8").read().lower()
-        self.assertIn(config.SVG_EXPORT_BG.lower(), content)
-        self.assertIn(config.SVG_EXPORT_STROKE.lower(), content)
+        self.assertIn(colors.SVG_EXPORT_BG.lower(), content)
+        self.assertIn(colors.SVG_EXPORT_STROKE.lower(), content)
 
     def test_xml_export(self):
         PaletteFormats.export_palette(self._p("xml"), self.TEST_PAL)
@@ -1014,7 +1015,7 @@ class TestAccessibility(unittest.TestCase):
         tier, and the two modes disagree. The second half is the one that
         matters -- the defect was one set of colors for three grounds.
         """
-        from utils.config import DARK_THEME_COLORS, LIGHT_THEME_COLORS
+        from utils.colors import DARK_THEME_COLORS, LIGHT_THEME_COLORS
 
         def _rgb(value):
             h = value.lstrip('#')
@@ -1356,41 +1357,41 @@ class TestFileUtils(unittest.TestCase):
 # 12. CONFIG / THEME MANAGER
 # ══════════════════════════════════════════════════════════════════════════════
 class TestConfig(unittest.TestCase):
-    """config.py — ThemeManager, theme dicts, brand colors."""
+    """config.py and colors.py — ThemeManager, theme dicts, brand colors."""
 
     def setUp(self): self.tm = config.ThemeManager()
 
     # ── Brand colors ──
     def test_brand_gold(self):       self.assertEqual(BRAND_MAP["BRAND_GOLD"], "APP.accent")
     def test_brand_gold_dark(self):  self.assertEqual(BRAND_MAP["BRAND_DARK_GOLD"], "APP.accent-light-mode")
-    def test_brand_gold_rgb(self):   self.assertEqual(config.BRAND_GOLD_RGB, (210,188,147))
-    def test_brand_gold_dark_rgb(self): self.assertEqual(ColorMath.hex_to_rgb(config.BRAND_DARK_GOLD), (140,115,55))
+    def test_brand_gold_rgb(self):   self.assertEqual(colors.BRAND_GOLD_RGB, (210,188,147))
+    def test_brand_gold_dark_rgb(self): self.assertEqual(ColorMath.hex_to_rgb(colors.BRAND_DARK_GOLD), (140,115,55))
 
     # ── Theme dicts present ──
-    def test_dark_theme_exists(self):  self.assertIsInstance(config.DARK_THEME_COLORS, dict)
-    def test_light_theme_exists(self): self.assertIsInstance(config.LIGHT_THEME_COLORS, dict)
-    def test_image_theme_exists(self): self.assertIsInstance(config.IMAGE_MODE_COLORS, dict)
+    def test_dark_theme_exists(self):  self.assertIsInstance(colors.DARK_THEME_COLORS, dict)
+    def test_light_theme_exists(self): self.assertIsInstance(colors.LIGHT_THEME_COLORS, dict)
+    def test_image_theme_exists(self): self.assertIsInstance(colors.IMAGE_MODE_COLORS, dict)
 
     def test_theme_names(self):
-        self.assertEqual(config.DARK_THEME_COLORS["name"], "Dark")
-        self.assertEqual(config.LIGHT_THEME_COLORS["name"], "Light")
-        self.assertEqual(config.IMAGE_MODE_COLORS["name"], "Image")
+        self.assertEqual(colors.DARK_THEME_COLORS["name"], "Dark")
+        self.assertEqual(colors.LIGHT_THEME_COLORS["name"], "Light")
+        self.assertEqual(colors.IMAGE_MODE_COLORS["name"], "Image")
 
     def test_theme_brand_gold_dark(self):
-        self.assertEqual(config.DARK_THEME_COLORS["text_accent"], config.BRAND_GOLD)
-        self.assertEqual(config.DARK_THEME_COLORS["tooltip_border"], config.BRAND_GOLD)
+        self.assertEqual(colors.DARK_THEME_COLORS["text_accent"], colors.BRAND_GOLD)
+        self.assertEqual(colors.DARK_THEME_COLORS["tooltip_border"], colors.BRAND_GOLD)
 
     def test_theme_brand_gold_light(self):
-        self.assertEqual(config.LIGHT_THEME_COLORS["text_accent"], config.BRAND_DARK_GOLD_DEEP)
+        self.assertEqual(colors.LIGHT_THEME_COLORS["text_accent"], colors.BRAND_DARK_GOLD_DEEP)
 
     # ── Required keys present in all 3 themes ──
     def test_all_themes_have_required_keys(self):
         required = ["window_bg","card_bg","text_primary",
                     "border_default","dialog_btn_bg","tooltip_border","scrollbar_bg",
                     "scrollbar_handle","scrollbar_handle_hover"]
-        for name, theme in [("DARK", config.DARK_THEME_COLORS),
-                            ("LIGHT", config.LIGHT_THEME_COLORS),
-                            ("IMAGE", config.IMAGE_MODE_COLORS)]:
+        for name, theme in [("DARK", colors.DARK_THEME_COLORS),
+                            ("LIGHT", colors.LIGHT_THEME_COLORS),
+                            ("IMAGE", colors.IMAGE_MODE_COLORS)]:
             for key in required:
                 self.assertIn(key, theme, f"{name} missing '{key}'")
 
@@ -1451,41 +1452,41 @@ class TestConfigNewConstants(unittest.TestCase):
     """
 
     def test_overlay_black_light_value(self):
-        self.assertEqual(config.OVERLAY_BLACK_LIGHT, (0, 0, 0, 50))
+        self.assertEqual(colors.OVERLAY_BLACK_LIGHT, (0, 0, 0, 50))
 
     def test_overlay_black_medium_value(self):
-        self.assertEqual(config.OVERLAY_BLACK_MEDIUM, (0, 0, 0, 75))
+        self.assertEqual(colors.OVERLAY_BLACK_MEDIUM, (0, 0, 0, 75))
 
     def test_overlay_black_heavy_value(self):
-        self.assertEqual(config.OVERLAY_BLACK_HEAVY, (0, 0, 0, 180))
+        self.assertEqual(colors.OVERLAY_BLACK_HEAVY, (0, 0, 0, 180))
 
     def test_overlay_alphas_increasing(self):
         # Light < Medium < Heavy by design
-        self.assertLess(config.OVERLAY_BLACK_LIGHT[3],
-                        config.OVERLAY_BLACK_MEDIUM[3])
-        self.assertLess(config.OVERLAY_BLACK_MEDIUM[3],
-                        config.OVERLAY_BLACK_HEAVY[3])
+        self.assertLess(colors.OVERLAY_BLACK_LIGHT[3],
+                        colors.OVERLAY_BLACK_MEDIUM[3])
+        self.assertLess(colors.OVERLAY_BLACK_MEDIUM[3],
+                        colors.OVERLAY_BLACK_HEAVY[3])
 
     def test_svg_export_bg_white(self):
-        self.assertEqual(BRAND_MAP["SVG_EXPORT_BG"]["app"], config.SVG_EXPORT_BG)
+        self.assertEqual(BRAND_MAP["SVG_EXPORT_BG"]["app"], colors.SVG_EXPORT_BG)
 
     def test_svg_export_stroke_black(self):
-        self.assertEqual(BRAND_MAP["SVG_EXPORT_STROKE"]["app"], config.SVG_EXPORT_STROKE)
+        self.assertEqual(BRAND_MAP["SVG_EXPORT_STROKE"]["app"], colors.SVG_EXPORT_STROKE)
 
     def test_missing_hex_placeholder(self):
-        self.assertEqual(BRAND_MAP["MISSING_HEX_PLACEHOLDER"]["app"], config.MISSING_HEX_PLACEHOLDER)
+        self.assertEqual(BRAND_MAP["MISSING_HEX_PLACEHOLDER"]["app"], colors.MISSING_HEX_PLACEHOLDER)
 
     def test_constants_in_all(self):
         for name in ["OVERLAY_BLACK_LIGHT", "OVERLAY_BLACK_MEDIUM",
                      "OVERLAY_BLACK_HEAVY", "SVG_EXPORT_BG",
                      "SVG_EXPORT_STROKE", "MISSING_HEX_PLACEHOLDER"]:
-            self.assertIn(name, config.__all__, f"{name} missing from __all__")
+            self.assertIn(name, colors.__all__, f"{name} missing from __all__")
 
     def test_overlays_construct_valid_qcolor(self):
         from PyQt6.QtGui import QColor
-        for tup in [config.OVERLAY_BLACK_LIGHT,
-                    config.OVERLAY_BLACK_MEDIUM,
-                    config.OVERLAY_BLACK_HEAVY]:
+        for tup in [colors.OVERLAY_BLACK_LIGHT,
+                    colors.OVERLAY_BLACK_MEDIUM,
+                    colors.OVERLAY_BLACK_HEAVY]:
             qc = QColor(*tup)
             self.assertTrue(qc.isValid())
             self.assertEqual(qc.alpha(), tup[3])
@@ -1852,7 +1853,7 @@ class TestEdgeCases(unittest.TestCase):
     # ── Accessibility integration ──
     def test_accessibility_brand_gold_on_black(self):
         ratio = ColorAccessibility.calculate_contrast_ratio(
-            config.BRAND_GOLD_RGB, (0,0,0))
+            colors.BRAND_GOLD_RGB, (0,0,0))
         self.assertGreater(ratio, 4.5)  # Brand gold passes AA on black
 
     def test_accessibility_brand_gold_dark_on_white(self):
@@ -1860,7 +1861,7 @@ class TestEdgeCases(unittest.TestCase):
         # but well above the conversational-readability floor. Just check it's
         # in a reasonable contrast range.
         ratio = ColorAccessibility.calculate_contrast_ratio(
-            ColorMath.hex_to_rgb(config.BRAND_DARK_GOLD), (255,255,255))
+            ColorMath.hex_to_rgb(colors.BRAND_DARK_GOLD), (255,255,255))
         self.assertGreater(ratio, 2.5)
         self.assertLess(ratio, 5.0)
 
@@ -1903,13 +1904,13 @@ class TestEdgeCases(unittest.TestCase):
     # ── Brand colors don't leak into IMAGE_MODE_COLORS overrides ──
     def test_image_mode_inherits_dark(self):
         # IMAGE_MODE_COLORS is built from DARK_THEME_COLORS spread + overrides
-        self.assertEqual(config.IMAGE_MODE_COLORS["text_accent"], config.BRAND_GOLD)
+        self.assertEqual(colors.IMAGE_MODE_COLORS["text_accent"], colors.BRAND_GOLD)
 
     # ── MISSING_HEX_PLACEHOLDER as fallback ──
     def test_missing_hex_used_for_dict_default(self):
         entry = {}  # missing 'hex' key
-        hex_code = entry.get("hex", config.MISSING_HEX_PLACEHOLDER)
-        self.assertEqual(hex_code, config.MISSING_HEX_PLACEHOLDER)
+        hex_code = entry.get("hex", colors.MISSING_HEX_PLACEHOLDER)
+        self.assertEqual(hex_code, colors.MISSING_HEX_PLACEHOLDER)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1920,9 +1921,9 @@ class TestStylesheetCache(unittest.TestCase):
     """cache.py — StylesheetCache class (theme-keyed stylesheet generation)."""
 
     def setUp(self):
-        # Use a real theme dict from config so stylesheets compose correctly
+        # Use a real theme dict from colors so stylesheets compose correctly
         self.theme_name = "dark"
-        self.theme = config.DARK_THEME_COLORS
+        self.theme = colors.DARK_THEME_COLORS
 
     def test_menu_stylesheet_is_string(self):
         ss = StylesheetCache.get_menu_stylesheet(self.theme_name, False, self.theme)

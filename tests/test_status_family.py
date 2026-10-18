@@ -27,7 +27,7 @@ from pathlib import Path
 
 import pytest
 
-from utils import config as C
+from utils import colors as C
 from tests.color_values import (
     RETIRED_BOOTSTRAP_ERROR, RETIRED_BOOTSTRAP_SUCCESS, RETIRED_ORPHAN_ERROR_TEXT,
     RETIRED_ORPHAN_ERROR_TEXT_LIGHT, RETIRED_WARNING_AMBER)
@@ -163,9 +163,9 @@ def test_every_value_is_the_registered_one(name, value):
 
 @pytest.mark.parametrize("dead", sorted(RETIRED))
 def test_no_retired_value_is_live_in_the_config(dead):
-    src = (ROOT / "utils" / "config.py").read_text(encoding="utf-8-sig")
+    src = (ROOT / "utils" / "colors.py").read_text(encoding="utf-8-sig")
     assert dead not in _code_only(src), (
-        f"utils/config.py uses {dead} again -- {RETIRED[dead]}")
+        f"utils/colors.py uses {dead} again -- {RETIRED[dead]}")
 
 
 @pytest.mark.parametrize("dead", sorted(RETIRED))
@@ -186,7 +186,7 @@ def test_no_retired_value_is_in_any_palette(dead):
 def test_the_error_text_is_named_in_all_three_palettes():
     """It was a bare literal in dark and image -- the same value written twice,
     which is how two palettes drift apart."""
-    src = (ROOT / "utils" / "config.py").read_text(encoding="utf-8-sig")
+    src = (ROOT / "utils" / "colors.py").read_text(encoding="utf-8-sig")
     assert src.count("'status_error_text': STATUS_ERROR_TEXT,") == 2
     assert src.count("'status_error_text': STATUS_ERROR_TEXT_LIGHT,") == 1
 
@@ -253,7 +253,7 @@ def test_the_two_spellings_did_not_come_back():
     under TWO identifiers across three applications -- STATUS_ERROR_LIGHT here
     and in the transformer, STATUS_ERROR_TEXT_LIGHT in the palette manager.
     One name now."""
-    src = (ROOT / "utils" / "config.py").read_text(encoding="utf-8-sig")
+    src = (ROOT / "utils" / "colors.py").read_text(encoding="utf-8-sig")
     assert not re.search(r"\bSTATUS_ERROR_LIGHT\b", _code_only(src)), (
         "STATUS_ERROR_LIGHT is back; the name is STATUS_ERROR_TEXT_LIGHT")
 
@@ -265,7 +265,7 @@ def test_the_light_text_is_not_computed_from_the_fill():
     A derivative whose
     rule no longer produces it is not a derivative."""
     assert C.STATUS_ERROR_TEXT_LIGHT != C.lighten(C.STATUS_ERROR, -20)
-    src = (ROOT / "utils" / "config.py").read_text(encoding="utf-8-sig")
+    src = (ROOT / "utils" / "colors.py").read_text(encoding="utf-8-sig")
     assert "lighten(STATUS_ERROR" not in _code_only(src)
 
 
@@ -274,7 +274,7 @@ def test_this_guard_is_actually_looking():
     ever turned up empty they would pass while checking nothing."""
     for mode, palette in PALETTES.items():
         assert len(palette) > 40, f"{mode} has only {len(palette)} keys"
-    src = (ROOT / "utils" / "config.py").read_text(encoding="utf-8-sig")
+    src = (ROOT / "utils" / "colors.py").read_text(encoding="utf-8-sig")
     assert len(_code_only(src)) > 5000, "the tokenizer returned almost nothing"
     # RNV-COLOR-SYNC, 2026-10-16: the success fill by name, where it was
     # its hex code; the sync writes it into the code as a literal.

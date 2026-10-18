@@ -15,7 +15,7 @@ from sklearn.cluster import KMeans
 from typing import Callable
 from dataclasses import dataclass
 
-from utils.config import contrast_ink_rgb, SVG_EXPORT_BG, SVG_EXPORT_STROKE
+from utils.colors import contrast_ink_rgb, SVG_EXPORT_BG, SVG_EXPORT_STROKE
 from utils.logger import Logger
 from utils.error_handler import ErrorHandler, ErrorContext
 from utils.signal_manager import SignalConnectionManager

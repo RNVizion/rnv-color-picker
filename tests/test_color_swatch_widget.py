@@ -24,7 +24,7 @@ from PyQt6.QtCore import Qt, QPoint
 from PyQt6.QtGui import QAction
 
 from ui.color_swatch_widget import ColorSwatchWidget
-from utils import config
+from utils import colors
 from tests.color_values import DATA_RED, EXAMPLE_GOLD, EXAMPLE_GOLD_HSL, EXAMPLE_GOLD_RGB
 
 
@@ -43,7 +43,7 @@ def mock_parent():
     24K-line ColorPickerApp.
     """
     parent = MagicMock()
-    parent.theme_manager.get_current_theme.return_value = config.DARK_THEME_COLORS
+    parent.theme_manager.get_current_theme.return_value = colors.DARK_THEME_COLORS
     parent.theme_manager.is_image_mode.return_value = False
     return parent
 

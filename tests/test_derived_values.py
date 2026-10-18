@@ -28,12 +28,14 @@ import ast
 import pathlib
 import re
 
-from utils import config as colors
-from utils.config import (DARK_THEME_COLORS as DARK,
-                          LIGHT_THEME_COLORS as LIGHT,
-                          IMAGE_MODE_COLORS as IMAGE,
-                          ThemeManager,
-                          translucent)
+from utils import colors
+from utils.config import (
+    ThemeManager,
+)
+from utils.colors import (
+    DARK_THEME_COLORS as DARK, LIGHT_THEME_COLORS as LIGHT, IMAGE_MODE_COLORS as IMAGE,
+    translucent,
+)
 from tests.color_values import (
     EXAMPLE_BLACK, EXAMPLE_CHARCOAL, EXAMPLE_CHARCOAL_AT_ED, EXAMPLE_GOLD, EXAMPLE_GRAY_44,
     EXAMPLE_NEAR_BLACK_AT_ED, EXAMPLE_NEAR_BLACK_BARE_UPPER, INVALID_HEX_BAD_DIGITS,
@@ -41,7 +43,7 @@ from tests.color_values import (
     RETIRED_SCROLLBAR_HANDLE_RGBA)
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-SRC = ROOT / "utils" / "config.py"
+SRC = ROOT / "utils" / "colors.py"
 PALETTES = {"DARK_THEME_COLORS": DARK, "LIGHT_THEME_COLORS": LIGHT,
             "IMAGE_MODE_COLORS": IMAGE}
 
@@ -144,7 +146,7 @@ def _sources():
 
 def _derived():
     """(where, call node, resolved value) for every translucent() call at
-    module level in utils/config.py -- a constant, or a value in a dict."""
+    module level in utils/colors.py -- a constant, or a value in a dict."""
     tree = ast.parse(SRC.read_text(encoding="utf-8-sig"))
     out = []
     for node in tree.body:
@@ -198,7 +200,7 @@ def test_translucent_refuses_what_it_cannot_compose():
 
 def test_the_alphas_are_the_declared_bytes():
     for name, byte in ALPHAS.items():
-        assert hasattr(colors, name), f"utils.config has no {name}"
+        assert hasattr(colors, name), f"utils.colors has no {name}"
         value = getattr(colors, name)
         assert type(value) is int, f"{name} is {value!r}, not an int byte"
         assert value == byte, f"{name} is {value:#x}, declared {byte:#x}"
@@ -227,7 +229,7 @@ def test_every_derived_value_names_constants_that_exist():
                 bad.append(f"{where}: the {pos} is {ast.unparse(arg)}, not a name")
             elif not hasattr(colors, arg.id):
                 bad.append(f"{where}: the {pos} names {arg.id}, which "
-                           f"utils.config does not define")
+                           f"utils.colors does not define")
         if isinstance(base, ast.Name) and hasattr(colors, base.id):
             if not re.fullmatch(r"#[0-9a-fA-F]{6}", str(getattr(colors, base.id))):
                 bad.append(f"{where}: the base {base.id} is not a six-digit color")
@@ -297,7 +299,7 @@ def test_the_diagnostic_overlay_stays_outside_the_brand():
                 "DEBUG_BG is computed from the application's own values; a "
                 "diagnostic overlay must not follow the brand")
             return
-    raise AssertionError("utils.config has no DEBUG_BG")
+    raise AssertionError("utils.colors has no DEBUG_BG")
 
 
 # ------------------------------------------------ the sheet that ignored it
@@ -386,7 +388,7 @@ def test_the_collapsed_value_is_gone_in_every_spelling():
 
 # ------------------------------------------------ eight-digit hex, lower case
 
-LOWER8_MODULES = ('utils.config',)
+LOWER8_MODULES = ('utils.colors',)
 #: Found when this was written; below the floor, the sweep has gone blind.
 #: 10 until RNV-NAMED-AND-USED (2026-10-04), when image mode's unread
 #: scroll_area_bg override went. 9 until 2026-10-05, when the frame color
@@ -474,9 +476,9 @@ def test_eight_digit_hex_is_lower_case():
 import importlib as _importlib
 
 #: Where the derived constants live, and where their bases and alphas live.
-TUPLE_HOME = 'utils/config.py'
-TUPLE_HOME_MODULE = 'utils.config'
-TUPLE_BASES_MODULE = 'utils.config'
+TUPLE_HOME = 'utils/colors.py'
+TUPLE_HOME_MODULE = 'utils.colors'
+TUPLE_BASES_MODULE = 'utils.colors'
 #: Each derived constant, by NAME: (helper, base, alpha or None). A register
 #: move passes straight through; a value re-made from something else fails.
 TUPLES_MADE_OF = {'OVERLAY_BLACK_LIGHT': ('translucent_tuple', 'TRUE_BLACK', 'OVERLAY_LIGHT_ALPHA'), 'OVERLAY_BLACK_MEDIUM': ('translucent_tuple', 'TRUE_BLACK', 'OVERLAY_MEDIUM_ALPHA'), 'OVERLAY_BLACK_HEAVY': ('translucent_tuple', 'TRUE_BLACK', 'OVERLAY_HEAVY_ALPHA')}
@@ -648,8 +650,8 @@ def test_the_unread_canvas_overlay_stays_removed():
     assert IMAGE["image_viewer_bg"] == DARK["image_viewer_bg"], (
         "image mode overrides image_viewer_bg again, and image mode never reads it")
     sources = list(_sources())
-    assert any(rel.as_posix() == "utils/config.py" for rel, _ in sources), (
-        "the sweep cannot see utils/config.py, so it proves nothing")
+    assert any(rel.as_posix() == "utils/colors.py" for rel, _ in sources), (
+        "the sweep cannot see utils/colors.py, so it proves nothing")
     named = [f"{rel}:{node.lineno}" for rel, tree in sources for node in ast.walk(tree)
              if (isinstance(node, ast.Name) and node.id == "APP_CANVAS_OVERLAY")
              or (isinstance(node, ast.Constant) and node.value == "APP_CANVAS_OVERLAY")]

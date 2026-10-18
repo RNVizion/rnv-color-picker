@@ -49,7 +49,7 @@ from ui.progress_dialog import (
     IMAGE_PROGRESS_STYLE,
 )
 from ui.transparent_scroll_widget import TransparentScrollWidget
-from utils import config
+from utils import colors
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -78,19 +78,19 @@ class TestBuildProgressStylesheet:
     the colors interpolated. Pure function — easy to verify."""
 
     def test_dark_theme_produces_nonempty_stylesheet(self):
-        ss = _build_progress_stylesheet(config.DARK_THEME_COLORS)
+        ss = _build_progress_stylesheet(colors.DARK_THEME_COLORS)
         assert ss != ""
         assert "QDialog" in ss
         assert "QProgressBar" in ss
         assert "QPushButton" in ss
 
     def test_dark_theme_uses_dark_dialog_bg(self):
-        ss = _build_progress_stylesheet(config.DARK_THEME_COLORS)
-        assert config.DARK_THEME_COLORS["dialog_bg"].lower() in ss.lower()
+        ss = _build_progress_stylesheet(colors.DARK_THEME_COLORS)
+        assert colors.DARK_THEME_COLORS["dialog_bg"].lower() in ss.lower()
 
     def test_light_theme_uses_light_dialog_bg(self):
-        ss = _build_progress_stylesheet(config.LIGHT_THEME_COLORS)
-        assert config.LIGHT_THEME_COLORS["dialog_bg"].lower() in ss.lower()
+        ss = _build_progress_stylesheet(colors.LIGHT_THEME_COLORS)
+        assert colors.LIGHT_THEME_COLORS["dialog_bg"].lower() in ss.lower()
 
     def test_module_level_constants_prebuilt(self):
         # The module exposes prebuilt stylesheets for backward compat

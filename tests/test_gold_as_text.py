@@ -40,8 +40,8 @@ import re
 
 import pytest
 
-from utils import config as colors
-from utils.config import (DARK_THEME_COLORS as DARK,
+from utils import colors
+from utils.colors import (DARK_THEME_COLORS as DARK,
                           IMAGE_MODE_COLORS as IMAGE,
                           LIGHT_THEME_COLORS as LIGHT)
 
@@ -175,7 +175,7 @@ def _fstrings(source: str):
         for node in ast.walk(scope):
             #: AN ALIASED IMPORT IS A BINDING. rnv-color-palette-manager binds
             #: its palette with a lazy import inside each style function --
-            #: `from ui.colors import LIGHT_THEME_COLORS as colors` -- to break
+            #: `from utils.colors import LIGHT_THEME_COLORS as colors` -- to break
             #: a circular dependency. Reading only Assign missed that, so a
             #: light-only block's `{accent_dark}` resolved to a bare local with
             #: no mode marker in it, the mode reader fell back to all three,

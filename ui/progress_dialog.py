@@ -18,7 +18,7 @@ from PyQt6.QtCore import Qt, pyqtSignal, QTimer
 
 from utils.logger import Logger
 from utils.signal_manager import SignalConnectionManager
-from utils.config import (
+from utils.colors import (
     DARK_THEME_COLORS, LIGHT_THEME_COLORS, IMAGE_MODE_COLORS,
 )
 

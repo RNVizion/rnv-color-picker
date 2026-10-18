@@ -29,7 +29,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QCloseEvent, QShowEvent
 
 from ui.settings_panel import SettingsPanel, ColorHistoryItem
-from utils import config
+from utils import colors
 from tests.color_values import (
     DATA_BLACK, DATA_BLACK_RGB_COMPACT, DATA_BLACK_SHORT, DATA_CERULEAN,
     DATA_CERULEAN_UPPER, DATA_DARK_ORANGE, DATA_DARK_ORANGE_BARE,
@@ -64,11 +64,11 @@ def _make_mock_parent_app(theme_name: str = "dark"):
     parent = MagicMock()
     parent.theme_manager.current_theme = theme_name
     if theme_name == "light":
-        parent.theme_manager.get_current_theme.return_value = config.LIGHT_THEME_COLORS
+        parent.theme_manager.get_current_theme.return_value = colors.LIGHT_THEME_COLORS
     elif theme_name == "image":
-        parent.theme_manager.get_current_theme.return_value = config.IMAGE_MODE_COLORS
+        parent.theme_manager.get_current_theme.return_value = colors.IMAGE_MODE_COLORS
     else:
-        parent.theme_manager.get_current_theme.return_value = config.DARK_THEME_COLORS
+        parent.theme_manager.get_current_theme.return_value = colors.DARK_THEME_COLORS
     parent.theme_manager.is_image_mode.return_value = (theme_name == "image")
     parent.tooltips_enabled = True
     parent.debug_label = None
@@ -260,11 +260,11 @@ class TestSettingsPanelFoundation:
 
     def test_get_accent_dark_theme_uses_brand_gold(self, panel):
         # Dark + Image themes use the bright BRAND_GOLD
-        assert panel._get_accent() == config.BRAND_GOLD
+        assert panel._get_accent() == colors.BRAND_GOLD
 
     def test_get_accent_light_theme_uses_brand_gold_dark(self, panel_light):
         # Light theme uses the muted BRAND_DARK_GOLD
-        assert panel_light._get_accent() == config.BRAND_DARK_GOLD
+        assert panel_light._get_accent() == colors.BRAND_DARK_GOLD
 
     def test_get_theme_returns_dict(self, panel):
         theme = panel._get_theme()
@@ -274,10 +274,10 @@ class TestSettingsPanelFoundation:
             assert key in theme
 
     def test_get_theme_dark_returns_dark_colors(self, panel):
-        assert panel._get_theme() == config.DARK_THEME_COLORS
+        assert panel._get_theme() == colors.DARK_THEME_COLORS
 
     def test_get_theme_light_returns_light_colors(self, panel_light):
-        assert panel_light._get_theme() == config.LIGHT_THEME_COLORS
+        assert panel_light._get_theme() == colors.LIGHT_THEME_COLORS
 
     def test_create_section_header_returns_qlabel(self, panel):
         header = panel._create_section_header("My Section")
@@ -288,7 +288,7 @@ class TestSettingsPanelFoundation:
         header = panel._create_section_header("Test")
         ss = header.styleSheet()
         # The dark-theme accent (BRAND_GOLD) must appear in the stylesheet
-        assert config.BRAND_GOLD.lower() in ss.lower()
+        assert colors.BRAND_GOLD.lower() in ss.lower()
 
     def test_create_section_divider_returns_hline_qframe(self, panel):
         divider = panel._create_section_divider()
@@ -302,7 +302,7 @@ class TestSettingsPanelFoundation:
         This test pins the fix in place."""
         divider = panel._create_section_divider()
         ss = divider.styleSheet()
-        expected_color = config.DARK_THEME_COLORS["border_hover"]
+        expected_color = colors.DARK_THEME_COLORS["border_hover"]
         assert expected_color.lower() in ss.lower()
 
 
@@ -323,7 +323,7 @@ class TestSettingsPanelTheme:
         palette = panel.palette()
         hl = palette.color(QPalette.ColorRole.Highlight)
         # Must match DARK_THEME_COLORS['selected_bg']
-        expected = QColor(config.DARK_THEME_COLORS["selected_bg"])
+        expected = QColor(colors.DARK_THEME_COLORS["selected_bg"])
         assert hl.rgb() == expected.rgb()
 
     def test_update_theme_sets_highlight_text(self, panel):
@@ -331,7 +331,7 @@ class TestSettingsPanelTheme:
         panel.update_theme()
         palette = panel.palette()
         fg = palette.color(QPalette.ColorRole.HighlightedText)
-        expected = QColor(config.DARK_THEME_COLORS["text_on_accent"])
+        expected = QColor(colors.DARK_THEME_COLORS["text_on_accent"])
         assert fg.rgb() == expected.rgb()
 
     def test_update_theme_with_no_parent_falls_back_to_dark(self, qtbot):
@@ -409,25 +409,25 @@ class TestBuildDialogStylesheet:
     feed through to the output."""
 
     def test_dark_theme_produces_nonempty_stylesheet(self):
-        ss = SettingsPanel._build_dialog_stylesheet(config.DARK_THEME_COLORS)
+        ss = SettingsPanel._build_dialog_stylesheet(colors.DARK_THEME_COLORS)
         assert isinstance(ss, str)
         assert len(ss) > 100
 
     def test_light_theme_produces_nonempty_stylesheet(self):
-        ss = SettingsPanel._build_dialog_stylesheet(config.LIGHT_THEME_COLORS)
+        ss = SettingsPanel._build_dialog_stylesheet(colors.LIGHT_THEME_COLORS)
         assert isinstance(ss, str)
         assert len(ss) > 100
 
     def test_image_theme_produces_nonempty_stylesheet(self):
-        ss = SettingsPanel._build_dialog_stylesheet(config.IMAGE_MODE_COLORS)
+        ss = SettingsPanel._build_dialog_stylesheet(colors.IMAGE_MODE_COLORS)
         assert isinstance(ss, str)
         assert len(ss) > 100
 
     def test_theme_dict_values_appear_in_output(self):
         # If we change a theme key, the stylesheet must reflect the change
-        ss = SettingsPanel._build_dialog_stylesheet(config.DARK_THEME_COLORS)
+        ss = SettingsPanel._build_dialog_stylesheet(colors.DARK_THEME_COLORS)
         # text_primary is used pervasively — it must show up somewhere
-        assert config.DARK_THEME_COLORS["text_primary"].lower() in ss.lower()
+        assert colors.DARK_THEME_COLORS["text_primary"].lower() in ss.lower()
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 8.  HISTORY TAB  (Phase 3b-2)
@@ -1336,7 +1336,7 @@ class TestCreateHarmonySwatch:
         )
         assert "3px solid" in color_box_ss
         # Accent for dark theme is BRAND_GOLD
-        assert config.BRAND_GOLD.lower() in color_box_ss.lower()
+        assert colors.BRAND_GOLD.lower() in color_box_ss.lower()
 
 
 class TestAddHarmonyToPalette:
@@ -1471,14 +1471,14 @@ class TestAccessibilityTabWiring:
         """
         panel._update_contrast_check()
         dark = panel.contrast_ratio_label.styleSheet()
-        assert config.DARK_THEME_COLORS['rating_excellent'] in dark, dark
+        assert colors.DARK_THEME_COLORS['rating_excellent'] in dark, dark
 
         panel.parent_app.theme_manager.get_current_theme.return_value = (
-            config.LIGHT_THEME_COLORS)
+            colors.LIGHT_THEME_COLORS)
         panel.update_theme()
         light = panel.contrast_ratio_label.styleSheet()
-        assert config.LIGHT_THEME_COLORS['rating_excellent'] in light, light
-        assert config.DARK_THEME_COLORS['rating_excellent'] not in light
+        assert colors.LIGHT_THEME_COLORS['rating_excellent'] in light, light
+        assert colors.DARK_THEME_COLORS['rating_excellent'] not in light
 
     def test_every_rating_tier_is_reachable_from_the_spin_boxes(self, panel):
         """Each tier must be something the widget can actually show. A scale
@@ -1495,7 +1495,7 @@ class TestAccessibilityTabWiring:
             panel._update_contrast_check()
             style = panel.contrast_ratio_label.styleSheet()
             for key in ColorAccessibility.RATING_KEYS:
-                if config.DARK_THEME_COLORS[key] in style:
+                if colors.DARK_THEME_COLORS[key] in style:
                     seen.add(key)
         assert seen == set(ColorAccessibility.RATING_KEYS), (
             f"tiers never reached from the widget: "
@@ -1562,12 +1562,12 @@ class TestUpdateContrastCheck:
         self._set_fg_bg(panel, (0, 0, 0), (255, 255, 255))
         ss = panel.wcag_aa_normal.styleSheet()
         # Background uses STATUS_SUCCESS_BG
-        assert config.STATUS_SUCCESS_BG.lower() in ss.lower()
+        assert colors.STATUS_SUCCESS_BG.lower() in ss.lower()
 
     def test_fail_uses_error_styling(self, panel):
         self._set_fg_bg(panel, (255, 255, 255), (255, 255, 255))
         ss = panel.wcag_aa_normal.styleSheet()
-        assert config.STATUS_ERROR_BG.lower() in ss.lower()
+        assert colors.STATUS_ERROR_BG.lower() in ss.lower()
 
     def test_fg_preview_styled_with_fg_rgb(self, panel):
         self._set_fg_bg(panel, (123, 45, 67), (200, 200, 200))
@@ -1848,7 +1848,7 @@ class TestCreateShortcutRow:
         row = panel._create_shortcut_row("Ctrl+S", "Save")
         key_label = row.itemAt(0).widget()
         ss = key_label.styleSheet()
-        expected_bg = config.DARK_THEME_COLORS["pressed_bg"]
+        expected_bg = colors.DARK_THEME_COLORS["pressed_bg"]
         assert expected_bg.lower() in ss.lower()
 
 
@@ -2215,8 +2215,8 @@ class TestMutedDescriptions:
     That stylesheet is rebuilt by update_theme() on every switch, so the
     descriptions follow the mode without anything tracking them."""
 
-    THEMES = {"dark": config.DARK_THEME_COLORS, "light": config.LIGHT_THEME_COLORS,
-              "image": config.IMAGE_MODE_COLORS}
+    THEMES = {"dark": colors.DARK_THEME_COLORS, "light": colors.LIGHT_THEME_COLORS,
+              "image": colors.IMAGE_MODE_COLORS}
 
     @staticmethod
     def _muted(panel):
@@ -2258,9 +2258,9 @@ class TestMutedDescriptions:
                                for w in primary), mode
 
     def test_the_two_values_are_the_ones_the_fleet_already_uses(self):
-        assert config.DARK_THEME_COLORS["text_muted"] == config.GRAY_88
-        assert config.IMAGE_MODE_COLORS["text_muted"] == config.GRAY_88
-        assert config.LIGHT_THEME_COLORS["text_muted"] == config.GRAY_66
+        assert colors.DARK_THEME_COLORS["text_muted"] == colors.GRAY_88
+        assert colors.IMAGE_MODE_COLORS["text_muted"] == colors.GRAY_88
+        assert colors.LIGHT_THEME_COLORS["text_muted"] == colors.GRAY_66
 
     def test_no_label_is_written_in_a_css_gray(self):
         """The literal the ruling retired, anywhere the application EVALUATES a
@@ -2310,10 +2310,10 @@ class TestHarmonyFollowsASwitch:
     as well as the stylesheet, so a rule that stops reaching the swatch fails
     even while the text of the rule is still there."""
 
-    THEMES = {"dark": config.DARK_THEME_COLORS, "light": config.LIGHT_THEME_COLORS,
-              "image": config.IMAGE_MODE_COLORS}
-    GOLD = {"dark": config.BRAND_GOLD, "image": config.BRAND_GOLD,
-            "light": config.BRAND_DARK_GOLD}
+    THEMES = {"dark": colors.DARK_THEME_COLORS, "light": colors.LIGHT_THEME_COLORS,
+              "image": colors.IMAGE_MODE_COLORS}
+    GOLD = {"dark": colors.BRAND_GOLD, "image": colors.BRAND_GOLD,
+            "light": colors.BRAND_DARK_GOLD}
     #: from a panel built in dark, every ordered pair of different modes
     WALK = ("light", "image", "dark", "light", "dark", "image", "light")
 
@@ -2368,8 +2368,8 @@ class TestHarmonyFollowsASwitch:
             assert self._drawn(base)[0] == gold, (mode, self._drawn(base))
             assert others, mode
             for box in others:
-                assert f"2px solid {config.GRAY_44}" in box.styleSheet(), (mode, box.styleSheet())
-                assert self._drawn(box)[0] == config.GRAY_44.lower(), (mode, self._drawn(box))
+                assert f"2px solid {colors.GRAY_44}" in box.styleSheet(), (mode, box.styleSheet())
+                assert self._drawn(box)[0] == colors.GRAY_44.lower(), (mode, self._drawn(box))
 
     def test_a_switch_keeps_the_harmony_on_show(self, panel):
         panel.harmony_type_combo.setCurrentText("Tetradic (Square)")
@@ -2404,7 +2404,7 @@ class TestHarmonyFollowsASwitch:
         switch must not depend on the order __init__ builds things in."""
         del panel.harmony_swatches_layout
         self._switch(panel, "light")        # no AttributeError
-        assert config.LIGHT_THEME_COLORS["text_muted"] in panel.styleSheet()
+        assert colors.LIGHT_THEME_COLORS["text_muted"] in panel.styleSheet()
 
 
 # RNV-PANEL-SWITCH
@@ -2424,10 +2424,10 @@ class TestPanelFollowsASwitch:
     stylesheet that reads the mode once, at build, fails it. The others read
     what Qt resolves and draws."""
 
-    THEMES = {"dark": config.DARK_THEME_COLORS, "light": config.LIGHT_THEME_COLORS,
-              "image": config.IMAGE_MODE_COLORS}
-    GOLD_TEXT = {"dark": config.BRAND_GOLD, "image": config.BRAND_GOLD,
-                 "light": config.BRAND_DARK_GOLD_DEEP}
+    THEMES = {"dark": colors.DARK_THEME_COLORS, "light": colors.LIGHT_THEME_COLORS,
+              "image": colors.IMAGE_MODE_COLORS}
+    GOLD_TEXT = {"dark": colors.BRAND_GOLD, "image": colors.BRAND_GOLD,
+                 "light": colors.BRAND_DARK_GOLD_DEEP}
     GOLD_LABELS = ("Auto-Save Options", "File Operations", "Color Operations",
                    "View Controls", "Application", "General Preferences",
                    "Color Settings", "Export Settings", "UI Preferences",

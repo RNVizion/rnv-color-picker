@@ -15,7 +15,7 @@ from core.color_math import ColorMath
 from utils.logger import Logger
 from utils.cache import ColorCache
 from utils.error_handler import ErrorHandler
-from utils.config import (
+from utils.colors import (
     contrast_ink,
     SVG_EXPORT_BG, SVG_EXPORT_STROKE,
 )

@@ -1,18 +1,18 @@
 {
-  "about": "Where each color in utils/config.py comes from. A string is a name in rnv-brand (TABLE.key, or one of its own constants, in engine/brand.py); an object is a value this application owns, with the reason. Edit this file, then run: python tools/sync_colors.py",
+  "about": "Where each color in utils/colors.py comes from. A string is a name in rnv-brand (TABLE.key, or one of its own constants, in engine/brand.py); an object is a value this application owns, with the reason. Edit this file, then run: python tools/sync_colors.py",
   "app": "RNV Color Picker",
-  "color_file": "utils/config.py",
+  "color_file": "utils/colors.py",
   "palettes": [
     {
-      "file": "utils/config.py",
+      "file": "utils/colors.py",
       "dict": "DARK_THEME_COLORS"
     },
     {
-      "file": "utils/config.py",
+      "file": "utils/colors.py",
       "dict": "LIGHT_THEME_COLORS"
     },
     {
-      "file": "utils/config.py",
+      "file": "utils/colors.py",
       "dict": "IMAGE_MODE_COLORS"
     }
   ],

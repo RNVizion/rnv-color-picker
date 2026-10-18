@@ -63,8 +63,8 @@ MARKERS = ("RNV-BUTTON-NAMING-GUARD", "RNV-BUTTON-NAMING-TOOL-DO-NOT-SWEEP")
 
 def _values(pins):
     """Each key's constant, as the value it holds."""
-    from utils import config
-    return {key: getattr(config, name) for key, name in pins.items()}
+    from utils import colors
+    return {key: getattr(colors, name) for key, name in pins.items()}
 
 
 def _palettes():
@@ -75,7 +75,7 @@ def _palettes():
     a literal, and an AST resolver returns None for it -- then compares None
     with None and passes.
     """
-    from utils.config import DARK_THEME_COLORS, LIGHT_THEME_COLORS
+    from utils.colors import DARK_THEME_COLORS, LIGHT_THEME_COLORS
     return {"dark": DARK_THEME_COLORS, "light": LIGHT_THEME_COLORS}
 
 

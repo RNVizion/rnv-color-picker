@@ -17,13 +17,13 @@ from pathlib import Path
 
 import pytest
 
-from utils import config as C
+from utils import colors as C
 from tests.color_values import (
     REGISTER_APP_SURFACE_LIGHT_2, RETIRED_LIGHT_STRAY_F0, RETIRED_LIGHT_STRAY_F8,
     RETIRED_LIGHT_STRAY_FA)
 
 ROOT = Path(__file__).resolve().parent.parent
-SOURCE = ROOT / 'utils/config.py'
+SOURCE = ROOT / 'utils/colors.py'
 PALETTES = ['DARK_THEME_COLORS', 'LIGHT_THEME_COLORS', 'IMAGE_MODE_COLORS']
 HEX = re.compile(r"#[0-9a-fA-F]{6}$")
 

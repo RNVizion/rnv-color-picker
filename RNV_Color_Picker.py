@@ -48,13 +48,12 @@ from ui.progress_dialog import LoadingDialog, QuickProgressDialog
 
 # Utilities
 from utils.config import (
-    contrast_ink_rgb, SVG_EXPORT_BG, SVG_EXPORT_STROKE,
-    ThemeManager, MAX_COLORS, APP_VERSION,
-    BUTTON_HEIGHT_MIN, BUTTON_HEIGHT_MAX,
-    WINDOW_WIDTH_MIN, WINDOW_WIDTH_MAX, SWATCH_SIZE,
-    DEBUG_BG, DEBUG_TEXT,
-    BRAND_GOLD, DARK_THEME_COLORS,
-    OVERLAY_BLACK_MEDIUM,
+    ThemeManager, MAX_COLORS, APP_VERSION, BUTTON_HEIGHT_MIN, BUTTON_HEIGHT_MAX, WINDOW_WIDTH_MIN,
+    WINDOW_WIDTH_MAX, SWATCH_SIZE,
+)
+from utils.colors import (
+    contrast_ink_rgb, SVG_EXPORT_BG, SVG_EXPORT_STROKE, DEBUG_BG, DEBUG_TEXT, BRAND_GOLD,
+    DARK_THEME_COLORS, OVERLAY_BLACK_MEDIUM,
 )
 from utils.font_loader import load_embedded_font
 from utils.logger import Logger, get_logger

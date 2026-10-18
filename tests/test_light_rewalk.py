@@ -21,7 +21,7 @@ import pathlib
 
 import pytest
 
-from utils import config as C
+from utils import colors as C
 from tests.color_values import (
     EXAMPLE_BLACK, EXAMPLE_WHITE, REGISTER_APP_SURFACE_LIGHT_2,
     REGISTER_GOLD_TEXT_GROUND_FLOOR)

@@ -9,7 +9,7 @@ import colorsys
 from enum import Enum
 from dataclasses import dataclass
 
-from utils import config
+from utils import colors
 from utils.logger import Logger
 from utils.cache import ColorCache
 
@@ -250,7 +250,7 @@ class ColorAccessibility:
         # better than the other.
         # RNV-NAMED-AND-USED (2026-10-04): the triple comes from the same
         # place; it was written out here as (255, 255, 255) and (0, 0, 0).
-        return config.contrast_ink_rgb(background)
+        return colors.contrast_ink_rgb(background)
     
     @staticmethod
     def suggest_accessible_color(
@@ -318,7 +318,7 @@ class ColorAccessibility:
     #: A constant names a color and a key names a role -- ruled 2026-09-02.
     #: "The color of the Good tier" is a role, and it is a role whose answer
     #: differs per mode, which is why it cannot live in this module at all.
-    #: This module owns WHICH TIER a ratio falls in; utils/config.py owns what
+    #: This module owns WHICH TIER a ratio falls in; utils/colors.py owns what
     #: each tier looks like on the ground it is drawn on.
     RATING_KEYS: tuple[str, ...] = ("rating_excellent", "rating_good",
                                     "rating_fair", "rating_poor")
@@ -370,12 +370,12 @@ class ColorAccessibility:
 
         Args:
             ratio: Contrast ratio
-            theme: A theme dict from utils.config; defaults to dark
+            theme: A theme dict from utils.colors; defaults to dark
 
         Returns:
             RGB color for the tier, on the ground `theme` describes
         """
-        palette = theme if theme is not None else config.DARK_THEME_COLORS
+        palette = theme if theme is not None else colors.DARK_THEME_COLORS
         value = str(palette[ColorAccessibility.get_contrast_rating_key(ratio)])
         digits = value.lstrip("#")
         if len(digits) == 8:                 # #AARRGGBB, Qt's own spelling

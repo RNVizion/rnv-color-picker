@@ -14,7 +14,7 @@ from pathlib import Path
 from utils.logger import Logger
 from utils.error_handler import ErrorHandler
 from utils.cache import ColorCache
-from utils.config import MISSING_RGB_PLACEHOLDER
+from utils.colors import MISSING_RGB_PLACEHOLDER
 
 logger = Logger("ColorHistory")
 ERROR_HANDLER_AVAILABLE = True

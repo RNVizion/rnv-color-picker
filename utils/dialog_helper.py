@@ -37,7 +37,7 @@ from PyQt6.QtWidgets import QMessageBox, QWidget, QInputDialog, QLineEdit
 from enum import Enum
 
 from utils.logger import Logger
-from utils.config import (
+from utils.colors import (
     DARK_THEME_COLORS, LIGHT_THEME_COLORS, IMAGE_MODE_COLORS,
     get_theme_colors,
 )
@@ -156,7 +156,7 @@ def _build_dialog_stylesheet(theme: dict) -> str:
 
 
 # Pre-build the default stylesheets from the theme dicts so callers don't
-# have to rebuild every time. If a theme dict is updated in config.py, these
+# have to rebuild every time. If a theme dict is updated in colors.py, these
 # reflect the change on next program start (single source of truth preserved).
 DARK_DIALOG_STYLE  = _build_dialog_stylesheet(DARK_THEME_COLORS)
 LIGHT_DIALOG_STYLE = _build_dialog_stylesheet(LIGHT_THEME_COLORS)

@@ -39,6 +39,7 @@ from PyQt6.QtCore import Qt
 
 from ui.about_dialog import AboutDialog, show_about_dialog
 from utils import config
+from utils import colors
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -61,8 +62,8 @@ def _make_mock_parent(theme_name: str = "dark", with_window_icon: bool = False):
     parent.theme_manager = MagicMock()
     parent.theme_manager.current_theme = theme_name
     parent.theme_manager.get_current_theme = MagicMock(
-        return_value=config.DARK_THEME_COLORS if theme_name in ("dark", "image")
-        else config.LIGHT_THEME_COLORS
+        return_value=colors.DARK_THEME_COLORS if theme_name in ("dark", "image")
+        else colors.LIGHT_THEME_COLORS
     )
     if with_window_icon:
         # Build a tiny non-null pixmap and wrap in QIcon
@@ -221,7 +222,7 @@ class TestGetAccent:
 
     def test_dark_theme_returns_brand_gold(self, dialog):
         # Default fixture is 'dark'
-        assert dialog._get_accent_text() == config.BRAND_GOLD
+        assert dialog._get_accent_text() == colors.BRAND_GOLD
 
     def test_light_theme_returns_brand_gold_dark(self, qtbot, monkeypatch):
         real_parent = _make_mock_parent("light", with_window_icon=False)
@@ -229,7 +230,7 @@ class TestGetAccent:
         dlg = AboutDialog(parent=real_parent)
         dlg._test_real_parent = real_parent
         qtbot.addWidget(dlg)
-        assert dlg._get_accent_text() == config.BRAND_DARK_GOLD_DEEP
+        assert dlg._get_accent_text() == colors.BRAND_DARK_GOLD_DEEP
 
     def test_image_theme_returns_brand_gold(self, qtbot, monkeypatch):
         real_parent = _make_mock_parent("image", with_window_icon=False)
@@ -238,13 +239,13 @@ class TestGetAccent:
         dlg._test_real_parent = real_parent
         qtbot.addWidget(dlg)
         # 'image' theme is treated like 'dark' for accent purposes
-        assert dlg._get_accent_text() == config.BRAND_GOLD
+        assert dlg._get_accent_text() == colors.BRAND_GOLD
 
     def test_no_parent_defaults_to_brand_gold(self, qtbot, monkeypatch):
         monkeypatch.setattr(os.path, "exists", lambda p: False)
         dlg = AboutDialog(parent=None)
         qtbot.addWidget(dlg)
-        assert dlg._get_accent_text() == config.BRAND_GOLD
+        assert dlg._get_accent_text() == colors.BRAND_GOLD
 
     def test_theme_manager_exception_falls_back_to_brand_gold(self, qtbot, monkeypatch):
         # If accessing theme_manager raises, the try/except catches it and
@@ -262,7 +263,7 @@ class TestGetAccent:
         dlg = AboutDialog(parent=real_parent)
         dlg._test_real_parent = real_parent
         qtbot.addWidget(dlg)
-        assert dlg._get_accent_text() == config.BRAND_GOLD
+        assert dlg._get_accent_text() == colors.BRAND_GOLD
 
 
 class TestGetTheme:
@@ -280,7 +281,7 @@ class TestGetTheme:
     def test_dark_parent_returns_dark_theme(self, dialog):
         # Default fixture's mock returns DARK_THEME_COLORS for "dark"
         result = dialog._get_theme()
-        assert result == config.DARK_THEME_COLORS
+        assert result == colors.DARK_THEME_COLORS
 
     def test_light_parent_returns_light_theme(self, qtbot, monkeypatch):
         real_parent = _make_mock_parent("light", with_window_icon=False)
@@ -289,14 +290,14 @@ class TestGetTheme:
         dlg._test_real_parent = real_parent
         qtbot.addWidget(dlg)
         result = dlg._get_theme()
-        assert result == config.LIGHT_THEME_COLORS
+        assert result == colors.LIGHT_THEME_COLORS
 
     def test_no_parent_falls_back_to_dark_colors(self, qtbot, monkeypatch):
         monkeypatch.setattr(os.path, "exists", lambda p: False)
         dlg = AboutDialog(parent=None)
         qtbot.addWidget(dlg)
         result = dlg._get_theme()
-        assert result == config.DARK_THEME_COLORS
+        assert result == colors.DARK_THEME_COLORS
 
     def test_theme_manager_exception_falls_back(self, qtbot, monkeypatch):
         real_parent = QWidget()
@@ -308,7 +309,7 @@ class TestGetTheme:
         dlg._test_real_parent = real_parent
         qtbot.addWidget(dlg)
         result = dlg._get_theme()
-        assert result == config.DARK_THEME_COLORS
+        assert result == colors.DARK_THEME_COLORS
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -326,7 +327,7 @@ class TestApplyTheme:
 
     def test_dialog_stylesheet_contains_dialog_bg_value(self, dialog):
         ss = dialog.styleSheet()
-        expected_bg = config.DARK_THEME_COLORS["dialog_bg"]
+        expected_bg = colors.DARK_THEME_COLORS["dialog_bg"]
         assert expected_bg.lower() in ss.lower()
 
     def test_dialog_stylesheet_contains_tab_styling(self, dialog):
@@ -337,7 +338,7 @@ class TestApplyTheme:
 
     def test_header_widget_uses_pressed_bg(self, dialog):
         ss = dialog.header_widget.styleSheet()
-        expected = config.DARK_THEME_COLORS["pressed_bg"]
+        expected = colors.DARK_THEME_COLORS["pressed_bg"]
         assert expected.lower() in ss.lower()
 
     def test_apply_theme_callable_externally(self, dialog):
@@ -364,7 +365,7 @@ class TestCreateDivider:
     def test_divider_uses_border_hover_color(self, dialog):
         line = dialog._create_divider()
         ss = line.styleSheet()
-        expected = config.DARK_THEME_COLORS["border_hover"]
+        expected = colors.DARK_THEME_COLORS["border_hover"]
         assert expected.lower() in ss.lower()
 
 
@@ -495,10 +496,10 @@ class TestAboutFollowsASwitch:
     The first test is the general one: after any switch, every widget
     carries the stylesheet a dialog built in that mode gives it."""
 
-    THEMES = {"dark": config.DARK_THEME_COLORS, "light": config.LIGHT_THEME_COLORS,
-              "image": config.IMAGE_MODE_COLORS}
-    GOLD_TEXT = {"dark": config.BRAND_GOLD, "image": config.BRAND_GOLD,
-                 "light": config.BRAND_DARK_GOLD_DEEP}
+    THEMES = {"dark": colors.DARK_THEME_COLORS, "light": colors.LIGHT_THEME_COLORS,
+              "image": colors.IMAGE_MODE_COLORS}
+    GOLD_TEXT = {"dark": colors.BRAND_GOLD, "image": colors.BRAND_GOLD,
+                 "light": colors.BRAND_DARK_GOLD_DEEP}
     GOLD = ("RNV", "Professional Color Extraction Application", "Feature Overview",
             "Keyboard Shortcuts", "Credits & Acknowledgments", "# Color Extraction",
             "# Themes & Display", "File Operations", "Color Swatches")

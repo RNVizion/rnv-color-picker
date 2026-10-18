@@ -47,7 +47,7 @@ from pathlib import Path
 
 import pytest
 
-from utils import config as C
+from utils import colors as C
 from tests.color_values import (
     EXAMPLE_BLACK, EXAMPLE_DARK_GOLD, EXAMPLE_WHITE, REGISTER_GOLD_TEXT_GROUND_FLOOR,
     RETIRED_APP_LOCAL_DARK_GOLD, RETIRED_HAND_WRITTEN_DARK_HOVER,
@@ -58,7 +58,7 @@ from tests.color_values import (
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-CONFIG_PY = PROJECT_ROOT / "utils" / "config.py"
+COLORS_PY = PROJECT_ROOT / "utils" / "colors.py"
 
 #: RNV-COLOR-SYNC, 2026-10-16. Where each color comes from, as brand_map.json
 #: says. The values are held by tests/test_colors_in_sync.py, against the
@@ -113,14 +113,15 @@ REGISTERED_CONSTANTS = {
 }
 
 
-def _config_source() -> str:
-    """utils/config.py carries a UTF-8 BOM. read_text('utf-8') leaves it in
-    the string as U+FEFF and ast.parse then rejects the whole file."""
-    return CONFIG_PY.read_text(encoding="utf-8-sig")
+def _colors_source() -> str:
+    """utf-8-sig: a UTF-8 BOM, which utils/config.py carries, read with
+    read_text('utf-8') is left in the string as U+FEFF, and ast.parse
+    then rejects the whole file. utils/colors.py carries none today."""
+    return COLORS_PY.read_text(encoding="utf-8-sig")
 
 
 def _module_level_assignments() -> dict[str, ast.expr]:
-    tree = ast.parse(_config_source())
+    tree = ast.parse(_colors_source())
     out: dict[str, ast.expr] = {}
     for node in tree.body:
         if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
@@ -138,7 +139,7 @@ def test_derived_constant_is_not_a_literal(name: str) -> None:
     """Derived means computed. A literal wearing the label is the bug."""
     assigns = _module_level_assignments()
     assert name in assigns, (
-        f"{name} is expected in utils/config.py and is not there. If it was "
+        f"{name} is expected in utils/colors.py and is not there. If it was "
         f"deliberately removed, remove it from DERIVED_CONSTANTS too.")
     node = assigns[name]
     assert isinstance(node, (ast.Call, ast.Name)), (
@@ -151,7 +152,7 @@ def test_derived_constant_is_not_a_literal(name: str) -> None:
 @pytest.mark.parametrize("name", sorted(REGISTERED_CONSTANTS))
 def test_registered_constant_is_a_literal(name: str) -> None:
     assigns = _module_level_assignments()
-    assert name in assigns, f"{name} missing from utils/config.py"
+    assert name in assigns, f"{name} missing from utils/colors.py"
     node = assigns[name]
     assert isinstance(node, ast.Constant) and isinstance(node.value, str), (
         f"{name} is a registered brand color and must be written down. "
@@ -557,7 +558,7 @@ def _app_sources():
     """Every .py this application ships, minus the files that NAME retired
     values on purpose and minus any delivery script.
 
-    Scoped to the REPOSITORY rather than to utils/config.py. The old version
+    Scoped to the REPOSITORY rather than to utils/colors.py. The old version
     of the guard below read one file, and the values it was looking for were
     in another.
     """
@@ -596,7 +597,7 @@ def test_one_status_family_only() -> None:
     THIS TEST PASSED FOR THIRTY DAYS WHILE FOUR OF THEM RENDERED, and the two
     reasons are worth keeping written down because either alone was enough:
 
-      1. IT READ ONE FILE. `_config_source()` is utils/config.py. The
+      1. IT READ ONE FILE. `_colors_source()` is utils/colors.py. The
          survivors were in core/accessibility.py.
       2. IT SEARCHED FOR HEX. The survivors were int triples --
          `return (76, 175, 80)` -- so a text search for RETIRED_MATERIAL_SUCCESS's hex could not
@@ -701,19 +702,19 @@ RETIRED = {
 def _assigned_string_values() -> list[tuple[int, str]]:
     """Every string this module actually assigns, as (line, value).
 
-    Deliberately not a text search. utils/config.py DOCUMENTS the values it
+    Deliberately not a text search. utils/colors.py DOCUMENTS the values it
     retired -- "it replaced the app-local" RETIRED_APP_LOCAL_DARK_GOLD -- and a text search
     cannot tell that sentence from a live constant. Use and mention again:
     the docstring explaining a retirement is the one place the retired value
     belongs. The AST only sees values, never prose.
     """
     out = []
-    for node in ast.walk(ast.parse(_config_source())):
+    for node in ast.walk(ast.parse(_colors_source())):
         if isinstance(node, ast.Constant) and isinstance(node.value, str):
             parent_is_doc = False
             out.append((node.lineno, node.value))
     # drop docstrings: a bare string expression statement is documentation
-    docs = {n.value.lineno for n in ast.walk(ast.parse(_config_source()))
+    docs = {n.value.lineno for n in ast.walk(ast.parse(_colors_source()))
             if isinstance(n, ast.Expr) and isinstance(n.value, ast.Constant)
             and isinstance(n.value.value, str)}
     return [(ln, v) for ln, v in out if ln not in docs]
@@ -726,7 +727,7 @@ def test_retired_values_are_gone() -> None:
             for ln, v in _assigned_string_values()
             if v.lower() in RETIRED]
     assert not back, "\n".join(
-        f"  utils/config.py:{ln}: {what} ({v}) is back" for ln, v, what in back)
+        f"  utils/colors.py:{ln}: {what} ({v}) is back" for ln, v, what in back)
 
 
 # ══════════════════════════════════════════════════════════════════════════

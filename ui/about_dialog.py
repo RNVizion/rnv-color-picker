@@ -18,7 +18,8 @@ from typing import Callable
 
 from utils.logger import Logger
 from utils.cache import QColorCache, StylesheetCache
-from utils.config import APP_NAME, APP_VERSION, APP_TAGLINE, BRAND_GOLD, BRAND_DARK_GOLD, BRAND_DARK_GOLD_DEEP
+from utils.config import APP_NAME, APP_VERSION, APP_TAGLINE
+from utils.colors import BRAND_GOLD, BRAND_DARK_GOLD, BRAND_DARK_GOLD_DEEP
 
 logger = Logger("AboutDialog")
 CACHE_AVAILABLE = True
@@ -642,7 +643,7 @@ class AboutDialog(QDialog):
         except Exception:
             pass
         # Fallback to dark theme values if parent theme unavailable
-        from utils.config import DARK_THEME_COLORS
+        from utils.colors import DARK_THEME_COLORS
         return DARK_THEME_COLORS
 
     def _apply_theme(self) -> None:

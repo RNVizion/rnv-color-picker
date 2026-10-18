@@ -13,7 +13,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from utils import config
+from utils import colors
 from tests.color_values import (
     EXAMPLE_BLACK, EXAMPLE_MID_GRAY, EXAMPLE_PURE_GREEN, EXAMPLE_PURE_GREEN_SHORT,
     EXAMPLE_WHITE)
@@ -58,18 +58,18 @@ def _sources():
 def test_the_rule_is_a_real_contrast_measurement():
     """Black on white and white on black, the two ends. If the rule were
     inverted or the luminance formula wrong, these are what break first."""
-    assert config.contrast_ink(EXAMPLE_WHITE) == config.TRUE_BLACK
-    assert config.contrast_ink(EXAMPLE_BLACK) == config.WHITE
-    assert round(config.contrast_ratio(EXAMPLE_WHITE, EXAMPLE_BLACK), 2) == 21.0
-    assert round(config.contrast_ratio(EXAMPLE_MID_GRAY, EXAMPLE_MID_GRAY), 2) == 1.0
+    assert colors.contrast_ink(EXAMPLE_WHITE) == colors.TRUE_BLACK
+    assert colors.contrast_ink(EXAMPLE_BLACK) == colors.WHITE
+    assert round(colors.contrast_ratio(EXAMPLE_WHITE, EXAMPLE_BLACK), 2) == 21.0
+    assert round(colors.contrast_ratio(EXAMPLE_MID_GRAY, EXAMPLE_MID_GRAY), 2) == 1.0
 
 
 def test_the_rule_gets_saturated_color_right():
     """The case the mean got wrong. Pure green is a LIGHT ground -- it is 71%
     of the luminance of white -- and the mean called it dark because it only
     looked at how many channels were lit."""
-    assert config.contrast_ink((0, 255, 0)) == config.TRUE_BLACK
-    assert config.contrast_ratio((0, 255, 0), config.TRUE_BLACK) > 15
+    assert colors.contrast_ink((0, 255, 0)) == colors.TRUE_BLACK
+    assert colors.contrast_ratio((0, 255, 0), colors.TRUE_BLACK) > 15
     # and the mean, for the record, would have chosen the other one
     assert sum((0, 255, 0)) / 3 < 128
 
@@ -77,8 +77,8 @@ def test_the_rule_gets_saturated_color_right():
 def test_it_takes_a_hex_string_or_an_rgb_triple():
     """Callers hold both shapes, and a silent TypeError inside an f-string
     renders as an empty color rather than an exception."""
-    assert config.contrast_ink(EXAMPLE_PURE_GREEN) == config.contrast_ink((0, 255, 0))
-    assert config.contrast_ink(EXAMPLE_PURE_GREEN_SHORT) == config.contrast_ink(EXAMPLE_PURE_GREEN)
+    assert colors.contrast_ink(EXAMPLE_PURE_GREEN) == colors.contrast_ink((0, 255, 0))
+    assert colors.contrast_ink(EXAMPLE_PURE_GREEN_SHORT) == colors.contrast_ink(EXAMPLE_PURE_GREEN)
 
 
 def test_the_brand_golds_are_ruled_not_measured():
@@ -96,15 +96,15 @@ def test_the_brand_golds_are_ruled_not_measured():
     it). The decision is held where it paints: the ink each palette puts on
     its gold fill, for a pressed dialog button, a selected row, and a
     pressed menu item or selected text."""
-    white = config.contrast_ratio(config.BRAND_DARK_GOLD, config.WHITE)
-    black = config.contrast_ratio(config.BRAND_DARK_GOLD, config.TRUE_BLACK)
+    white = colors.contrast_ratio(colors.BRAND_DARK_GOLD, colors.WHITE)
+    black = colors.contrast_ratio(colors.BRAND_DARK_GOLD, colors.TRUE_BLACK)
     assert abs(white - black) < 0.15, (
         "the golds moved; re-take the ruling rather than the measurement")
     on_gold = (("dialog_btn_pressed_bg", "dialog_btn_pressed_text"),
                ("list_selected_bg", "list_selected_text"),
                ("selected_bg", "text_on_accent"))
-    for palette, gold, ink in ((config.DARK_THEME_COLORS, config.BRAND_GOLD, config.TRUE_BLACK),
-                               (config.LIGHT_THEME_COLORS, config.BRAND_DARK_GOLD, config.WHITE)):
+    for palette, gold, ink in ((colors.DARK_THEME_COLORS, colors.BRAND_GOLD, colors.TRUE_BLACK),
+                               (colors.LIGHT_THEME_COLORS, colors.BRAND_DARK_GOLD, colors.WHITE)):
         for ground, text in on_gold:
             assert palette[ground] == gold, (
                 f"{palette['name']}: {ground} is no longer the gold fill")
@@ -119,7 +119,7 @@ def test_the_accessibility_helper_does_not_hold_a_second_copy():
     src = _code_only(
         (ROOT / "core" / "accessibility.py").read_text(encoding="utf-8-sig"))
     assert "0.179" not in src, "a second crossover threshold is back"
-    assert config.contrast_ink(EXAMPLE_WHITE) == config.TRUE_BLACK
+    assert colors.contrast_ink(EXAMPLE_WHITE) == colors.TRUE_BLACK
     from core.accessibility import ColorAccessibility
     assert ColorAccessibility.get_optimal_text_color((255, 255, 255)) == (0, 0, 0)
     assert ColorAccessibility.get_optimal_text_color((0, 0, 0)) == (255, 255, 255)
@@ -187,6 +187,6 @@ def test_no_three_digit_hex_in_the_palette():
     """Two of the retired constants were RETIRED_GRAY_33_SHORT and
     RETIRED_GRAY_CC_SHORT. The census reads
     six-digit hexes, so a three-digit one is a value the chart cannot see."""
-    src = (ROOT / "utils" / "config.py").read_text(encoding="utf-8-sig")
+    src = (ROOT / "utils" / "colors.py").read_text(encoding="utf-8-sig")
     hits = re.findall(r"""['"]#[0-9a-fA-F]{3}['"]""", src)
     assert not hits, f"three-digit hexes are back: {hits}"

@@ -17,7 +17,7 @@ from PyQt6.QtGui import QColor, QFont
 from PyQt6.QtWidgets import QApplication
 
 from utils.logger import Logger
-from utils.config import (
+from utils.colors import (
     BRAND_GOLD,
     TRUE_BLACK, WHITE,
     contrast_ink_rgb,
@@ -98,7 +98,7 @@ class ColorCache:
         # RNV-INK-RULE (2026-09-02): was ITU-R BT.601 perceived brightness,
         # which is a photographic weighting, not a contrast measurement. It
         # put white on a mid gray that reads 5.32:1 in black and 3.95:1 in
-        # white. One rule now, stated in utils/config.py.
+        # white. One rule now, stated in utils/colors.py.
         return contrast_ink_rgb(rgb)
     
     @staticmethod

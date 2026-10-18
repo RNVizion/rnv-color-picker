@@ -12,7 +12,7 @@ from PyQt6.QtGui import QPainter, QColor, QPaintEvent
 
 from utils.logger import Logger
 from utils.cache import QColorCache
-from utils.config import OVERLAY_BLACK_MEDIUM
+from utils.colors import OVERLAY_BLACK_MEDIUM
 
 logger = Logger("TransparentScroll")
 CACHE_AVAILABLE = True

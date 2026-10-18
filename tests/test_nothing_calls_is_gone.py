@@ -153,16 +153,20 @@ def test_what_went_is_not_written_again():
 
 
 def test_the_color_module_and_the_cache_do_not_define_it():
-    from utils import cache, config
+    # #63 A (2026-10-18): the colors moved to utils/colors.py. Both modules
+    # are held: the one the colors live in, and the one they left.
+    from utils import cache, colors, config
     for name in COLORS_GONE:
-        assert not hasattr(config, name), f"utils.config defines {name} again"
-        assert name not in config.__all__, f"utils.config exports {name}"
+        for module in (colors, config):
+            assert not hasattr(module, name), f"{module.__name__} defines {name} again"
+            assert name not in module.__all__, f"{module.__name__} exports {name}"
         assert not hasattr(cache, name), f"utils.cache imports {name} again"
     for name in FUNCTIONS_GONE:
         assert not hasattr(cache.StylesheetCache, name), f"StylesheetCache.{name}() is back"
     for name in CONFIG_FUNCTIONS_GONE:
-        assert not hasattr(config, name), f"utils.config defines {name}() again"
-        assert name not in config.__all__, f"utils.config exports {name}"
+        for module in (colors, config):
+            assert not hasattr(module, name), f"{module.__name__} defines {name}() again"
+            assert name not in module.__all__, f"{module.__name__} exports {name}"
     from utils.settings_manager import SettingsManager
     assert PREFERENCE_GONE not in SettingsManager._get_default_settings()["preferences"], \
         f"the settings' defaults store {PREFERENCE_GONE} again"
@@ -180,7 +184,8 @@ def test_the_sweeps_are_looking():
     everything, application = list(_python()), list(_python(app_only=True))
     assert len(everything) >= MIN_PYTHON and len(application) >= MIN_APP, (len(everything), len(application))
     paths = {rel for rel, _ in everything}
-    for must in (CACHE, "utils/config.py", "utils/settings_manager.py", "test_rnv_color_picker.py",
+    for must in (CACHE, "utils/colors.py", "utils/config.py", "utils/settings_manager.py",
+                 "test_rnv_color_picker.py",
                  "tests/test_brand_contrast.py"):
         assert must in paths, f"the sweep is not reading {must}"
     assert not any(rel.startswith("tests/") or rel.startswith("test_") for rel, _ in application), \

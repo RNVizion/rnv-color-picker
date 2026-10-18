@@ -23,7 +23,7 @@ from utils.settings_manager import get_settings_manager
 from utils.session_manager import get_session_manager
 from utils.error_handler import ErrorHandler
 from utils.signal_manager import SignalConnectionManager
-from utils.config import (
+from utils.colors import (
     prefers_dark_ink,
     BRAND_GOLD, BRAND_DARK_GOLD, BRAND_DARK_GOLD_DEEP,
     GRAY_44,
@@ -1811,7 +1811,7 @@ class SettingsPanel(QDialog):
         """Return the current theme color dict for theme-aware styling."""
         if self.parent_app and hasattr(self.parent_app, 'theme_manager'):
             return self.parent_app.theme_manager.get_current_theme()
-        from utils.config import DARK_THEME_COLORS
+        from utils.colors import DARK_THEME_COLORS
         return DARK_THEME_COLORS
 
     def _style_for_mode(self, widget: QWidget, sheet: Callable[[], str]) -> None:

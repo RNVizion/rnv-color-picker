@@ -47,6 +47,7 @@ from PyQt6.QtGui import (
 from ui.image_button import ImageButton
 from ui.image_viewer import ImageViewer
 from utils import config
+from utils import colors
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -59,8 +60,8 @@ def _make_theme_manager(theme_name: str = "dark", is_image_mode: bool = False):
     tm.current_theme = theme_name
     tm.is_image_mode = MagicMock(return_value=is_image_mode)
     tm.get_current_theme = MagicMock(
-        return_value=config.DARK_THEME_COLORS if theme_name == "dark"
-        else config.LIGHT_THEME_COLORS
+        return_value=colors.DARK_THEME_COLORS if theme_name == "dark"
+        else colors.LIGHT_THEME_COLORS
     )
     return tm
 

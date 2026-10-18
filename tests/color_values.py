@@ -1,7 +1,7 @@
 """Every color value the tests need that is not one of the application's own.
 
 RNV-COLOR-SYNC (#53 A), 2026-10-17. The application's colors, brand and its
-own, are named in utils/config.py and a test reads them from there. Every
+own, are named in utils/colors.py and a test reads them from there. Every
 other color value a test or the root suite writes is named here, once, with
 why, grouped by kind. tests/test_color_values.py holds this file: no color
 value is written anywhere else, each name says what kind it is and why, each

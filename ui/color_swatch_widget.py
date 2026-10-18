@@ -20,7 +20,7 @@ from PyQt6.QtGui import QPainter, QColor, QPen, QFont, QAction, QPaintEvent
 from utils.logger import Logger
 from utils.cache import QColorCache, ColorCache, StylesheetCache
 from utils.signal_manager import SignalConnectionManager
-from utils.config import BRAND_GOLD, IMAGE_MENU_BG, prefers_dark_ink
+from utils.colors import BRAND_GOLD, IMAGE_MENU_BG, prefers_dark_ink
 
 logger = Logger("ColorSwatch")
 CACHE_AVAILABLE = True

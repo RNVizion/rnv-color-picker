@@ -97,7 +97,7 @@ A polished PyQt6 desktop application for extracting, organizing, and exporting c
 
 **Themes**
 - Dark mode (default), Light mode, Image mode (custom backgrounds + translucent overlays)
-- Brand-gold accent system, single source of truth in `utils/config.py`
+- Brand-gold accent system, single source of truth in `utils/colors.py`
 
 ## Tech Stack
 
@@ -162,7 +162,8 @@ RNV_Color_Picker/
 │   ├── transparent_scroll_widget.py
 │   └── widget_pool.py            # Widget recycling for fast palette refresh
 ├── utils/                        # Cross-cutting utilities
-│   ├── config.py                 # Single source of truth for colors, paths, constants
+│   ├── colors.py                 # Single source of truth for colors
+│   ├── config.py                 # Paths, constants, theme state
 │   ├── logger.py                 # Color-coded structured logging
 │   ├── error_handler.py          # Centralized exception handling
 │   ├── signal_manager.py         # Tracked Qt signal connections (leak-free cleanup)
@@ -181,7 +182,7 @@ RNV_Color_Picker/
 │   ├── button_images/            # Image-mode button graphics
 │   └── background_images/        # Image-mode backgrounds
 ├── tools/
-│   └── sync_colors.py            # Writes the colors in utils/config.py, and COLORS.md
+│   └── sync_colors.py            # Writes the colors in utils/colors.py, and COLORS.md
 ├── .github/workflows/
 │   ├── tests.yml                 # CI: the two suites
 │   └── brand-sync.yml            # Daily: colors from rnv-brand; a pull request only if one moved
@@ -248,7 +249,7 @@ For the full audit history including affected methods and verification approach,
 
 ## Architecture Highlights
 
-**Centralized config (`utils/config.py`)** — every color in the app comes from one file. Theme dicts (`DARK_THEME_COLORS`, `LIGHT_THEME_COLORS`, `IMAGE_MODE_COLORS`) are referenced by key throughout the codebase; brand colors (`BRAND_GOLD`, `BRAND_DARK_GOLD`) are typed as `Final[str]`. Any hardcoded color elsewhere is a bug.
+**Centralized colors (`utils/colors.py`)** — every color in the app comes from one file. Theme dicts (`DARK_THEME_COLORS`, `LIGHT_THEME_COLORS`, `IMAGE_MODE_COLORS`) are referenced by key throughout the codebase; brand colors (`BRAND_GOLD`, `BRAND_DARK_GOLD`) are typed as `Final[str]`. Any hardcoded color elsewhere is a bug.
 
 **Signal lifecycle management (`utils/signal_manager.py`)** — every Qt signal connection is registered with a `SignalConnectionManager`, tagged with a `track_as` label, and disconnected on widget close. Eliminates the leak-then-crash class of PyQt bugs.
 

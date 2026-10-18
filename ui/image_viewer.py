@@ -24,7 +24,7 @@ from PyQt6.QtGui import (
 from utils.logger import Logger
 from utils.cache import QColorCache, StylesheetCache
 from utils.signal_manager import SignalConnectionManager
-from utils.config import BRAND_GOLD, IMAGE_MENU_BG, SELECTION_BOX_COLOR
+from utils.colors import BRAND_GOLD, IMAGE_MENU_BG, SELECTION_BOX_COLOR
 
 logger = Logger("ImageViewer")
 CACHE_AVAILABLE = True

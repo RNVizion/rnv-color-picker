@@ -43,12 +43,12 @@ import pytest
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 #: Where this application writes its colors: the one place a literal belongs.
-COLOR_MODULES = ("utils/config.py",)
+COLOR_MODULES = ("utils/colors.py",)
 #: Where its palettes are written: their own keys are not lookups.
 PALETTE_MODULES = COLOR_MODULES
 SKIP_DIRS = {"tests", "build", "dist", "docs", "resources", "scripts", "snapshots", "__pycache__"}
 
-from utils.config import DARK_THEME_COLORS, IMAGE_MODE_COLORS, LIGHT_THEME_COLORS  # noqa: E402
+from utils.colors import DARK_THEME_COLORS, IMAGE_MODE_COLORS, LIGHT_THEME_COLORS  # noqa: E402
 from tests.color_values import (  # noqa: E402
     EXAMPLE_CLEAR_RGBA, EXAMPLE_PALE_PINK, EXAMPLE_WHITE_RGBA_230)
 

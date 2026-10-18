@@ -30,12 +30,12 @@ import pathlib
 
 import pytest
 
-from utils import config as colors
-from utils.config import (DARK_THEME_COLORS as DARK,
+from utils import colors
+from utils.colors import (DARK_THEME_COLORS as DARK,
                           IMAGE_MODE_COLORS as IMAGE)
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-SRC = ROOT / 'utils/config.py'
+SRC = ROOT / 'utils/colors.py'
 
 #: RNV-COLOR-SYNC, 2026-10-16. Where each color comes from, as brand_map.json
 #: says. The values are held by tests/test_colors_in_sync.py, against the
