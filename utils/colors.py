@@ -228,7 +228,7 @@ application read it; a name is kept for what uses it."""
 # and every one of them is a REGISTERED brand value. A registered value could
 # move upstream and this app would keep the old one silently, which is the
 # failure #c4a458 had, one level down. It nearly happened: APP["text"] moved
-# from #e0e0e0 to #dddddd in rnv-brand@68d195e.
+# from #e0e0e0 to #dddddd in rnv-brand@989f12e.
 #
 # THE INK GRID, published in the brand beside that move:
 #

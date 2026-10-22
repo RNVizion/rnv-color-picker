@@ -7,7 +7,7 @@ literals -- rewiring is a mechanical substitution and that pass was a value
 change, and mixing the two makes the diff unreadable and the snapshot evidence
 worthless. This is the substitution, on its own, in DARK and IMAGE only.
 
-WHY DARK ONLY. rnv-brand@8ab1174 rules the order: the dark surface ladder is
+WHY DARK ONLY. rnv-brand@6fc312e rules the order: the dark surface ladder is
 two-thirds specified and entirely inside the register, while the light ladder
 is not ruled at all -- nine light surfaces sit inside three grid steps and the
 register has not yet decided which of them are real distinctions. Deriving

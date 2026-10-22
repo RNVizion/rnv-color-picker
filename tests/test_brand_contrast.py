@@ -239,11 +239,14 @@ ACCEPTED: dict[tuple[str, str, str], str] = {
     ("LIGHT", C.TRUE_BLACK, C.APP_BORDER):
         "main-window button hover. The main window runs a white/near-black "
         "inverse scheme where the text stays black while the background "
-        "darkens. Deliberate, and separate from the gold dialog scheme.",
+        "darkens. Deliberate, and separate from the gold dialog scheme."
+        " Ruled 2026-09-01 (claude/ruling-interaction-contrast.md); #74 A: the main button only.",
     ("DARK", C.TRUE_BLACK, C.GRAY_44):
-        "main-window button pressed, dark. Same inverse scheme mirrored.",
+        "main-window button pressed, dark. Same inverse scheme mirrored."
+        " Ruled 2026-09-01 (claude/ruling-interaction-contrast.md); #74 A: the main button only.",
     ("IMAGE", C.TRUE_BLACK, C.GRAY_44):
-        "main-window button pressed, image mode (inherits dark).",
+        "main-window button pressed, image mode (inherits dark)."
+        " Ruled 2026-09-01 (claude/ruling-interaction-contrast.md); #74 A: the main button only.",
     ("LIGHT", C.APP_TEXT_DIM, C.WHITE):
         "disabled control text. WCAG 1.4.3 exempts disabled controls.",
     ("LIGHT", C.APP_TEXT_DIM, C.APP_PRESSED_LIGHT):

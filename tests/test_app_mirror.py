@@ -9,7 +9,7 @@ value could have moved upstream and this app would have kept the old one
 silently -- the same failure RETIRED_ORPHANED_LIGHT_HOVER had, one level down.
 
 It nearly happened. `APP["text"]` moved from GRAY_E0's hex to APP_TEXT's in
-rnv-brand@68d195e, and nothing here would have noticed.
+rnv-brand@989f12e, and nothing here would have noticed.
 
 THE INK GRID, published in the brand beside that move:
 
