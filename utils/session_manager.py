@@ -12,6 +12,7 @@ from pathlib import Path
 
 from utils.logger import Logger
 from utils.error_handler import ErrorHandler
+from utils.atomic_write import atomic_write_json
 
 logger = Logger("SessionManager")
 ERROR_HANDLER_AVAILABLE = True
@@ -128,8 +129,7 @@ class SessionManager:
             }
             
             # Write to file with pretty formatting
-            with open(filepath, 'w', encoding='utf-8') as f:
-                json.dump(session_data, f, indent=2, ensure_ascii=False)
+            atomic_write_json(filepath, session_data, indent=2, ensure_ascii=False)
             
             # Add to recent sessions
             self._add_to_recent(filepath)
@@ -285,8 +285,7 @@ class SessionManager:
             recent_paths = recent_paths[:self.MAX_RECENT_SESSIONS]
             
             # Save
-            with open(self.recent_file, 'w', encoding='utf-8') as f:
-                json.dump(recent_paths, f, indent=2)
+            atomic_write_json(self.recent_file, recent_paths, indent=2)
                 
         except Exception as e:
             if logger:
@@ -304,8 +303,7 @@ class SessionManager:
             if filepath in recent_paths:
                 recent_paths.remove(filepath)
                 
-                with open(self.recent_file, 'w', encoding='utf-8') as f:
-                    json.dump(recent_paths, f, indent=2)
+                atomic_write_json(self.recent_file, recent_paths, indent=2)
                     
         except Exception as e:
             if logger:

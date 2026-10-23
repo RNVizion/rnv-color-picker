@@ -322,16 +322,16 @@ class TestSaveHistory:
 
     def test_atomic_write_cleans_up_temp_file_on_failure(
             self, manager, monkeypatch):
-        # Make json.dump raise mid-write; source must clean up the .tmp file
+        # Make the serializer raise mid-write; the writer must leave no .tmp file
+        # (it serializes with json.dumps, through utils.atomic_write, since #83 A)
         def fail_dump(*args, **kwargs):
             raise OSError("simulated write failure")
-        monkeypatch.setattr(json, "dump", fail_dump)
+        monkeypatch.setattr(json, "dumps", fail_dump)
 
         manager.history = [{"hex": DATA_BLACK}]
         assert manager.save_history() is False
-        # No temp file left behind
-        temp = manager.history_file.with_suffix(".json.tmp")
-        assert not temp.exists()
+        # No temp file left behind (the helper names its own, <name>.<pid>-<n>.tmp)
+        assert not list(manager.history_file.parent.glob("*.tmp"))
 
     def test_creates_parent_directory_if_missing(self, tmp_path):
         m = ColorHistoryManager()

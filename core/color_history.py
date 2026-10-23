@@ -13,6 +13,7 @@ from pathlib import Path
 
 from utils.logger import Logger
 from utils.error_handler import ErrorHandler
+from utils.atomic_write import atomic_write_json
 from utils.cache import ColorCache
 from utils.colors import MISSING_RGB_PLACEHOLDER
 
@@ -133,27 +134,9 @@ class ColorHistoryManager:
                 "colors": self.history
             }
             
-            # Atomic write: write to temp file then rename
-            # This prevents corruption if the app crashes during write
-            temp_file = self.history_file.with_suffix('.json.tmp')
-            
-            try:
-                with open(temp_file, 'w', encoding='utf-8') as f:
-                    json.dump(data, f, indent=2, ensure_ascii=False)
-                    f.flush()
-                    os.fsync(f.fileno())  # Force write to disk
-                
-                # Rename temp file to actual file (atomic on most systems)
-                temp_file.replace(self.history_file)
-                
-            except Exception as e:
-                # Clean up temp file if it exists
-                if temp_file.exists():
-                    try:
-                        temp_file.unlink()
-                    except Exception:
-                        pass
-                raise e
+            # Atomic write (#83 A): the file is the old one or the new one, never
+            # a mixture, and no temporary file is left on failure.
+            atomic_write_json(self.history_file, data, indent=2, ensure_ascii=False)
             
             if logger:
                 logger.debug(f"Color history saved ({len(self.history)} colors)")
