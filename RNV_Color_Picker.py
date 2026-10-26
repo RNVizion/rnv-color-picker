@@ -3,10 +3,10 @@ RNV Color Picker - Professional Color Extraction Application
 
 A PyQt6-based application for extracting, organizing, and exporting colors
 from images. Features include:
-- Upload and sample colors from images
+- Upload or drop images and sample colors from them
 - Screen color picker
 - Dominant color extraction using K-means clustering
-- Multiple palette export formats
+- Palette export (17 formats) and import (16 formats)
 - Dark/Light/Image themes
 - Hilbert curve color sorting
 
@@ -21,12 +21,12 @@ from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QScrollArea, QFrame, QFileDialog,
     QInputDialog, QGraphicsScene, QGraphicsPixmapItem,
-    QCheckBox, QGridLayout
+    QCheckBox, QGridLayout, QMenu
 )
 from PyQt6.QtCore import Qt, QPointF, QRectF, QEvent, QPoint, QTimer
 from PyQt6.QtGui import (
     QPixmap, QImage, QColor, QIcon, QPalette, QBrush,
-    QCursor, QPainter, QPen, QPainterPath
+    QCursor, QPainter, QPen, QPainterPath, QAction
 )
 from PIL import Image, ImageDraw, ImageFont
 from sklearn.cluster import KMeans
@@ -56,6 +56,7 @@ from utils.colors import (
     DARK_THEME_COLORS, OVERLAY_BLACK_MEDIUM,
 )
 from utils.font_loader import load_embedded_font
+from utils.file_utils import filter_for_extension, first_extension
 from utils.logger import Logger, get_logger
 from utils.dialog_helper import DialogHelper, DialogResult
 from utils.error_handler import ErrorHandler, ErrorContext
@@ -178,7 +179,14 @@ class _ThemedToolTip(QLabel):
 class ColorPickerApp(QMainWindow):
     """Main application window for RNV Color Picker."""
     
-    MAX_COLORS = 333
+    MAX_COLORS = 333  # the default; the Maximum Colors setting replaces it per window
+    # (#93 B) Drag-and-drop loading, Shift+drag, palette import, the restore offer and Maximum Colors are wired below.
+    #: What Upload Image (Ctrl+O) and a drop accept, in the order the dialog lists them.
+    IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg")
+    #: The range the Settings tab allows for Maximum Colors.
+    MAX_COLORS_RANGE = (1, 1000)
+    #: How long after the window is built the startup session check runs (ms).
+    STARTUP_SESSION_DELAY_MS = 500
     
     def __init__(self):
         super().__init__()
@@ -273,6 +281,14 @@ class ColorPickerApp(QMainWindow):
         
         scroll_area.setWidget(self.scrollable_frame)
         main_layout.addWidget(scroll_area, 3)
+        
+        # Right-click an empty part of the palette: Import Palette (also Ctrl+I).
+        # A swatch keeps its own menu (copy, remove, lock).
+        self.scrollable_frame.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.signal_manager.connect(
+            self.scrollable_frame, self.scrollable_frame.customContextMenuRequested,
+            self.show_palette_menu, "palette_menu_requested"
+        )
 
         self.create_checkboxes()
         self.create_debug_label()
@@ -299,6 +315,13 @@ class ColorPickerApp(QMainWindow):
         # Install application-level event filter for custom themed tooltips
         # (bypasses native Windows tooltip rendering that ignores CSS border-radius)
         QApplication.instance().installEventFilter(self)
+        
+        # An image file dropped on the window or the image view loads like Upload Image
+        self.setAcceptDrops(True)
+        
+        # Once the window is up: offer to restore the auto-save of a run that did not
+        # close cleanly, or else load the last session if Auto-load is on
+        QTimer.singleShot(self.STARTUP_SESSION_DELAY_MS, self._check_startup_session)
         
         logger.success("ColorPickerApp initialization completed successfully")
 
@@ -446,7 +469,7 @@ class ColorPickerApp(QMainWindow):
             "dominant": "Extract dominant colors using K-means clustering (Ctrl+K)",
             "screen": "Pick a color from anywhere on screen (Ctrl+Shift+C)",
             "save": "Save color swatches as an image file (Ctrl+S)",
-            "export": "Export palette in various formats (Ctrl+E)",
+            "export": "Export palette in various formats (Ctrl+E); import one with Ctrl+I or a right-click on the palette",
             "clear": "Clear all unlocked colors (Ctrl+D)",
             "reset": "Reset zoom and pan to default (Ctrl+0)",
         }
@@ -491,7 +514,10 @@ class ColorPickerApp(QMainWindow):
         # Graphics view tooltip
         if hasattr(self, 'graphics_view') and self.graphics_view:
             if self.tooltips_enabled:
-                self.graphics_view.setToolTip("Double-click to pick color, drag to select region, scroll to zoom")
+                self.graphics_view.setToolTip(
+                    "Double-click to pick color, Shift+drag to select region, "
+                    "drag to pan, scroll to zoom, drop an image to load it"
+                )
             else:
                 self.graphics_view.setToolTip("")
     
@@ -505,6 +531,14 @@ class ColorPickerApp(QMainWindow):
             
             # Apply tooltips setting
             self.tooltips_enabled = settings.get("show_tooltips", True)
+            
+            # Window size and position from the last close, if Settings says so
+            self._restore_window_geometry(settings)
+            
+            # Maximum Colors (Settings tab); 333 when it was never set
+            self.MAX_COLORS = self._clamp_max_colors(
+                settings.get("max_colors", ColorPickerApp.MAX_COLORS)
+            )
             
             # Apply debug overlay setting
             show_debug = settings.get("show_debug_overlay", True)
@@ -866,8 +900,41 @@ class ColorPickerApp(QMainWindow):
             self.sort_colors_by_hsl()
 
     def get_remaining_slots(self) -> int:
-        """Get number of remaining color slots."""
-        return self.MAX_COLORS - len(self.colors)
+        """Get number of remaining color slots (0 when the palette is at or
+        over the limit, as it can be after Maximum Colors is lowered)."""
+        return max(0, self.MAX_COLORS - len(self.colors))
+
+    @classmethod
+    def _clamp_max_colors(cls, value: object) -> int:
+        """Maximum Colors as a whole number within MAX_COLORS_RANGE; the
+        default (333) for a value that is not a number."""
+        low, high = cls.MAX_COLORS_RANGE
+        try:
+            number = int(value)
+        except (TypeError, ValueError):
+            return ColorPickerApp.MAX_COLORS
+        return max(low, min(high, number))
+
+    def set_max_colors(self, value: object) -> None:
+        """Apply the Maximum Colors setting.
+
+        Lowering it below the number of colors in the palette removes none of
+        them: they all stay, nothing new is added until the palette is under
+        the new limit, and the user is told so.
+        """
+        self.MAX_COLORS = ColorPickerApp._clamp_max_colors(value)
+        count = len(self.colors)
+        if count > self.MAX_COLORS:
+            DialogHelper.show_info(
+                self,
+                f"The palette has {count} colors, more than the new maximum "
+                f"of {self.MAX_COLORS}.\n\n"
+                f"All {count} colors are kept. No new colors can be added "
+                f"until the palette has fewer than {self.MAX_COLORS}; "
+                f"remove colors or clear the palette to make room.",
+                title="Over the Maximum"
+            )
+            logger.info(f"Maximum Colors {self.MAX_COLORS} is below the palette's {count}; colors kept")
 
     def color_exists(self, rgb: tuple[int, int, int]) -> bool:
         """Check if color already exists in palette."""
@@ -941,7 +1008,7 @@ class ColorPickerApp(QMainWindow):
         """
         import time
         
-        total = min(len(rgb_list), self.MAX_COLORS - len(self.colors))
+        total = min(len(rgb_list), self.get_remaining_slots())
         
         # Create and show progress dialog
         progress = LoadingDialog(
@@ -1070,11 +1137,9 @@ class ColorPickerApp(QMainWindow):
             DialogHelper.show_warning(self, "No colors to save!", title="No Colors")
             return
 
-        file_path, _ = QFileDialog.getSaveFileName(
-            self,
+        file_path = self._ask_save_path(
             "Save Colors As Image",
-            "",
-            "PNG Files (*.png);;JPEG Files (*.jpg *.jpeg)"
+            ["PNG Files (*.png)", "JPEG Files (*.jpg *.jpeg)"]
         )
         if not file_path:
             return
@@ -1177,13 +1242,9 @@ class ColorPickerApp(QMainWindow):
             return
         
         formats = PaletteFormats.get_export_formats()
-        filter_string = ";;".join([f"{name} ({pattern})" for name, pattern in formats])
-        
-        file_path, _ = QFileDialog.getSaveFileName(
-            self,
+        file_path = self._ask_save_path(
             "Export Palette",
-            "",
-            filter_string
+            [f"{name} ({pattern})" for name, pattern in formats]
         )
         
         if not file_path:
@@ -1208,6 +1269,29 @@ class ColorPickerApp(QMainWindow):
                 title="Export Error"
             )
             logger.error("Failed to export palette", error=e)
+
+    def _default_export_filter(self, file_filters: list[str]) -> str | None:
+        """The filter a save dialog opens on for Settings > Default Export
+        Format, or None when that is the first filter (where it opens anyway)
+        or the dialog has no filter for it. PNG and JPEG are image formats:
+        they apply to Save As Image; the palette formats to Export Palette."""
+        ext = self.settings_manager.get("export_format") if self.settings_manager else None
+        found = filter_for_extension(file_filters, ext)
+        return found if found and found != file_filters[0] else None
+
+    def _ask_save_path(self, caption: str, file_filters: list[str]) -> str:
+        """Ask where to save, opening on the Default Export Format's filter.
+        When the dialog opened on it, a name typed without an extension takes
+        the extension of the filter chosen in the dialog."""
+        joined = ";;".join(file_filters)
+        initial = self._default_export_filter(file_filters)
+        if not initial:
+            file_path, _ = QFileDialog.getSaveFileName(self, caption, "", joined)
+            return file_path
+        file_path, chosen = QFileDialog.getSaveFileName(self, caption, "", joined, initial)
+        if file_path and not os.path.splitext(file_path)[1]:
+            file_path += first_extension(chosen) or ""
+        return file_path
 
     def import_palette(self) -> None:
         """Import color palette from various professional formats."""
@@ -1275,6 +1359,32 @@ class ColorPickerApp(QMainWindow):
                 title="Import Error"
             )
             logger.error("Failed to import palette", error=e)
+
+    def palette_menu(self) -> QMenu:
+        """The palette area's right-click menu, styled for the current mode
+        as the swatch and image menus are."""
+        menu = QMenu(self)
+        theme = self.theme_manager.get_current_theme()
+        is_image_mode = self.theme_manager.is_image_mode()
+        if is_image_mode:
+            menu.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+            menu.setWindowFlags(
+                menu.windowFlags() |
+                Qt.WindowType.FramelessWindowHint |
+                Qt.WindowType.NoDropShadowWindowHint
+            )
+        if theme:
+            menu.setStyleSheet(StylesheetCache.get_menu_stylesheet(
+                self.theme_manager.current_theme, is_image_mode, theme
+            ))
+        import_action = QAction("Import Palette...\tCtrl+I", menu)
+        import_action.triggered.connect(self.import_palette)
+        menu.addAction(import_action)
+        return menu
+
+    def show_palette_menu(self, pos: QPoint) -> None:
+        """Show the palette area's right-click menu."""
+        self.palette_menu().exec(self.scrollable_frame.mapToGlobal(pos))
 
     def refresh_color_display(self, show_progress: bool = True) -> None:
         """
@@ -1517,16 +1627,83 @@ class ColorPickerApp(QMainWindow):
 
     def upload_image(self) -> None:
         """Upload an image file."""
+        patterns = " ".join(f"*{ext}" for ext in self.IMAGE_EXTENSIONS)
         file_path, _ = QFileDialog.getOpenFileName(
             self, 
             "Select Image", 
             "", 
-            "Image files (*.png *.jpg *.jpeg)"
+            f"Image files ({patterns})"
         )
         
         if file_path:
-            self.image = Image.open(file_path).convert("RGB")
-            self.display_image()
+            self.load_image_file(file_path)
+
+    @classmethod
+    def _image_type_names(cls) -> str:
+        """The accepted image types, as a user reads them: "PNG, JPG or JPEG"."""
+        names = [ext.lstrip(".").upper() for ext in cls.IMAGE_EXTENSIONS]
+        return ", ".join(names[:-1]) + " or " + names[-1]
+
+    def is_supported_image(self, file_path: str) -> bool:
+        """Whether Upload Image and a drop accept this file (by its extension)."""
+        return os.path.splitext(file_path)[1].lower() in self.IMAGE_EXTENSIONS
+
+    def load_image_file(self, file_path: str) -> bool:
+        """Load an image into the viewer: the one path Upload Image and a drop
+        share. Returns whether it loaded; a refusal is always said."""
+        if not self.is_supported_image(file_path):
+            DialogHelper.show_warning(
+                self,
+                f"Not loaded: {os.path.basename(file_path)}\n\n"
+                f"Only {self._image_type_names()} images can be loaded.",
+                title="Image Not Loaded"
+            )
+            logger.warning(f"Refused to load an unsupported file: {file_path}")
+            return False
+        try:
+            image = Image.open(file_path).convert("RGB")
+        except Exception as e:
+            DialogHelper.show_warning(
+                self,
+                f"Not loaded: {os.path.basename(file_path)}\n\n"
+                f"The file could not be read as an image.",
+                title="Image Not Loaded",
+                detailed_text=str(e)
+            )
+            logger.error(f"Failed to load image: {file_path}", error=e)
+            return False
+        self.image = image
+        self.display_image()
+        logger.success(f"Loaded image: {file_path}")
+        return True
+
+    # ----- Drag and drop: an image file dropped on the window or the view -----
+
+    def dragEnterEvent(self, event) -> None:
+        """Take every drag, so that what cannot be loaded is refused with a
+        message on the drop rather than by a no-entry cursor alone."""
+        event.acceptProposedAction()
+
+    def dragMoveEvent(self, event) -> None:
+        event.acceptProposedAction()
+
+    def dropEvent(self, event) -> None:
+        """Load a dropped image file as Upload Image does; refuse anything
+        else with a message."""
+        event.acceptProposedAction()
+        mime = event.mimeData()
+        files = [url.toLocalFile() for url in mime.urls() if url.isLocalFile()] if mime.hasUrls() else []
+        if len(files) == 1:
+            self.load_image_file(files[0])
+            return
+        if len(files) > 1:
+            message = (f"Not loaded: {len(files)} files were dropped.\n\n"
+                       f"Drop one image at a time.")
+        else:
+            message = (f"Not loaded: what was dropped is not a file.\n\n"
+                       f"Drop a {self._image_type_names()} image file.")
+        DialogHelper.show_warning(self, message, title="Image Not Loaded")
+        logger.warning("Refused a drop that was not one image file")
 
     def display_image(self) -> None:
         """Display the loaded image."""
@@ -1634,7 +1811,7 @@ class ColorPickerApp(QMainWindow):
             logger.debug(f"Setting changed: {key} = {value}")
             
             if key == "max_colors":
-                self.MAX_COLORS = int(value)
+                self.set_max_colors(value)
             elif key == "default_sort_method":
                 self.sort_method = str(value)
                 if hasattr(self, 'sort_checkbox'):
@@ -1992,7 +2169,7 @@ class ColorPickerApp(QMainWindow):
         self.shortcut_upload.activated.connect(self.upload_image)
         self._shortcuts.append(self.shortcut_upload)
         
-        # Save Color Swatch - Ctrl+S
+        # Save Colors As Image (the whole palette as a sheet) - Ctrl+S
         self.shortcut_save = QShortcut(QKeySequence("Ctrl+S"), self)
         self.shortcut_save.activated.connect(self.save_colors_as_image)
         self._shortcuts.append(self.shortcut_save)
@@ -2001,6 +2178,11 @@ class ColorPickerApp(QMainWindow):
         self.shortcut_export = QShortcut(QKeySequence("Ctrl+E"), self)
         self.shortcut_export.activated.connect(self.export_palette)
         self._shortcuts.append(self.shortcut_export)
+        
+        # Import Palette - Ctrl+I
+        self.shortcut_import = QShortcut(QKeySequence("Ctrl+I"), self)
+        self.shortcut_import.activated.connect(self.import_palette)
+        self._shortcuts.append(self.shortcut_import)
         
         # Screen Color Picker - Ctrl+Shift+C
         self.shortcut_screen_picker = QShortcut(QKeySequence("Ctrl+Shift+C"), self)
@@ -2060,8 +2242,9 @@ class ColorPickerApp(QMainWindow):
         # Print shortcut summary
         shortcuts_info = [
             "  Ctrl+O - Upload Image",
-            "  Ctrl+S - Save Color Swatch",
+            "  Ctrl+S - Save Palette Sheet",
             "  Ctrl+E - Export Palette",
+            "  Ctrl+I - Import Palette",
             "  Ctrl+Shift+C - Screen Color Picker",
             "  Ctrl+, or Ctrl+P - Settings & Features",
             "  Ctrl+D - Clear Colors",
@@ -2074,6 +2257,116 @@ class ColorPickerApp(QMainWindow):
         ]
         for shortcut in shortcuts_info:
             print(f"         |                      | {shortcut}")
+
+    # ----- Sessions at startup: the restore offer and Auto-load -----
+
+    def _check_startup_session(self) -> None:
+        """Run once, just after launch. If the previous run did not close
+        cleanly and left an auto-save, offer to restore it. Otherwise, with
+        "Auto-load last session on startup" on, load the last session: the
+        newest in the recent-sessions list, which every save, auto-save and
+        load puts first. After an offer, whatever the answer, nothing is
+        auto-loaded: the last session would be that auto-save."""
+        try:
+            if self._offer_restore():
+                return
+            if self.settings_manager and self.settings_manager.get("auto_load_session", False):
+                self._auto_load_last_session()
+        except Exception as e:
+            logger.error(f"Error checking the session at startup: {e}")
+
+    def _offer_restore(self) -> bool:
+        """Offer the auto-save of a run that did not close cleanly. Returns
+        whether an offer was made."""
+        if not self.session_manager:
+            return False
+        autosave_path = self.session_manager.check_for_autosave()
+        if not autosave_path:
+            return False
+        count = SessionManager.session_color_count(autosave_path)
+        if DialogHelper.confirm(
+            self,
+            "RNV Color Picker did not close properly last time.\n\n"
+            f"Restore the {count} colors it auto-saved?\n\n"
+            "The auto-save is kept either way.",
+            title="Restore Previous Session?",
+            default_yes=True
+        ):
+            self.restore_session(autosave_path)
+        else:
+            logger.info("Restore of the previous session declined")
+        return True
+
+    def _auto_load_last_session(self) -> None:
+        """Load the newest session in the recent-sessions list, if there is one."""
+        recent = self.session_manager.get_recent_sessions() if self.session_manager else []
+        if not recent:
+            logger.info("Auto-load is on, but there is no last session to load")
+            return
+        self.restore_session(recent[0]['filepath'])
+
+    def restore_session(self, filepath: str) -> int:
+        """Load a session's colors into the palette, as the Sessions tab's
+        Load Selected does. Returns how many colors it loaded (0 if it could
+        not read the session). Every color in the session is loaded, even
+        past Maximum Colors: a session is never cut short."""
+        session_data = self.session_manager.load_session(filepath)
+        if not session_data or "colors" not in session_data:
+            logger.warning(f"Session not restored: {filepath}")
+            return 0
+        self.colors = SessionManager.session_colors(session_data)
+        self.refresh_color_display()
+        logger.success(f"Restored {len(self.colors)} colors from: {filepath}")
+        return len(self.colors)
+
+    # ----- Window size and position (Settings: Remember window size/position) -----
+
+    def _restore_window_geometry(self, settings: dict) -> None:
+        """Size the window as it was at the last close when "Remember window
+        size" is on (the default), and place it there when "Remember window
+        position" is on, unless that place is no longer on a screen."""
+        def pair(value) -> tuple[int, int] | None:
+            try:
+                a, b = value
+                return int(a), int(b)
+            except (TypeError, ValueError):
+                return None
+
+        size = pair(settings.get("window_size"))
+        if size and settings.get("remember_window_size", True):
+            self.resize(*size)
+        position = pair(settings.get("window_position"))
+        if position and settings.get("remember_window_position", False):
+            if self._on_a_screen(*position):
+                self.move(*position)
+            else:
+                logger.info(f"Saved window position {position} is off every screen; not used")
+
+    @staticmethod
+    def _on_a_screen(x: int, y: int) -> bool:
+        """Whether a window placed at (x, y) has its top-left corner, with
+        room to grab its title bar, on some screen's usable area."""
+        corner = QPoint(x + 40, y + 10)
+        return any(screen.availableGeometry().contains(corner)
+                   for screen in QApplication.screens())
+
+    def _save_window_geometry(self) -> None:
+        """Keep the window's size and position for the next launch, as the
+        Remember settings say. A maximized window keeps its normal size and
+        leaves the saved position as it was."""
+        if not self.settings_manager:
+            return
+        maximized = self.isMaximized() or self.isFullScreen()
+        changed = False
+        if self.settings_manager.get("remember_window_size", True):
+            rect = self.normalGeometry() if maximized else self.geometry()
+            self.settings_manager.set("window_size", [rect.width(), rect.height()])
+            changed = True
+        if self.settings_manager.get("remember_window_position", False) and not maximized:
+            self.settings_manager.set("window_position", [self.x(), self.y()])
+            changed = True
+        if changed:
+            self.settings_manager.save_settings()
 
     def get_current_state(self) -> dict | None:
         """
@@ -2117,6 +2410,9 @@ class ColorPickerApp(QMainWindow):
             # 0. Remove app-level event filter and hide custom tooltip
             QApplication.instance().removeEventFilter(self)
             _ThemedToolTip.instance().hide_tip()
+            
+            # Keep the window's size and position, as the Remember settings say
+            self._save_window_geometry()
 
             # 1. Stop any active workers/threads
             if hasattr(self, 'current_worker') and self.current_worker:

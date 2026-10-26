@@ -248,7 +248,7 @@ class AboutDialog(QDialog):
             "Hilbert Curve Sorting - Visual harmony through mathematical sorting",
             "Color Harmonies - Generate complementary, triadic, and more",
             "Accessibility Tools - WCAG contrast checker and colorblind simulation",
-            "Export Formats - ASE, ACO, GPL, JSON, CSS, and 10+ more formats",
+            "Palette Files - Export 17 formats (ASE, ACO, GPL, JSON, CSS, SCSS and more), import 16",
             "Session Management - Save and restore your color palettes",
         ]
         
@@ -332,7 +332,8 @@ class AboutDialog(QDialog):
             ("Color Extraction", [
                 ("Grab All Colors", "Extract every unique color from loaded image"),
                 ("Dominant Colors", "K-means clustering identifies key colors"),
-                ("Selection Extraction", "Drag to select region for color sampling"),
+                ("Selection Extraction", "Shift+drag to select region for color sampling"),
+                ("Drag and Drop", "Drop a PNG, JPG or JPEG file to load it"),
                 ("Real-time Preview", "See extracted colors instantly"),
             ]),
             ("Screen Color Picker", [
@@ -348,8 +349,9 @@ class AboutDialog(QDialog):
             ]),
             ("Session & Export", [
                 ("Session Management", "Save and restore your palettes"),
-                ("Auto-Save", "Never lose your work"),
-                ("15+ Export Formats", "ASE, ACO, GPL, JSON, CSS, SCSS, and more"),
+                ("Auto-Save", "Every 6 minutes and on exit; restore offered after a crash"),
+                ("17 Export Formats", "ASE, ACO, GPL, JSON, CSS, SCSS, and more"),
+                ("Palette Import", "16 formats, added to or replacing the palette"),
                 ("Color History", "Track all colors you've picked"),
             ]),
             ("Themes & Display", [
@@ -406,8 +408,9 @@ class AboutDialog(QDialog):
         shortcut_categories = [
             ("File Operations", [
                 ("Ctrl+O", "Open/Upload Image"),
-                ("Ctrl+S", "Save Color Swatch"),
+                ("Ctrl+S", "Save Colors as Image (Palette Sheet)"),
                 ("Ctrl+E", "Export Palette"),
+                ("Ctrl+I", "Import Palette"),
             ]),
             ("Color Operations", [
                 ("Ctrl+G", "Grab All Colors from Image"),
@@ -429,10 +432,13 @@ class AboutDialog(QDialog):
                 ("Click & Drag", "Pan Image"),
                 ("Double Click", "Pick Color from Pixel"),
                 ("Shift + Drag", "Select Region for Extraction"),
+                ("Ctrl+0", "Reset Zoom/Pan"),
+                ("Drop File", "Load Image (PNG, JPG, JPEG)"),
+                ("Right Click", "Clear Image, Lock/Unlock Zoom"),
             ]),
             ("Color Swatches", [
                 ("Right Click", "Context Menu (Copy, Remove, Lock)"),
-                ("Click Lock Icon", "Lock/Unlock Color"),
+                ("Locked Color", "Gold Border; Kept by Clear All Colors"),
             ]),
         ]
         

@@ -691,13 +691,132 @@ class TestAutosaveCallback:
 
 
 class TestCheckForAutosave:
-    def test_returns_path_string_when_exists(self, sm):
+    """(#93 B) check_for_autosave() finds the auto-save of a run that did not
+    close cleanly: one whose recovery flag is still there, and which that run
+    wrote. Before, it looked only for this run's own file, which never exists
+    at startup, so nothing was ever offered."""
+
+    @staticmethod
+    def _previous_run(tmp_path, at: float):
+        """A run that set its flag at `at` and auto-saved after it."""
+        prev = SessionManager(sessions_dir=str(tmp_path))
+        prev._set_recovery_flag()
+        os.utime(prev.recovery_flag, (at, at))
+        prev.autosave_path.write_text("{}")
+        os.utime(prev.autosave_path, (at + 60, at + 60))
+        return prev
+
+    def test_returns_the_previous_runs_autosave_when_its_flag_survived(self, tmp_path):
+        prev = self._previous_run(tmp_path, 1_000_000)
+        sm = SessionManager(sessions_dir=str(tmp_path))
+        assert sm.autosave_path != prev.autosave_path
+        assert sm.check_for_autosave() == str(prev.autosave_path)
+
+    def test_none_after_a_clean_close(self, tmp_path):
+        prev = self._previous_run(tmp_path, 1_000_000)
+        prev.stop_autosave()                        # a clean close removes the flag
+        sm = SessionManager(sessions_dir=str(tmp_path))
+        assert prev.autosave_path.exists()
+        assert sm.check_for_autosave() is None
+
+    def test_none_when_every_autosave_is_older_than_the_flag(self, tmp_path):
+        prev = self._previous_run(tmp_path, 1_000_000)
+        os.utime(prev.autosave_path, (999_000, 999_000))
+        assert SessionManager(sessions_dir=str(tmp_path)).check_for_autosave() is None
+
+    def test_reads_the_flag_from_before_this_run_set_its_own(self, tmp_path, stub_timer):
+        prev = self._previous_run(tmp_path, 1_000_000)
+        sm = SessionManager(sessions_dir=str(tmp_path))
+        sm.start_autosave(MagicMock())              # writes this run's flag, now
+        assert sm.recovery_flag.stat().st_mtime > 1_000_100
+        assert sm.check_for_autosave() == str(prev.autosave_path)
+
+    def test_never_returns_this_runs_own_file(self, tmp_path):
+        self._previous_run(tmp_path, 1_000_000)
+        sm = SessionManager(sessions_dir=str(tmp_path))
+        for path in tmp_path.glob("autosave_*"):
+            path.unlink()
         sm.autosave_path.write_text("{}")
-        result = sm.check_for_autosave()
-        assert result == str(sm.autosave_path)
+        assert sm.check_for_autosave() is None
 
     def test_returns_none_when_missing(self, sm):
         assert sm.check_for_autosave() is None
+
+
+class TestRecoveryFlag:
+    def test_start_autosave_sets_it(self, sm, stub_timer):
+        assert not sm.recovery_flag.exists()
+        sm.start_autosave(MagicMock())
+        assert sm.recovery_flag.exists()
+
+    def test_not_set_when_autosave_is_disabled(self, sm, stub_timer):
+        sm.autosave_enabled = False
+        sm.start_autosave(MagicMock())
+        assert not sm.recovery_flag.exists()
+
+    def test_stop_autosave_clears_it(self, sm, stub_timer):
+        sm.start_autosave(MagicMock())
+        sm.stop_autosave()
+        assert not sm.recovery_flag.exists()
+
+    def test_shutdown_clears_it(self, sm, stub_timer):
+        main_app = MagicMock()
+        main_app.get_current_state.return_value = {"colors": [{"rgb": [1, 2, 3]}]}
+        sm.start_autosave(main_app)
+        sm.shutdown()
+        assert not sm.recovery_flag.exists()
+        assert sm.autosave_path.exists(), "the exit auto-save is still written"
+
+    def test_it_is_written_atomically(self, sm, monkeypatch):
+        written = []
+        monkeypatch.setattr(session_manager_module, "atomic_write_text",
+                            lambda path, text: written.append((path, text)))
+        sm._set_recovery_flag()
+        assert [p for p, _ in written] == [sm.recovery_flag]
+
+    def test_a_failed_write_or_removal_is_swallowed(self, sm, monkeypatch):
+        def boom(*args, **kwargs):
+            raise OSError("read-only")
+        monkeypatch.setattr(session_manager_module, "atomic_write_text", boom)
+        sm._set_recovery_flag()                     # must not raise
+        sm.recovery_flag.write_text("1")
+        monkeypatch.setattr(Path, "unlink", boom)
+        sm._clear_recovery_flag()                   # must not raise
+        assert sm.recovery_flag.exists()
+
+
+class TestAutosaveNameIsTheRunsOwn:
+    def test_a_second_run_in_the_same_second_takes_another_name(self, tmp_path, monkeypatch):
+        from datetime import datetime as real_datetime
+
+        class OneSecond(real_datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return real_datetime(2026, 10, 24, 9, 0, 0)
+
+        monkeypatch.setattr(session_manager_module, "datetime", OneSecond)
+        first = SessionManager(sessions_dir=str(tmp_path))
+        first.autosave_path.write_text("{}")
+        second = SessionManager(sessions_dir=str(tmp_path))
+        assert first._autosave_filename == "autosave_20261024_090000.cpksession"
+        assert second._autosave_filename == "autosave_20261024_090000_1.cpksession"
+
+
+class TestSessionColors:
+    def test_converts_saved_entries_in_order(self):
+        data = {"colors": [{"rgb": [1, 2, 3], "hsl": [4, 5, 6], "hilbert": 7, "locked": True},
+                           {"rgb": [9, 9, 9], "hsl": [0, 0, 0], "hilbert": 1}]}
+        assert SessionManager.session_colors(data) == [
+            ((1, 2, 3), (4, 5, 6), 7, True), ((9, 9, 9), (0, 0, 0), 1, False)]
+
+    def test_no_colors_key_is_empty(self):
+        assert SessionManager.session_colors({}) == []
+
+    def test_color_count_of_a_file(self, tmp_path):
+        path = tmp_path / "s.cpksession"
+        path.write_text('{"colors": [{}, {}, {}]}')
+        assert SessionManager.session_color_count(str(path)) == 3
+        assert SessionManager.session_color_count(str(tmp_path / "missing")) == 0
 
 
 class TestDeleteAutosave:

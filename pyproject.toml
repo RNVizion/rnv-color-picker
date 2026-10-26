@@ -88,8 +88,20 @@ Documentation = "https://github.com/RNVizion/rnv-color-picker/blob/main/README.m
 # ---------------------------------------------------------------------------
 
 [tool.setuptools]
-# Top-level packages and the standalone main module
-packages = ["core", "ui", "utils"]
+# Top-level packages and the standalone main module. `resources` and its
+# folders have no __init__.py; they are listed so their files install beside
+# core/, ui/ and utils/, where utils/config.py looks for them (BASE_DIR is the
+# parent of utils/) and RNV_Color_Picker.py looks for its icon. A new folder
+# under resources/ is added here too.
+packages = [
+    "core", "ui", "utils",
+    "resources",
+    "resources.background_images",
+    "resources.button_images",
+    "resources.fonts",
+    "resources.icons",
+    "resources.screenshots",
+]
 py-modules = ["RNV_Color_Picker"]
 
 # Bundle resources (fonts, icons, backgrounds, screenshots) into the wheel
@@ -97,14 +109,11 @@ include-package-data = true
 
 
 [tool.setuptools.package-data]
-# Anything under resources/ travels with installs
-"*" = [
-    "resources/fonts/*",
-    "resources/icons/*",
-    "resources/button_images/*",
-    "resources/background_images/*",
-    "resources/screenshots/*",
-]
+# Anything under resources/ travels with installs. Package data is matched
+# inside each package, so the files are named under their own `resources`
+# package; "resources/fonts/*" under "*" matched nothing, because no package
+# holds a resources/ folder. tests/test_install_resources.py holds this.
+"resources" = ["**/*"]
 
 
 # ---------------------------------------------------------------------------

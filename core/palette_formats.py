@@ -1,6 +1,6 @@
 """
 Palette import/export functionality for various formats.
-Supports: ACO, ACB, ASE, CLR, .COLORS, GPL, CSS, JSON, HSV, SVG, 
+Supports: ACO, ACB, ASE, CLR, .COLORS, GPL, CSS, SCSS, JSON, HSV, SVG, 
 HEX, HSL, TXT, XML, Procreate, and Affinity formats.
 NOW WITH OPTIONAL IMPORTS FOR SVG, CLR, and SWATCHES!
 """
@@ -56,6 +56,7 @@ class PaletteFormats:
             ("macOS Colors", "*.clr"),
             ("Colors File", "*.colors"),
             ("CSS Variables", "*.css"),
+            ("SCSS Variables", "*.scss"),
             ("JSON", "*.json"),
             ("XML", "*.xml"),
             ("SVG Palette", "*.svg"),
@@ -70,13 +71,14 @@ class PaletteFormats:
     def get_import_formats() -> list[tuple[str, str]]:
         """Get list of supported import formats."""
         return [
-            ("All Supported Formats", "*.gpl *.ase *.aco *.afpalette *.colors *.css *.json *.xml *.hex *.hsv *.hsl *.txt *.svg *.clr *.swatches"),
+            ("All Supported Formats", "*.gpl *.ase *.aco *.afpalette *.colors *.css *.scss *.json *.xml *.hex *.hsv *.hsl *.txt *.svg *.clr *.swatches"),
             ("GIMP Palette", "*.gpl"),
             ("Adobe Swatch Exchange", "*.ase"),
             ("Adobe Color", "*.aco"),
             ("Affinity Palette", "*.afpalette"),
             ("Colors File", "*.colors"),
             ("CSS Variables", "*.css"),
+            ("SCSS Variables", "*.scss"),
             ("JSON", "*.json"),
             ("XML", "*.xml"),
             ("HEX Text", "*.hex"),
@@ -105,6 +107,7 @@ class PaletteFormats:
             '.clr': PaletteFormats._export_clr,
             '.colors': PaletteFormats._export_colors,
             '.css': PaletteFormats._export_css,
+            '.scss': PaletteFormats._export_scss,
             '.json': PaletteFormats._export_json,
             '.xml': PaletteFormats._export_xml,
             '.hsv': PaletteFormats._export_hsv,
@@ -131,6 +134,7 @@ class PaletteFormats:
             '.json': PaletteFormats._import_json,
             '.xml': PaletteFormats._import_xml,
             '.css': PaletteFormats._import_css,
+            '.scss': PaletteFormats._import_scss,
             '.colors': PaletteFormats._import_colors,
             '.hex': PaletteFormats._import_hex,
             '.hsv': PaletteFormats._import_hsv,
@@ -317,6 +321,20 @@ class PaletteFormats:
                 f.write(f".bg-color-{i+1} {{\n")
                 f.write(f"  background-color: {hex_color};\n")
                 f.write(f"}}\n\n")
+
+    @staticmethod
+    def _export_scss(path: str, colors: list[tuple[tuple[int, int, int], int]]) -> None:
+        """Export SCSS variables format: the CSS exporter's names, as
+        $color-N and $color-N-rgb."""
+        # newline='\n' disables Python's text-mode CRLF translation on Windows
+        # so the file is byte-identical across platforms.
+        with open(path, 'w', newline='\n') as f:
+            f.write("// Color Mixer Palette - SCSS Variables\n\n")
+            for i, (color, weight) in enumerate(colors):
+                # Use ColorCache for cached hex conversion
+                hex_color = ColorCache.rgb_to_hex(color) if CACHE_AVAILABLE else ColorMath.rgb_to_hex(color)
+                f.write(f"$color-{i+1}: {hex_color};\n")
+                f.write(f"$color-{i+1}-rgb: {color[0]}, {color[1]}, {color[2]};\n")
 
     @staticmethod
     def _export_json(path: str, colors: list[tuple[tuple[int, int, int], int]]) -> None:
@@ -699,6 +717,12 @@ class PaletteFormats:
             logger.error(f"Error importing CSS: {e}")
         
         return colors
+
+    @staticmethod
+    def _import_scss(path: str) -> list[tuple[tuple[int, int, int], int]]:
+        """Import SCSS variables format. Read as CSS is: every #rrggbb in the
+        file, once each, in order, at weight 50."""
+        return PaletteFormats._import_css(path)
 
     @staticmethod
     def _import_colors(path: str) -> list[tuple[tuple[int, int, int], int]]:
@@ -1110,6 +1134,8 @@ class PaletteFormats:
                     return '.clr'
                 elif ':root' in first_lines or 'var(--' in first_lines:
                     return '.css'
+                elif re.search(r'^\s*\$[\w-]+\s*:', first_lines, re.MULTILINE):
+                    return '.scss'
                 elif first_lines.strip().startswith('{'):
                     return '.json'
                 
@@ -1177,6 +1203,12 @@ class PaletteFormats:
             },
             '.css': {
                 'name': 'CSS Variables',
+                'type': 'text',
+                'support': 'full',
+                'apps': ['Web Development']
+            },
+            '.scss': {
+                'name': 'SCSS Variables',
                 'type': 'text',
                 'support': 'full',
                 'apps': ['Web Development']

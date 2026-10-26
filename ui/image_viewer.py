@@ -2,9 +2,10 @@
 Image viewer widget for RNV Color Picker.
 
 Provides a QGraphicsView for displaying images with:
-- Zoom/pan functionality
-- Drag-to-select region for color extraction
+- Zoom (mouse wheel) and pan (click and drag)
+- Shift+drag to select a region for color extraction
 - Double-click to pick single pixel color
+- Dropping an image file on it loads the image (handled by the main window)
 - Zoom lock feature
 - Context menu for clearing image and toggling zoom lock
 
@@ -18,7 +19,7 @@ from PyQt6.QtWidgets import QGraphicsView, QMenu
 from PyQt6.QtCore import Qt, QPoint, QRectF, QPointF
 from PyQt6.QtGui import (
     QPainter, QColor, QPen, QAction, QBrush,
-    QPaintEvent, QMouseEvent
+    QPaintEvent, QMouseEvent, QDragEnterEvent, QDragMoveEvent, QDropEvent
 )
 
 from utils.logger import Logger
@@ -76,6 +77,9 @@ class ImageViewer(QGraphicsView):
         self.selection_rect_item = None
         self.scene_ref = None
         self.dragging = False
+        # Panning: a plain left-drag scrolls the view. The last viewport
+        # position the drag reached, or None when no pan is in progress.
+        self.pan_last: QPoint | None = None
         self.parent_app: ColorPickerApp | None = None
         self.zoom_locked = False
 
@@ -207,22 +211,27 @@ class ImageViewer(QGraphicsView):
             painter.drawRect(rect.adjusted(2, 2, -2, -2))
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
-        """Handle mouse press to start selection."""
+        """Start a gesture: Shift+left-drag selects a region, a plain
+        left-drag pans the image."""
         if event.button() == Qt.MouseButton.LeftButton:
-            self.selection_start = self.mapToScene(event.pos())
-            self.selection_end = None
-            self.dragging = True
+            if event.modifiers() & Qt.KeyboardModifier.ShiftModifier:
+                self.selection_start = self.mapToScene(event.pos())
+                self.selection_end = None
+                self.dragging = True
 
-            if self.selection_rect_item and self.scene_ref:
-                self.scene_ref.removeItem(self.selection_rect_item)
-                self.selection_rect_item = None
+                if self.selection_rect_item and self.scene_ref:
+                    self.scene_ref.removeItem(self.selection_rect_item)
+                    self.selection_rect_item = None
+            else:
+                self.pan_last = event.pos()
+                self.viewport().setCursor(Qt.CursorShape.ClosedHandCursor)
 
             event.accept()
         else:
             super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
-        """Handle mouse move to update selection rectangle."""
+        """Update the selection rectangle, or scroll the view while panning."""
         if self.dragging and self.scene_ref and self.selection_start is not None:
             current_pos = self.mapToScene(event.pos())
             rect = QRectF(self.selection_start, current_pos).normalized()
@@ -240,11 +249,25 @@ class ImageViewer(QGraphicsView):
             else:
                 self.selection_rect_item.setRect(rect)
             event.accept()
+        elif self.pan_last is not None:
+            delta = event.pos() - self.pan_last
+            self.pan_last = event.pos()
+            self.pan_by(delta.x(), delta.y())
+            event.accept()
         else:
             super().mouseMoveEvent(event)
 
+    def pan_by(self, dx: int, dy: int) -> None:
+        """Move the image with the pointer: scroll the view by (-dx, -dy).
+        Does nothing where the whole image already fits in the view."""
+        hbar = self.horizontalScrollBar()
+        vbar = self.verticalScrollBar()
+        hbar.setValue(hbar.value() - dx)
+        vbar.setValue(vbar.value() - dy)
+
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
-        """Handle mouse release to complete selection."""
+        """Complete the selection (a region over 5 px each way extracts its
+        colors) or end the pan."""
         if self.dragging and event.button() == Qt.MouseButton.LeftButton:
             self.dragging = False
             self.selection_end = self.mapToScene(event.pos())
@@ -261,8 +284,32 @@ class ImageViewer(QGraphicsView):
             self.selection_start = None
             self.selection_end = None
             event.accept()
+        elif self.pan_last is not None and event.button() == Qt.MouseButton.LeftButton:
+            self.pan_last = None
+            self.viewport().unsetCursor()
+            event.accept()
         else:
             super().mouseReleaseEvent(event)
+
+    # Drag and drop: an image file dropped on the view loads as Upload Image
+    # does. The main window owns the rule; the view hands the events to it.
+    def dragEnterEvent(self, event: QDragEnterEvent) -> None:
+        if self.parent_app:
+            self.parent_app.dragEnterEvent(event)
+        else:
+            super().dragEnterEvent(event)
+
+    def dragMoveEvent(self, event: QDragMoveEvent) -> None:
+        if self.parent_app:
+            self.parent_app.dragMoveEvent(event)
+        else:
+            super().dragMoveEvent(event)
+
+    def dropEvent(self, event: QDropEvent) -> None:
+        if self.parent_app:
+            self.parent_app.dropEvent(event)
+        else:
+            super().dropEvent(event)
 
     def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
         """

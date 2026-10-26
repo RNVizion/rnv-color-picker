@@ -12,7 +12,7 @@ from pathlib import Path
 
 from utils.logger import Logger
 from utils.error_handler import ErrorHandler
-from utils.atomic_write import atomic_write_json
+from utils.atomic_write import atomic_write_json, atomic_write_text
 
 logger = Logger("SessionManager")
 ERROR_HANDLER_AVAILABLE = True
@@ -26,6 +26,8 @@ class SessionManager:
     MAX_RECENT_SESSIONS = 10
     AUTOSAVE_PREFIX = "autosave_"  # Prefix for auto-save files
     AUTOSAVE_INTERVAL = 360  # Auto-save every 6 minutes
+    # Recovery is offered only when this flag survives a run (no clean close)
+    RECOVERY_FLAG_NAME = ".recovery_needed"  # Present while the app runs; a clean close removes it
     
     def __init__(self, sessions_dir: str | None = None):
         """
@@ -60,6 +62,21 @@ class SessionManager:
         self._session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
         self._autosave_filename = f"{self.AUTOSAVE_PREFIX}{self._session_id}{self.SESSION_EXTENSION}"
         self.autosave_path = self.sessions_dir / self._autosave_filename
+        # Two runs started within one second would share a name, and the second
+        # would write over the first's auto-save, which may be the one to restore
+        counter = 1
+        while self.autosave_path.exists():
+            self._autosave_filename = (
+                f"{self.AUTOSAVE_PREFIX}{self._session_id}_{counter}{self.SESSION_EXTENSION}"
+            )
+            self.autosave_path = self.sessions_dir / self._autosave_filename
+            counter += 1
+        # Crash detection: start_autosave() writes this flag and stop_autosave()
+        # (a clean close) removes it, so a flag found at startup means the last
+        # run did not close cleanly. Its modification time is when that run began.
+        self.recovery_flag = self.sessions_dir / self.RECOVERY_FLAG_NAME
+        self._autosave_started = False
+        self._unclean_exit_since: float | None = None  # read by start_autosave()
         # === END AUTO-SAVE SETUP ===
         
         if logger:
@@ -384,20 +401,51 @@ class SessionManager:
         from PyQt6.QtCore import QTimer
         
         self.main_app = main_app
+        
+        # Read the previous run's recovery flag before this run writes its own
+        self._unclean_exit_since = self._recovery_flag_time()
+        self._autosave_started = True
+        
         if self.autosave_enabled:
             self.autosave_timer = QTimer()
             self.autosave_timer.timeout.connect(self._autosave)
             self.autosave_timer.start(self.autosave_interval * 1000)
+            self._set_recovery_flag()
             if logger:
                 minutes = self.autosave_interval / 60
                 logger.success(f"Auto-save enabled (every {minutes:.0f} min) → {self._autosave_filename}")
     
     def stop_autosave(self) -> None:
-        """Stop auto-save timer (call on clean exit)."""
+        """Stop auto-save timer and clear the recovery flag (call on clean exit)."""
         if self.autosave_timer and self.autosave_timer.isActive():
             self.autosave_timer.stop()
             if logger:
                 logger.success("Auto-save stopped")
+        self._clear_recovery_flag()
+    
+    def _set_recovery_flag(self) -> None:
+        """Mark that the application is running (for crash detection next launch)."""
+        try:
+            atomic_write_text(self.recovery_flag, str(datetime.now().timestamp()))
+        except Exception as e:
+            if logger:
+                logger.debug(f"Could not set recovery flag: {e}")
+    
+    def _clear_recovery_flag(self) -> None:
+        """Remove the recovery flag (clean shutdown)."""
+        try:
+            if self.recovery_flag.exists():
+                self.recovery_flag.unlink()
+        except Exception as e:
+            if logger:
+                logger.debug(f"Could not clear recovery flag: {e}")
+    
+    def _recovery_flag_time(self) -> float | None:
+        """Modification time of the recovery flag, or None if there is none."""
+        try:
+            return self.recovery_flag.stat().st_mtime
+        except OSError:
+            return None
     
     def shutdown(self) -> None:
         """
@@ -463,14 +511,62 @@ class SessionManager:
     
     def check_for_autosave(self) -> str | None:
         """
-        Check if autosave exists (call on startup for crash recovery).
+        Check for an auto-save to recover (call on startup for crash recovery).
+        Returns the newest auto-save of an earlier run only if the previous run
+        did not close cleanly (its recovery flag is still there) and that run
+        wrote it. Each run auto-saves to a file of its own, so this run's file
+        is never the one returned.
         
         Returns:
-            Path to autosave file if exists, None otherwise
+            Path to the autosave to recover, None otherwise
         """
-        if self.autosave_path.exists():
-            return str(self.autosave_path)
+        # Offer recovery only after a run that did not close cleanly.
+        # A clean close removes the flag; the auto-saves themselves are kept.
+        if self._autosave_started:
+            since = self._unclean_exit_since   # read before this run set its own flag
+        else:
+            since = self._recovery_flag_time()
+        if since is None:
+            return None
+        newest: tuple[float, Path] | None = None
+        try:
+            for path in self.sessions_dir.glob(f"{self.AUTOSAVE_PREFIX}*{self.SESSION_EXTENSION}"):
+                if path.name == self._autosave_filename:
+                    continue
+                mtime = path.stat().st_mtime
+                if newest is None or mtime > newest[0]:
+                    newest = (mtime, path)
+        except OSError as e:
+            if logger:
+                logger.error(f"Error looking for an auto-save to recover: {e}")
+            return None
+        if newest and newest[0] >= since:
+            return str(newest[1])  # Newest, written by the run that did not close
         return None
+    
+    @staticmethod
+    def session_colors(session_data: dict[str, Any]) -> list[tuple]:
+        """The palette entries (rgb, hsl, hilbert, locked) a session's "colors"
+        hold, in their saved order. Shared by the Sessions tab's Load Selected
+        and the main window's restore and Auto-load."""
+        colors = []
+        for color_info in session_data.get("colors", []):
+            rgb = tuple(color_info["rgb"])
+            hsl = tuple(color_info["hsl"])
+            hilbert = color_info["hilbert"]
+            locked = color_info.get("locked", False)
+            colors.append((rgb, hsl, hilbert, locked))
+        return colors
+    
+    @staticmethod
+    def session_color_count(filepath: str) -> int:
+        """How many colors a session file holds (0 if it cannot be read)."""
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            return len(data.get("colors", []))
+        except Exception:
+            return 0
     
     def delete_autosave(self) -> None:
         """Delete autosave file (call after successful manual save or clean exit)."""

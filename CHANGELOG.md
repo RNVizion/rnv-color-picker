@@ -9,9 +9,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Changes since the May 2026 patches: June to October 2026.
+
+### Added
+- **Drag and drop.** Dropping a PNG, JPG or JPEG file on the window or the image view loads it as Upload Image (`Ctrl+O`) does. Anything else (another file type, a file that is not really an image, several files, text) is refused with a message.
+- **SCSS export and import** (`.scss`), beside CSS: `$color-1: #rrggbb;` and `$color-1-rgb: r, g, b;`, named as the CSS export names its variables. That makes 17 export formats and 16 import formats.
+- **Palette import is reachable**: `Ctrl+I`, or right-click an empty part of the palette and choose Import Palette.
+- **The restore offer.** After a run that did not close properly, the next launch offers to restore the colors it auto-saved. A normal close is never followed by the offer, and the auto-save is kept whatever the answer.
+- **Setup scripts**: `in.sh` (Linux and Codespaces, with the Qt system libraries) and `in.ps1` (Windows) install `requirements.txt` and `tests/requirements-dev.txt`.
+- **Color sync**: `brand_map.json` says where each color comes from; `tools/sync_colors.py` writes the values in `utils/colors.py` and the chart `COLORS.md`; the daily `brand-sync` workflow opens a pull request when a brand color this app uses moves.
+- **`ACCENT_IMAGES.md`**, written by `tools/accent_images.py`: every image with the gold drawn into its pixels.
+- **Guard tests**: colors in sync with the brand, the brand pin, atomic state writes, status carried by a word, the accent-image list, the setup scripts, the test-count floors in the docs, and an installed copy carrying `resources/`; also the Python floor, dependency coherence, the image budget and the shared test-tool ranges.
+- `tests/test_picker_features.py` drives the main window through the features and settings above.
+
+### Changed
+- **Gestures in the image view**: Shift+drag selects a region and extracts its colors, as the README said; a plain drag now pans the image instead of selecting. Double-click still picks one color, and the wheel still zooms.
+- **Maximum Colors** (Settings, 1 to 1000) now sets the palette limit, at launch too; it was 333 whatever the setting said. Lowering it below the palette's size keeps every color and says so.
+- **Auto-load last session on startup** now loads, at launch, the session saved, auto-saved or loaded most recently.
+- **Default Export Format** now sets the format Export Palette opens on (GPL, ASE, JSON, CSS), or Save As Image (PNG, JPEG).
+- **Remember window size** and **Remember window position** now keep the window's size and place from one close to the next launch, in the settings file; a place no longer on any screen is not used.
+- **Python 3.13** is the floor, declared and run.
+- **Colors**: the theme colors follow rnv-brand, pinned at a commit in `tests/requirements-dev.txt`; light-mode text and the contrast-rating colors were reworked to clear WCAG contrast; hovers take the mode's gold; colors written at an alpha are derived from their base color.
+- **Files the app keeps** (settings, sessions, the recent list, history) are written atomically through `utils/atomic_write.py`.
+- **A status is never shown by color alone**, and a guard now holds it; in this app the WCAG results read PASS or FAIL beside their color.
+- The background, settings-gear and icon images were re-encoded much smaller, with the same pictures.
+- The dev requirements moved from `requirements-test.txt` to `tests/requirements-dev.txt`, with rnv-brand pinned and the test tools in ranges shared by the RNV apps.
+- `run_tests.py` runs coverage with its own Python (`python -m coverage`), not a `coverage` found first on PATH.
+- Help text in the app: the About dialog and the Settings shortcut list name `Ctrl+I`, `Ctrl+0`, the drop and the right-click menus, the gestures as they are, and `Ctrl+S` as saving the palette sheet; the History tab says double-click.
+- The documentation was corrected against the code: README, TESTING and this file.
+
+### Fixed
+- `pip install .` now installs `resources/` (fonts, icons, button images, background, screenshots); the wheel had none of them.
+- Settings: Apply now reaches the Preserve Colors checkbox; Save Settings applies the settings as Apply does; the Settings panel and the About dialog follow a theme switch made while they are open; the Sessions tab's divider is drawn in the theme's color.
+- Two runs started within the same second no longer share one auto-save file.
+- The 3.0.3 entry below describes an ASE `metadata` parameter fix that never was: no such parameter existed. The fixes of that day (2026-05-19, with the line endings on 2026-05-20, not 2026-05-21) were: ASE color names gained their UTF-16 terminator and each color block its correct length (20 bytes plus the name, not 22); ACO export writes the name length as 4 bytes; ACO import rounds 16-bit channels instead of truncating them.
+
 ### Planned
 - Mutation testing harness (`mutmut`) against `core/` modules.
-- PyInstaller spec for downloadable `.exe` releases.
 - Snapshot test suite (mirroring Color Mixer) for byte-level export verification.
 
 ---

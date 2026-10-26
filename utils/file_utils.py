@@ -18,6 +18,32 @@ ERROR_HANDLER_AVAILABLE = True
 
 
 # =========================================================================
+# SAVE-DIALOG FILTERS (Settings > Default Export Format)
+# =========================================================================
+
+def filter_for_extension(file_filters: list[str], ext: str | None) -> str | None:
+    """
+    The first filter that lists `*.ext` (e.g. ext "jpeg" finds
+    "JPEG Files (*.jpg *.jpeg)"), or None if none does or ext is empty.
+    """
+    if not ext:
+        return None
+    pattern = f"*.{ext.lower().lstrip('.')}"
+    for file_filter in file_filters:
+        start, end = file_filter.rfind("("), file_filter.rfind(")")
+        if 0 <= start < end and pattern in file_filter[start + 1:end].split():
+            return file_filter
+    return None
+
+
+def first_extension(file_filter: str | None) -> str | None:
+    """The first `*.ext` a filter lists, as ".ext", or None (also for "*.*")."""
+    import re
+    match = re.search(r'\*(\.\w+)', file_filter or "")
+    return match.group(1) if match else None
+
+
+# =========================================================================
 # PATH UTILITIES
 # =========================================================================
 

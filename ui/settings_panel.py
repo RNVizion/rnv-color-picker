@@ -20,7 +20,7 @@ from utils.logger import Logger
 from utils.dialog_helper import DialogHelper
 from utils.cache import QColorCache, ColorCache, StylesheetCache
 from utils.settings_manager import get_settings_manager
-from utils.session_manager import get_session_manager
+from utils.session_manager import get_session_manager, SessionManager
 from utils.error_handler import ErrorHandler
 from utils.signal_manager import SignalConnectionManager
 from utils.colors import (
@@ -207,7 +207,7 @@ class SettingsPanel(QDialog):
             header.setStyleSheet("font-weight: bold; font-size: 14px;")
         layout.addWidget(header)
         
-        desc = QLabel("Click any color to load it into an empty slot")
+        desc = QLabel("Double-click any color to add it to the palette")
         desc.setObjectName("muted_text")
         if CACHE_AVAILABLE and StylesheetCache:
             desc.setStyleSheet(StylesheetCache.get_description_stylesheet())
@@ -470,7 +470,7 @@ class SettingsPanel(QDialog):
         layout.addWidget(self.session_autosave_check)
         
         self.session_autoload_check = QCheckBox("Auto-load last session on startup")
-        self.session_autoload_check.setToolTip("Restore palette from previous session")
+        self.session_autoload_check.setToolTip("Load the last session saved, auto-saved or loaded when the app starts")
         self.session_autoload_check.stateChanged.connect(self._sync_autoload_checkbox_from_sessions)
         layout.addWidget(self.session_autoload_check)
         
@@ -624,13 +624,7 @@ class SettingsPanel(QDialog):
             if self.parent_app:
                 colors_data = session_data["colors"]
                 self.parent_app.colors.clear()
-                
-                for color_info in colors_data:
-                    rgb = tuple(color_info["rgb"])
-                    hsl = tuple(color_info["hsl"])
-                    hilbert = color_info["hilbert"]
-                    locked = color_info.get("locked", False)
-                    self.parent_app.colors.append((rgb, hsl, hilbert, locked))
+                self.parent_app.colors.extend(SessionManager.session_colors(session_data))
                 
                 self.parent_app.refresh_color_display()
                 
@@ -1548,6 +1542,7 @@ class SettingsPanel(QDialog):
                 ("Ctrl+O", "Upload Image"),
                 ("Ctrl+S", "Save Colors as Image"),
                 ("Ctrl+E", "Export Palette"),
+                ("Ctrl+I", "Import Palette"),
             ]),
             ("Color Operations", [
                 ("Ctrl+G", "Grab ALL Colors from image"),
@@ -1559,7 +1554,9 @@ class SettingsPanel(QDialog):
                 ("Ctrl+0", "Reset Zoom/Pan"),
                 ("Scroll Wheel", "Zoom In/Out"),
                 ("Double-Click", "Pick color from pixel"),
-                ("Click+Drag", "Select region for extraction"),
+                ("Click+Drag", "Pan image"),
+                ("Shift+Drag", "Select region for extraction"),
+                ("Drop File", "Load a PNG, JPG or JPEG image"),
             ]),
             ("Application", [
                 ("Ctrl+,", "Open Settings"),
@@ -1670,7 +1667,7 @@ class SettingsPanel(QDialog):
         
         # Auto-load session
         self.autoload_session_check = QCheckBox("Auto-load last session on startup")
-        self.autoload_session_check.setToolTip("Restore colors from previous session")
+        self.autoload_session_check.setToolTip("Load the last session saved, auto-saved or loaded when the app starts")
         content_layout.addWidget(self.autoload_session_check)
         
         # Sync with Sessions tab checkbox
@@ -1684,7 +1681,10 @@ class SettingsPanel(QDialog):
         max_colors_layout.addWidget(QLabel("Maximum Colors:"))
         self.max_colors_input = QLineEdit("333")
         self.max_colors_input.setMaximumWidth(80)
-        self.max_colors_input.setToolTip("Maximum number of colors in palette (1-1000)")
+        self.max_colors_input.setToolTip(
+            "Maximum number of colors in palette (1-1000). Lowering it below the "
+            "palette's size keeps every color; nothing new is added until there is room."
+        )
         max_colors_layout.addWidget(self.max_colors_input)
         max_colors_layout.addStretch()
         content_layout.addLayout(max_colors_layout)
@@ -1719,7 +1719,10 @@ class SettingsPanel(QDialog):
             "Adobe Swatch (ASE)", "JSON Data", "CSS Variables"
         ])
         self.export_format_combo.setMinimumWidth(180)
-        self.export_format_combo.setToolTip("Default format when exporting palettes")
+        self.export_format_combo.setToolTip(
+            "The format Export Palette opens on; PNG and JPEG set the format "
+            "Save As Image opens on"
+        )
         export_layout.addWidget(self.export_format_combo)
         export_layout.addStretch()
         content_layout.addLayout(export_layout)
@@ -1744,7 +1747,9 @@ class SettingsPanel(QDialog):
         
         # Remember window position
         self.remember_position_check = QCheckBox("Remember window position")
-        self.remember_position_check.setToolTip("Restore window position on next launch")
+        self.remember_position_check.setToolTip(
+            "Restore window position on next launch, if it is still on a screen"
+        )
         content_layout.addWidget(self.remember_position_check)
         
         content_layout.addStretch()

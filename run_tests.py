@@ -29,6 +29,11 @@ ROOT = Path(__file__).resolve().parent
 COVERAGE_SOURCE = "--source=core,utils,ui"
 COVERAGE_BRANCH = "--branch"
 
+# coverage from this interpreter, never a `coverage` found first on PATH,
+# which may belong to another Python with another rnv-brand installed.
+PYTHON = sys.executable
+COVERAGE = [PYTHON, "-m", "coverage"]
+
 # Data file names so the two suites don't overwrite each other before merge.
 UNITTEST_DATA = ".coverage.unittest"
 PYTEST_DATA = ".coverage.pytest"
@@ -48,7 +53,7 @@ def _run(label, cmd):
 def run_unittest_suite():
     return _run(
         "Suite 1 / 2 — unittest (test_rnv_color_picker.py)",
-        ["coverage", "run",
+        [*COVERAGE, "run",
          f"--data-file={UNITTEST_DATA}",
          COVERAGE_SOURCE,
          COVERAGE_BRANCH,
@@ -62,7 +67,7 @@ def run_pytest_suite():
         return 0
     return _run(
         "Suite 2 / 2 — pytest (tests/)",
-        ["coverage", "run",
+        [*COVERAGE, "run",
          f"--data-file={PYTEST_DATA}",
          COVERAGE_SOURCE,
          COVERAGE_BRANCH,
@@ -78,7 +83,7 @@ def merge_data_files():
         return 1
     # `coverage combine` deletes input files after a successful merge, so
     # the canonical .coverage ends up with the union of both runs.
-    return subprocess.call(["coverage", "combine", *parts], cwd=ROOT)
+    return subprocess.call([*COVERAGE, "combine", *parts], cwd=ROOT)
 
 
 def print_report(summary=False):
@@ -87,13 +92,13 @@ def print_report(summary=False):
     print("=" * 72)
     print("  Coverage report" + ("  (--skip-covered)" if summary else ""))
     print("=" * 72)
-    cmd = ["coverage", "report", "-m"]
+    cmd = [*COVERAGE, "report", "-m"]
     if summary:
         cmd.append("--skip-covered")
     rc = subprocess.call(cmd, cwd=ROOT)
     # Always also write the full report to disk for archiving.
     with open(ROOT / "coverage_report.txt", "w", encoding="utf-8") as f:
-        subprocess.call(["coverage", "report", "-m"], cwd=ROOT, stdout=f)
+        subprocess.call([*COVERAGE, "report", "-m"], cwd=ROOT, stdout=f)
     return rc
 
 

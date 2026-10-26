@@ -2232,7 +2232,7 @@ class TestMutedDescriptions:
         labels = self._muted(panel)
         texts = [w.text() for w in labels]
         # the six tab descriptions, the color-blindness one and the harmony one
-        for fragment in ("Click any color", "Save and restore", "Generate harmonious",
+        for fragment in ("click any color", "Save and restore", "Generate harmonious",
                          "Check WCAG", "See how your colors", "Quick reference"):
             assert any(fragment in t for t in texts), (fragment, texts)
         assert panel.harmony_desc_label in labels
@@ -2675,6 +2675,9 @@ class TestSaveAppliesAndTheDivider:
                               tooltips_enabled=True, sort_checkbox=MagicMock(),
                               preserve_checkbox=MagicMock(), debug_label=MagicMock(),
                               _apply_tooltips=MagicMock())
+        # (#95 A) Maximum Colors goes through set_max_colors(), which reads the palette
+        app.colors = []
+        app.set_max_colors = lambda value: RNV_Color_Picker.ColorPickerApp.set_max_colors(app, value)
         for key, value in sent:
             RNV_Color_Picker.ColorPickerApp._on_setting_changed(app, key, value)
         assert app.MAX_COLORS == 256

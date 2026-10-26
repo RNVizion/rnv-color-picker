@@ -1,8 +1,8 @@
 # Testing
 
-> **Summary:** over 1,800 tests across two harnesses · 86% TOTAL coverage with branch coverage enabled · 3 production bugs caught and fixed during the campaign · 26 reusable testing patterns banked.
+> **Summary:** over 1,900 tests across two harnesses · branch coverage measured on every run · a set of guard tests for rules that span the repository · 3 production bugs caught and fixed during the campaign · 26 reusable testing patterns banked.
 
-This document describes the test architecture, the seven-phase campaign that built the suite, the coverage profile, and the three production bugs that the suite caught before they reached users.
+This document describes the test architecture, the guard tests, the seven-phase campaign that built the suite, the coverage profile, and the three production bugs that the suite caught before they reached users.
 
 ---
 
@@ -10,21 +10,19 @@ This document describes the test architecture, the seven-phase campaign that bui
 
 | Metric | Value |
 |---|---|
-| Total tests | **over 1,800** |
+| Total tests | **over 1,900** |
 | `unittest` harness | over 300 tests |
-| `pytest` harness | over 1,400 tests |
-| Coverage (TOTAL, branch enabled) | **86%** |
-| Modules at ≥90% coverage | 12 |
+| `pytest` harness | over 1,500 tests |
+| Coverage (TOTAL, branch enabled) | measured on every full run; `python run_tests.py --report` prints it |
 | Production bugs caught by the suite | 3 |
-| Suite runtime | ~85 seconds (full combined run) |
 
-Run the full combined suite:
+Run the full combined suite, after installing `tests/requirements-dev.txt` (see *Setting up for development* in the [README](README.md)):
 
 ```bash
 python run_tests.py
 ```
 
-This runs `unittest` first, then `pytest`, and merges coverage data into a single report.
+This runs `unittest` first, then `pytest`, and merges coverage data into a single report. It runs coverage with the same Python that runs it (`python -m coverage`), never a `coverage` found first on PATH.
 
 ---
 
@@ -42,55 +40,61 @@ A single file of over 300 tests, using Python's standard `unittest.TestCase`. Ol
 
 ### `pytest` harness (`tests/`)
 
-Over 1,400 pytest tests, spread across one file per production module (`tests/test_<module>.py`). Uses:
+Over 1,500 pytest tests in `tests/`. Some files test one module (`tests/test_session_manager.py`, `tests/test_palette_formats.py`); others test one topic across modules (`tests/test_picker_features.py` drives the main window through drag and drop, the gestures, palette import, the restore offer, and the settings Maximum Colors, Auto-load, Default Export Format and Remember window size and position) or hold a guard (below). Not every module has a file of its own. Uses:
 
 - **`pytest-qt`** for real Qt event loop and signal verification (no mocking of widget signals).
 - **`hypothesis`** for property-based testing of color math and color history invariants — round-trip identity, monotonicity, max-size invariants, etc.
 - **`qtbot.waitUntil(predicate, timeout)`** for callback-driven manager tests where signals fire asynchronously.
 
-The two harnesses share a `conftest.py` that globally patches `ColorHistoryManager.__init__/_setup/_load` so tests don't write to user `AppData` directories.
+Each harness patches `ColorHistoryManager.__init__/_setup/_load` itself, so tests don't write to the user's history file: the `unittest` file at its top, the `pytest` suite in `tests/conftest.py`. The root `conftest.py` only puts the project root on `sys.path`.
+
+---
+
+## Guard tests
+
+Besides the tests of the app's behavior, a set of guard tests holds rules that span the
+repository:
+
+| Test | Holds |
+|---|---|
+| `tests/test_colors_in_sync.py` | the color file and `COLORS.md` are what `brand_map.json` and the pinned brand say |
+| `tests/test_register_pin.py` | the installed rnv-brand is the pinned commit |
+| `tests/test_atomic_state_writes.py` | every file the app keeps is written atomically |
+| `tests/test_status_carried_by_a_word.py` | a status is never shown by color alone: each one has a word or a mark beside it |
+| `tests/test_accent_images.py` | `ACCENT_IMAGES.md` matches the images |
+| `tests/test_setup_scripts.py` | `in.sh` and `in.ps1` install the same files |
+| `tests/test_readme_test_counts.py` | every test count the docs state is a floor that holds |
+| `tests/test_install_resources.py` | an installed copy (`pip install .`) carries every file under `resources/` |
 
 ---
 
 ## Coverage profile
 
-Coverage is measured with **branch coverage enabled** (stricter than line coverage alone). All numbers below are from the post-Phase-7 verified clean run.
+Coverage is measured with **branch coverage enabled** (stricter than line coverage alone).
 
-### Modules at 90%+
+Coverage is measured on every full run. `python run_tests.py --report` prints the current
+figure for every module; it differs a little between Windows and Linux. CI prints the
+combined report after every run; this repository's workflow sets no floor (`--fail-under`).
+`python run_tests.py --summary` prints only the modules that are not fully covered.
 
-| Module | Coverage | Notes |
-|---|---|---|
-| `utils/error_handler.py` | 100% | Every branch of every safe-execute path |
-| `utils/pixmap_cache.py` | 99% | LRU eviction, resize, hit-rate stats |
-| `ui/progress_dialog.py` | 97% | All three theme paths, cancel handling |
-| `ui/about_dialog.py` | 96% | All four tabs, theme fallbacks |
-| `core/accessibility.py` | 96% | WCAG ratios, color-blindness simulation |
-| `core/color_math.py` | 95% | RGB/HSV/HSL/Lab/RYB round-trips, mixing modes |
-| `core/palette_formats.py` | 94% | 17 file formats, round-trip preservation |
-| `utils/async_file_ops.py` | 94% | Real QThread file I/O with progress callbacks |
-| `utils/session_manager.py` | 93% | Save, load, autosave, recent sessions, cleanup |
-| `core/color_history.py` | 91% | OS-specific path resolution, max-size invariant |
-| `core/color_harmony.py` | 91% | All 7 harmony types |
-| `utils/signal_manager.py` | 91% | Connection tracking, leak detection |
+### Where the gaps are — and why
 
-### Modules below 90% — and why
+The modules with the most uncovered lines are not under-tested by accident; their uncovered lines fall into well-defined buckets that are uneconomical to test in isolation.
 
-The remaining modules are not under-tested by accident; their uncovered lines fall into well-defined buckets that are uneconomical to test in isolation.
+| Module | Why the gap |
+|---|---|
+| `utils/font_loader.py` | OS-specific file-discovery branches and the system-fallback path require platform-specific test fixtures. |
+| `utils/file_utils.py` | Defensive branches around `OSError` / `PermissionError` for unwritable paths — would require platform-specific permission setup. |
+| `utils/logger.py` | ANSI rendering branches and file-logging path are touched by manual smoke tests rather than automated tests. |
+| `utils/config.py` | The `detect_image_resources()` filesystem walk — covered indirectly by integration runs. |
+| `utils/settings_manager.py` | Settings export/import paths and settings-file-corruption recovery branches. |
+| `utils/cache.py` | Some cache-eviction edge cases and unused convenience helpers. |
+| `core/screen_color_picker.py` | Fullscreen overlay paint branches that depend on real cursor/screen geometry. |
+| `ui/image_button.py` | Image-mode painting paths that depend on actual loaded button images. |
+| `utils/dialog_helper.py` | The themed `get_text` / `get_int` instance-based dialog bodies are intentionally mocked at the call site in `settings_panel` tests to avoid modal `.exec()` blocking — a deliberate trade-off for test reliability. |
+| `utils/clipboard.py` | Some `QApplication`-not-yet-initialized defensive branches. |
 
-| Module | Coverage | Why the gap |
-|---|---|---|
-| `utils/font_loader.py` | 51% | OS-specific file-discovery branches and the system-fallback path require platform-specific test fixtures. |
-| `utils/file_utils.py` | 55% | Defensive branches around `OSError` / `PermissionError` for unwritable paths — would require platform-specific permission setup. |
-| `utils/logger.py` | 63% | ANSI rendering branches and file-logging path are touched by manual smoke tests rather than automated tests. |
-| `utils/config.py` | 66% | Module-level constants and the `detect_image_resources()` filesystem walk — covered indirectly by integration runs. |
-| `utils/settings_manager.py` | 69% | Settings export/import paths and settings-file-corruption recovery branches. |
-| `utils/cache.py` | 71% | Some cache-eviction edge cases and unused convenience helpers. |
-| `core/screen_color_picker.py` | 77% | Fullscreen overlay paint branches that depend on real cursor/screen geometry. |
-| `ui/image_button.py` | 81% | Image-mode painting paths that depend on actual loaded button images. |
-| `utils/dialog_helper.py` | 85% | The themed `get_text` / `get_int` instance-based dialog bodies are intentionally mocked at the call site in `settings_panel` tests to avoid modal `.exec()` blocking — a deliberate trade-off for test reliability. |
-| `utils/clipboard.py` | 87% | Some `QApplication`-not-yet-initialized defensive branches. |
-
-The `RNV_Color_Picker.py` main module itself is **excluded from the coverage spec** by design — the entry point is exercised by the application starting up, and coverage tooling for `if __name__ == "__main__"` blocks adds noise without insight.
+The `RNV_Color_Picker.py` main module itself is **excluded from the coverage figures** by design. `tests/test_picker_features.py` drives the main window through its features all the same.
 
 ---
 
@@ -119,9 +123,9 @@ Three real production bugs were discovered by tests written during the campaign 
 
 ### Bug 1 — `pixmap_cache.py` keyword-argument mismatch
 
-**Symptom:** `ImagePixmapCache(max_size_mb=15)` would `TypeError` immediately on construction, which masked itself behind a fallback path that constructed an oversized cache.
+**Symptom:** constructing the cache with a `max_size_mb` keyword would `TypeError` immediately, which masked itself behind a fallback path that constructed an oversized cache.
 
-**Root cause:** The class signature accepted `max_size` (entry count, default 15) but a call site passed `max_size_mb=256` (a megabyte budget that didn't exist as an argument). The call site had been written assuming a different cache abstraction that was never implemented.
+**Root cause:** The class signature accepted `max_size` (entry count, default 15) but a call site passed `max_size_mb` (a megabyte budget that didn't exist as an argument). The call site had been written assuming a different cache abstraction that was never implemented.
 
 **Fix:** Standardized on `max_size` with a default of 15 entries. Tests now construct the cache with both default and explicit `max_size` to lock the contract.
 
@@ -129,11 +133,11 @@ Three real production bugs were discovered by tests written during the campaign 
 
 ### Bug 2 — `image_viewer.py` `QPointF(0,0)` truthiness
 
-**Symptom:** Drag-to-select region extraction silently failed when the user's drag began at the absolute scene origin `(0, 0)`. No selection rectangle was created, no error logged. The user saw nothing happen.
+**Symptom:** Drag-to-select region extraction (Shift+drag today) silently failed when the user's drag began at the absolute scene origin `(0, 0)`. No selection rectangle was created, no error logged. The user saw nothing happen.
 
-**Root cause:** Two lines used `if self.selection_start:` to test whether a selection was in progress. `QPointF(0, 0)` is falsy in PyQt6 because `__bool__` returns `not self.isNull()`. The fix is `if self.selection_start is not None:`.
+**Root cause:** Two checks, in the mouse-move and mouse-release handlers, used `if self.selection_start:` to test whether a selection was in progress. `QPointF(0, 0)` is falsy in PyQt6 because `__bool__` returns `not self.isNull()`. The fix is `if self.selection_start is not None:`.
 
-**Fix:** Both occurrences (lines 226 and 251) corrected to use explicit `is not None` checks. Two regression tests pin the `(0, 0)` case specifically.
+**Fix:** Both occurrences corrected to use explicit `is not None` checks. Two regression tests pin the `(0, 0)` case specifically.
 
 **Tests that caught it:**
 - `tests/test_image_widgets.py::TestMouseMoveEvent::test_drag_with_qpointf_zero_zero_start_now_creates_rect`
@@ -143,7 +147,7 @@ Three real production bugs were discovered by tests written during the campaign 
 
 **Symptom:** Importing an HSL `.hsl` palette file containing pure red (`H=0.0, S=100.0, L=50.0`) yielded white `(255, 255, 255)` instead of red `(255, 0, 0)`. Other colors were similarly wrong in non-obvious ways.
 
-**Root cause:** `palette_formats.py` line 793 called `ColorMath.hsl_to_rgb((h, s, l))`, but `ColorMath.hsl_to_rgb` internally uses `colorsys.hls_to_rgb` which expects **(hue, lightness, saturation)** ordering — the standard Python stdlib convention. The fix swaps the tuple argument to `(h, l, s)`.
+**Root cause:** the HSL importer in `palette_formats.py` called `ColorMath.hsl_to_rgb((h, s, l))`, but `ColorMath.hsl_to_rgb` internally uses `colorsys.hls_to_rgb` which expects **(hue, lightness, saturation)** ordering — the standard Python stdlib convention. The fix swaps the tuple argument to `(h, l, s)`.
 
 This bug was discovered by the round-trip test `test_round_trip_within_two_per_channel`: exporting then re-importing the same HSL palette should preserve the colors within ±2 per channel. It didn't, and the diff pointed straight at the conversion call.
 
@@ -191,16 +195,16 @@ When a manager's behavior is "after `cancel_all()`, the active count should even
 
 ### Round-trip tests for file format I/O (Phase 7)
 
-For each of the 17 supported palette formats, the test pattern is:
+For each of the 16 palette formats that import (the 17 export formats less `.acb`, which is export-only and checked by its header), the test pattern is:
 1. Construct a fixed input palette.
 2. Export it to a temp file.
 3. Re-import from the temp file.
 4. Assert the imported colors match the input within a documented tolerance.
 
-Three tolerance tiers were used:
-- **Exact** — JSON, XML, GPL, hex text formats.
-- **RGB-only** — formats that drop or default the weight metadata (CSS, SVG, ASE, ACO).
-- **Lossy ±N per channel** — HSV/HSL/Lab formats that round-trip through floating-point conversion.
+Three tolerance tiers are used:
+- **Exact** — JSON, XML, `.colors`, `.hex`: colors and weights.
+- **RGB-only** — formats that drop or default the weight (GPL, ASE, ACO, CLR, CSS, SCSS, SVG, TXT).
+- **Lossy ±N per channel** — HSV (±1), HSL (±2), Affinity (±1) and Procreate (±1), which round-trip through floating-point conversion.
 
 Documenting the tolerance per format makes the contract explicit.
 
@@ -211,16 +215,15 @@ Documenting the tolerance per format makes the contract explicit.
 Honesty matters here. The suite does not currently cover:
 
 - **Visual rendering correctness.** The custom theme stylesheets, image-mode translucent overlays, and tooltip rendering are exercised structurally (the right CSS strings get applied) but not visually verified. Doing this well requires a screenshot-diff harness — out of scope for v1.
-- **Cross-platform clipboard edge cases.** macOS and Linux clipboard behavior is exercised on Windows CI; platform-specific quirks may exist.
+- **Cross-platform clipboard edge cases.** CI runs the suite on Ubuntu and Windows; macOS is not exercised, and platform-specific quirks may exist.
 - **Multi-monitor screen picker geometry.** The fullscreen overlay assumes a single primary screen. Multi-monitor cursor mapping has been smoke-tested but not unit-tested.
-- **The main entry-point module (`RNV_Color_Picker.py`).** Excluded from the coverage spec by design — the entry point is exercised by application startup, and adding tests for `if __name__ == "__main__"` adds noise without insight.
+- **The main entry-point module (`RNV_Color_Picker.py`) in the coverage figures.** It is left out of them by design; `tests/test_picker_features.py` exercises its features, and `main()` itself runs only when the app starts.
 
 ---
 
 ## Future work
 
 - **Mutation testing** with `mutmut` against `core/` modules. Coverage measures *what code ran*; mutation testing measures *whether the tests would notice if the code was wrong*. A natural next step.
-- **GitHub Actions CI** running the suite on every push, with a coverage badge in the README. Tracked under portfolio Phase 5.
 - **Property-based tests for `palette_formats`** edge cases — currently uses fixed inputs; hypothesis could surface format-specific malformations.
 
 ---
@@ -236,24 +239,28 @@ python run_tests.py
 **Just `pytest` with verbose output:**
 
 ```bash
-pytest tests/ -v
+python -m pytest tests/ -v
 ```
 
 **Coverage report only:**
 
 ```bash
-coverage run --source=core,utils,ui --branch -m pytest tests/
-coverage report -m
+python -m coverage run --source=core,utils,ui --branch -m pytest tests/
+python -m coverage report -m
 ```
 
 **Single test file:**
 
 ```bash
-pytest tests/test_palette_formats.py -v
+python -m pytest tests/test_palette_formats.py -v
 ```
 
 **Single test:**
 
 ```bash
-pytest tests/test_palette_formats.py::TestHslRoundTrip::test_round_trip_within_two_per_channel -v
+python -m pytest tests/test_palette_formats.py::TestHslRoundTrip::test_round_trip_within_two_per_channel -v
 ```
+
+Use `python -m pytest` and `python -m coverage` rather than a bare `pytest` or `coverage`: a copy on PATH from another Python has another rnv-brand, and the register-pin tests fail falsely under it.
+
+**CI** (`.github/workflows/tests.yml`) runs both suites on Ubuntu and Windows with Python 3.13 on every push and pull request.

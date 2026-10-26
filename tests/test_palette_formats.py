@@ -26,6 +26,7 @@ mostly the import side and detect_format.
 """
 
 import json
+import re
 import struct
 import xml.etree.ElementTree as ET
 
@@ -105,8 +106,19 @@ class TestGetExportFormats:
         # Spot-check the formats that have round-trip tests downstream
         flat = " ".join(ext for _, ext in PaletteFormats.get_export_formats())
         for ext in ("*.gpl", "*.ase", "*.aco", "*.json", "*.xml",
-                    "*.css", "*.svg", "*.hex", "*.hsv", "*.hsl", "*.txt"):
+                    "*.css", "*.scss", "*.svg", "*.hex", "*.hsv", "*.hsl", "*.txt"):
             assert ext in flat
+
+    def test_scss_sits_next_to_css(self):
+        # (#93 B) SCSS export, listed beside CSS in the export dialog
+        names = [n for n, _ in PaletteFormats.get_export_formats()]
+        assert names[names.index("CSS Variables") + 1] == "SCSS Variables"
+
+    def test_seventeen_formats_and_the_catch_all(self):
+        # The count the README and the About dialog state
+        entries = PaletteFormats.get_export_formats()
+        assert entries[-1][0] == "All Files"
+        assert len(entries) - 1 == 17
 
     def test_includes_all_files_catchall(self):
         names = [n for n, _ in PaletteFormats.get_export_formats()]
@@ -125,9 +137,17 @@ class TestGetImportFormats:
     def test_aggregate_includes_all_importable_extensions(self):
         aggregate = PaletteFormats.get_import_formats()[0][1]
         for ext in ("*.gpl", "*.ase", "*.aco", "*.json", "*.xml",
-                    "*.css", "*.hex", "*.hsv", "*.hsl", "*.txt",
+                    "*.css", "*.scss", "*.hex", "*.hsv", "*.hsl", "*.txt",
                     "*.svg", "*.clr", "*.swatches"):
             assert ext in aggregate
+
+    def test_sixteen_formats_between_the_aggregate_and_the_catch_all(self):
+        # The count the README and the About dialog state; .acb is export-only
+        entries = PaletteFormats.get_import_formats()
+        assert entries[0][0] == "All Supported Formats" and entries[-1][0] == "All Files"
+        singles = entries[1:-1]
+        assert len(singles) == 16
+        assert entries[0][1].split() == [pattern for _, pattern in singles]
 
 
 # ===========================================================================
@@ -503,6 +523,69 @@ class TestCssImportEdgeCases:
     def test_no_hex_colors_returns_empty(self, tmp_path):
         path = tmp_path / "x.css"
         path.write_text("body { font-family: sans-serif; }")
+        assert PaletteFormats.import_palette(str(path)) == []
+
+
+# ===========================================================================
+# SCSS — the CSS exporter's names as SCSS variables; read back as CSS is
+# ===========================================================================
+
+#: The exact text SCSS export writes for the first two colors of
+#: SAMPLE_PALETTE: a frozen expectation, as a snapshot would be. The header
+#: names the palette as every exporter in this module does.
+SCSS_EXPECTED = (
+    "// Color Mixer Palette - SCSS Variables\n\n"
+    f"$color-1: {DATA_RED};\n"
+    "$color-1-rgb: 255, 0, 0;\n"
+    f"$color-2: {DATA_GREEN};\n"
+    "$color-2-rgb: 0, 255, 0;\n"
+)
+
+
+class TestScssRoundTrip:
+    def test_round_trip_preserves_rgbs(self, tmp_path):
+        path = str(tmp_path / "p.scss")
+        PaletteFormats.export_palette(path, SAMPLE_PALETTE)
+        out = PaletteFormats.import_palette(path)
+        assert len(out) == len(SAMPLE_PALETTE)
+        _assert_round_trip_rgb_exact(out, SAMPLE_PALETTE)
+
+    def test_weight_does_not_survive_as_in_css(self, tmp_path):
+        path = str(tmp_path / "p.scss")
+        PaletteFormats.export_palette(path, SAMPLE_PALETTE)
+        assert {w for _, w in PaletteFormats.import_palette(path)} == {50}
+
+    def test_byte_exact_output(self, tmp_path):
+        path = tmp_path / "p.scss"
+        PaletteFormats.export_palette(str(path), SAMPLE_PALETTE[:2])
+        assert path.read_bytes() == SCSS_EXPECTED.encode("ascii")
+
+    def test_names_match_the_css_export(self, tmp_path):
+        css, scss = tmp_path / "p.css", tmp_path / "p.scss"
+        PaletteFormats.export_palette(str(css), SAMPLE_PALETTE)
+        PaletteFormats.export_palette(str(scss), SAMPLE_PALETTE)
+        css_names = sorted(re.findall(r"--(color-\d+(?:-rgb)?):", css.read_text()))
+        scss_names = sorted(re.findall(r"\$(color-\d+(?:-rgb)?):", scss.read_text()))
+        assert css_names == scss_names and len(scss_names) == 2 * len(SAMPLE_PALETTE)
+
+    def test_uppercase_extension_dispatches(self, tmp_path):
+        path = tmp_path / "P.SCSS"
+        PaletteFormats.export_palette(str(path), SAMPLE_PALETTE[:1])
+        assert path.read_text().startswith("// Color Mixer Palette - SCSS Variables")
+        assert PaletteFormats.import_palette(str(path)) == [((255, 0, 0), 50)]
+
+
+class TestScssImportEdgeCases:
+    def test_reads_a_hand_written_file(self, tmp_path):
+        path = tmp_path / "x.scss"
+        path.write_text(f"$brand: {DATA_RED};\n$accent: {DATA_GREEN}; // note\n"
+                        f"$again: {DATA_RED};\n")
+        assert PaletteFormats.import_palette(str(path)) == [
+            ((255, 0, 0), 50), ((0, 255, 0), 50)]
+
+    def test_no_hex_colors_returns_empty(self, tmp_path):
+        path = tmp_path / "x.scss"
+        path.write_text("$gap: 4px;\n")
         assert PaletteFormats.import_palette(str(path)) == []
 
 
@@ -1110,6 +1193,11 @@ class TestDetectFormat:
         path.write_text(".x { color: var(--brand); }")
         assert PaletteFormats.detect_format(str(path)) == ".css"
 
+    def test_detects_scss_by_variable_declaration(self, tmp_path):
+        path = tmp_path / "noext_scss"
+        path.write_text(f"// palette\n$color-1: {DATA_RED};\n")
+        assert PaletteFormats.detect_format(str(path)) == ".scss"
+
     def test_detects_json_by_opening_brace(self, tmp_path):
         # Source line 1076: starts with `{`
         path = tmp_path / "noext_json"
@@ -1186,6 +1274,11 @@ class TestGetFormatInfo:
         info = PaletteFormats.get_format_info(".gpl")
         assert info["name"] == "GIMP Palette"
         assert info["type"] == "text"
+
+    def test_scss_is_described_as_css_is(self):
+        scss, css = PaletteFormats.get_format_info(".scss"), PaletteFormats.get_format_info(".css")
+        assert scss["name"] == "SCSS Variables"
+        assert (scss["type"], scss["support"], scss["apps"]) == (css["type"], css["support"], css["apps"])
 
     def test_binary_format_marked_as_binary(self):
         info = PaletteFormats.get_format_info(".ase")

@@ -67,7 +67,8 @@ def _make_theme_manager(theme_name: str = "dark", is_image_mode: bool = False):
 
 
 def _make_left_mouse_event(event_type, x: float, y: float,
-                           button: Qt.MouseButton = Qt.MouseButton.LeftButton):
+                           button: Qt.MouseButton = Qt.MouseButton.LeftButton,
+                           modifiers: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier):
     """Construct a QMouseEvent for unit-testing event handlers directly."""
     pos = QPointF(x, y)
     return QMouseEvent(
@@ -75,8 +76,11 @@ def _make_left_mouse_event(event_type, x: float, y: float,
         pos,                # localPos (also used as windowPos in this overload)
         button,             # button
         button,             # buttons
-        Qt.KeyboardModifier.NoModifier,
+        modifiers,
     )
+
+
+SHIFT = Qt.KeyboardModifier.ShiftModifier
 
 
 # =============================================================================
@@ -603,15 +607,25 @@ class TestShowContextMenu:
 
 
 class TestMousePressEvent:
-    """LeftButton starts a selection drag; other buttons fall through to
+    """Shift+LeftButton starts a selection drag; a plain LeftButton starts a
+    pan (#93 B: before, a plain drag selected); other buttons fall through to
     super (parent QGraphicsView default behavior)."""
 
-    def test_left_button_starts_drag(self, viewer):
-        evt = _make_left_mouse_event(QEvent.Type.MouseButtonPress, 10, 10)
+    def test_shift_left_button_starts_selection(self, viewer):
+        evt = _make_left_mouse_event(QEvent.Type.MouseButtonPress, 10, 10, modifiers=SHIFT)
         viewer.mousePressEvent(evt)
         assert viewer.dragging is True
         assert viewer.selection_start is not None
         assert viewer.selection_end is None
+        assert viewer.pan_last is None
+
+    def test_plain_left_button_starts_a_pan_not_a_selection(self, viewer):
+        evt = _make_left_mouse_event(QEvent.Type.MouseButtonPress, 10, 10)
+        viewer.mousePressEvent(evt)
+        assert viewer.dragging is False
+        assert viewer.selection_start is None
+        assert viewer.pan_last == QPoint(10, 10)
+        assert viewer.viewport().cursor().shape() == Qt.CursorShape.ClosedHandCursor
 
     def test_right_button_does_not_start_drag(self, viewer):
         evt = _make_left_mouse_event(QEvent.Type.MouseButtonPress, 10, 10,
@@ -629,10 +643,72 @@ class TestMousePressEvent:
         rect_item = scene.addRect(QRectF(0, 0, 10, 10), QPen(Qt.GlobalColor.yellow))
         viewer.selection_rect_item = rect_item
 
-        evt = _make_left_mouse_event(QEvent.Type.MouseButtonPress, 10, 10)
+        evt = _make_left_mouse_event(QEvent.Type.MouseButtonPress, 10, 10, modifiers=SHIFT)
         viewer.mousePressEvent(evt)
         # Source removes the old rect item and clears the reference
         assert viewer.selection_rect_item is None
+
+
+class TestPanning:
+    """A plain left-drag scrolls the view with the pointer (#93 B)."""
+
+    def test_move_while_panning_scrolls_by_the_pointer_delta(self, viewer):
+        moved = []
+        viewer.pan_by = lambda dx, dy: moved.append((dx, dy))
+        viewer.pan_last = QPoint(100, 100)
+        evt = _make_left_mouse_event(QEvent.Type.MouseMove, 70, 120)
+        viewer.mouseMoveEvent(evt)
+        assert moved == [(-30, 20)]
+        assert viewer.pan_last == QPoint(70, 120)
+
+    def test_pan_by_moves_the_scroll_bars_against_the_pointer(self, qtbot, viewer):
+        scene = QGraphicsScene(0, 0, 2000, 2000)
+        viewer.setScene(scene)
+        viewer.resize(200, 200)
+        viewer.show()
+        qtbot.waitExposed(viewer)
+        viewer.horizontalScrollBar().setValue(500)
+        viewer.verticalScrollBar().setValue(500)
+        viewer.pan_by(-30, 20)
+        assert viewer.horizontalScrollBar().value() == 530
+        assert viewer.verticalScrollBar().value() == 480
+
+    def test_release_ends_the_pan_and_restores_the_cursor(self, viewer):
+        viewer.mousePressEvent(_make_left_mouse_event(QEvent.Type.MouseButtonPress, 10, 10))
+        viewer.mouseReleaseEvent(_make_left_mouse_event(QEvent.Type.MouseButtonRelease, 40, 40))
+        assert viewer.pan_last is None
+        assert viewer.viewport().cursor().shape() == Qt.CursorShape.ArrowCursor
+
+    def test_a_pan_never_extracts(self, viewer):
+        viewer.parent_app = _make_parent_app()
+        viewer.mapToScene = lambda p: QPointF(p.x(), p.y())
+        viewer.mousePressEvent(_make_left_mouse_event(QEvent.Type.MouseButtonPress, 10, 10))
+        viewer.mouseMoveEvent(_make_left_mouse_event(QEvent.Type.MouseMove, 200, 200))
+        viewer.mouseReleaseEvent(_make_left_mouse_event(QEvent.Type.MouseButtonRelease, 200, 200))
+        viewer.parent_app.extract_colors_from_selection.assert_not_called()
+        assert viewer.selection_rect_item is None
+
+
+class TestDropForwarding:
+    """Drag and drop on the view goes to the main window, which loads an
+    image file or refuses with a message (#93 B)."""
+
+    def test_events_reach_the_main_window(self, viewer):
+        viewer.parent_app = _make_parent_app()
+        enter, move, drop = object(), object(), object()
+        viewer.dragEnterEvent(enter)
+        viewer.dragMoveEvent(move)
+        viewer.dropEvent(drop)
+        viewer.parent_app.dragEnterEvent.assert_called_once_with(enter)
+        viewer.parent_app.dragMoveEvent.assert_called_once_with(move)
+        viewer.parent_app.dropEvent.assert_called_once_with(drop)
+
+    def test_without_a_main_window_the_view_handles_them_no_crash(self, viewer):
+        from PyQt6.QtCore import QMimeData
+        from PyQt6.QtGui import QDragEnterEvent
+        enter = QDragEnterEvent(QPoint(5, 5), Qt.DropAction.CopyAction, QMimeData(),
+                                Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
+        viewer.dragEnterEvent(enter)        # QGraphicsView's own handler
 
 
 class TestMouseMoveEvent:
