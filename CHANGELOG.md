@@ -23,6 +23,9 @@ Changes since the May 2026 patches: June to October 2026.
 - `tests/test_picker_features.py` drives the main window through the features and settings above.
 
 ### Changed
+- **The brand register is read as `rnv_brand.brand`.** rnv-brand 48.1.0 (`108213b`) installs it under that name, which no other package's `engine` can hide. `tools/sync_colors.py` imports it so, the daily brand-sync checks that name, and `tests/requirements-dev.txt` pins `108213b`. No color moved.
+- **The interface fonts are the brand's.** Inter, for interface text, and JetBrains Mono, for fixed-width text, replace Arial, Segoe UI, Consolas and Courier wherever the app used them; the mark stays Montserrat Black. `python tools/sync_fonts.py` makes them from rnv-brand's files at the pin, one TrueType file per weight (Qt on Windows loads no woff2), into `resources/fonts/`, with `fonts.json`, and `utils/brand_fonts.py` registers them at startup, by file. `tests/test_fonts_in_sync.py` holds the copy to the pin. Exported files (SVG, HTML) keep the fonts they name.
+- **Each font's license travels with it.** `resources/fonts/` holds `OFL-Montserrat.txt`, `OFL-Inter.txt` and `OFL-JetBrains-Mono.txt`; Montserrat Black had been committed and bundled without its license. `tests/test_font_license.py` holds it, and the README's License section says so.
 - **Gestures in the image view**: Shift+drag selects a region and extracts its colors, as the README said; a plain drag now pans the image instead of selecting. Double-click still picks one color, and the wheel still zooms.
 - **Maximum Colors** (Settings, 1 to 1000) now sets the palette limit, at launch too; it was 333 whatever the setting said. Lowering it below the palette's size keeps every color and says so.
 - **Auto-load last session on startup** now loads, at launch, the session saved, auto-saved or loaded most recently.

@@ -16,6 +16,7 @@ from utils.logger import Logger
 from utils.error_handler import ErrorHandler
 from utils.signal_manager import SignalConnectionManager
 from utils.cache import QColorCache
+from utils import brand_fonts
 from utils.colors import (
     BRAND_GOLD, BRAND_GOLD_RGB,
     OVERLAY_BLACK_LIGHT, OVERLAY_BLACK_HEAVY,
@@ -335,7 +336,7 @@ class ScreenColorPicker(QWidget):
             
             # Draw color text (gold brand color - cached)
             painter.setPen(self._gold_color)
-            painter.setFont(QFont("Arial", 9, QFont.Weight.Bold))
+            painter.setFont(brand_fonts.font("body", 9, 600))
             
             # HEX
             hex_color = f"#{self.current_color[0]:02X}{self.current_color[1]:02X}{self.current_color[2]:02X}"
@@ -343,7 +344,7 @@ class ScreenColorPicker(QWidget):
             
             # RGB
             rgb_text = f"RGB: {self.current_color[0]}, {self.current_color[1]}, {self.current_color[2]}"
-            painter.setFont(QFont("Arial", 7))
+            painter.setFont(brand_fonts.font("body", 7))
             painter.drawText(info_x + 40, info_y + 30, rgb_text)
             
             # Instructions

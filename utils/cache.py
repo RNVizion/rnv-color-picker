@@ -17,6 +17,7 @@ from PyQt6.QtGui import QColor, QFont
 from PyQt6.QtWidgets import QApplication
 
 from utils.logger import Logger
+from utils import brand_fonts
 from utils.colors import (
     BRAND_GOLD,
     TRUE_BLACK, WHITE,
@@ -448,7 +449,7 @@ class StylesheetCache:
         key = ('static', 'monospace', size)
         
         if key not in cls._cache:
-            cls._cache[key] = f"font-size: {size}px; font-family: monospace;"
+            cls._cache[key] = f"font-size: {size}px; font-family: {brand_fonts.css('mono')};"
         
         return cls._cache[key]
     

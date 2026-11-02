@@ -56,6 +56,7 @@ from utils.colors import (
     DARK_THEME_COLORS, OVERLAY_BLACK_MEDIUM,
 )
 from utils.font_loader import load_embedded_font
+from utils import brand_fonts
 from utils.file_utils import filter_for_extension, first_extension
 from utils.logger import Logger, get_logger
 from utils.dialog_helper import DialogHelper, DialogResult
@@ -363,7 +364,7 @@ class ColorPickerApp(QMainWindow):
             color: {DEBUG_TEXT};
             padding: 5px 10px;
             border-radius: 4px;
-            font-family: 'Courier New', monospace;
+            font-family: {brand_fonts.css('mono')};
             font-weight: bold;
         """)
         self.update_debug_label()
@@ -1196,9 +1197,11 @@ class ColorPickerApp(QMainWindow):
                     font = ImageFont.truetype(mont_path, font_size)
                     small_font = ImageFont.truetype(mont_path, max(10, font_size - 4))
                 else:
+                    # The brand's body face (ruling 107 A), where it once was Arial.
                     try:
-                        font = ImageFont.truetype("arial.ttf", font_size)
-                        small_font = ImageFont.truetype("arial.ttf", max(10, font_size - 4))
+                        body = str(brand_fonts.file_for("body", 600))
+                        font = ImageFont.truetype(body, font_size)
+                        small_font = ImageFont.truetype(body, max(10, font_size - 4))
                     except OSError:
                         font = ImageFont.load_default()
                         small_font = font

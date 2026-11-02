@@ -2,8 +2,9 @@
 Font loading utilities for RNV Color Picker.
 
 Loads the bundled Montserrat-Black font from resources/fonts/, with a
-graceful fallback to the system default (Arial) if the file cannot be
-found or registered with Qt.
+graceful fallback to the brand's body face, Inter, if the file cannot be
+found or registered with Qt. It registers the brand's interface faces,
+Inter and JetBrains Mono, at the same time (utils/brand_fonts.py, ruling 107 A).
 
 Python 3.13 optimized - using modern type hints.
 """
@@ -12,6 +13,7 @@ import os
 from PyQt6.QtGui import QFont, QFontDatabase
 
 from utils.logger import Logger
+from utils import brand_fonts
 
 logger = Logger("FontLoader")
 
@@ -19,8 +21,6 @@ logger = Logger("FontLoader")
 # Filename of the bundled font, expected under resources/fonts/
 _FONT_FILENAME = "Montserrat-Black.ttf"
 
-# Fallback font family used when the bundled file cannot be loaded
-_FALLBACK_FAMILY = "Arial"
 
 
 def load_embedded_font(default_size: int = 10) -> QFont:
@@ -29,7 +29,7 @@ def load_embedded_font(default_size: int = 10) -> QFont:
 
     Priority:
     1. Try loading from resources/fonts/Montserrat-Black.ttf
-    2. Fallback to system Arial
+    2. Fallback to the brand's body face, Inter
 
     Args:
         default_size: Font size in points (default: 10)
@@ -48,6 +48,7 @@ def load_embedded_font(default_size: int = 10) -> QFont:
 
     for font_path in possible_paths:
         if os.path.exists(font_path):
+            brand_fonts.register(os.path.dirname(font_path))
             try:
                 font_id = QFontDatabase.addApplicationFont(font_path)
                 if font_id != -1:
@@ -60,10 +61,11 @@ def load_embedded_font(default_size: int = 10) -> QFont:
                 if logger:
                     logger.warning(f"Failed to load font from file: {e}")
 
-    # Fallback to system font
+    # Fallback to the brand's body face (ruling 107 A; Arial until 2026-11-02)
+    fallback = brand_fonts.family("body")
     if logger:
-        logger.warning(f"Using fallback font ({_FALLBACK_FAMILY})")
-    return QFont(_FALLBACK_FAMILY, default_size)
+        logger.warning(f"Using fallback font ({fallback})")
+    return QFont(fallback, default_size)
 
 
 def get_font(

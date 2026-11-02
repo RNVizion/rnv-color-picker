@@ -538,9 +538,10 @@ class TestPaletteExportWorkerFontFallbacks:
         assert any(str(font_file) == c for c in truetype_calls)
         assert finished[0].success is True
 
-    def test_provided_font_that_fails_falls_back_to_arial(
+    def test_provided_font_that_fails_falls_back_to_the_brand_body_face(
             self, tmp_path, monkeypatch):
-        # truetype raises for the user-supplied path → arial fallback path
+        # truetype raises for the user-supplied path → the brand's body face,
+        # Inter (ruling 107 A, 2026-11-02; it was Arial)
         from PIL import ImageFont
         original_truetype = ImageFont.truetype
         attempt_log = []
@@ -559,24 +560,27 @@ class TestPaletteExportWorkerFontFallbacks:
         w = PaletteExportWorker(_palette_colors(), out, font_path=str(font_file))
         _, finished, _ = _collect_signals(w)
         w.run()
-        # Both the user font and arial were attempted
+        # Both the user font and the body face were attempted
         assert any("fake.ttf" in p for p in attempt_log)
-        assert any("arial" in p.lower() for p in attempt_log)
+        assert any("inter-600-normal.ttf" in p.lower() for p in attempt_log)
         assert finished[0].success is True
 
-    def test_no_font_path_and_arial_fails_uses_default(
+    def test_no_font_path_and_the_body_face_fails_uses_default(
             self, tmp_path, monkeypatch):
-        # Both arial attempts fail → source falls through to load_default().
+        # Both body-face attempts fail → source falls through to load_default().
         # Tricky: PIL's load_default() *internally* calls truetype(BytesIO, 13,
         # layout_engine=...). If our patch fails ALL truetype calls, load_default
         # raises too and we test the wrong branch. Solution: keep a reference
-        # to the original truetype, and only fail when the source asks for arial.
+        # to the original truetype, and only fail when the source asks for the body face.
         from PIL import ImageFont
         original_truetype = ImageFont.truetype
 
+        asked = []
+
         def selective_truetype(path, size=10, *args, **kwargs):
-            if isinstance(path, str) and "arial" in path.lower():
-                raise OSError("no arial")
+            if isinstance(path, str) and "inter-600-normal.ttf" in path.lower():
+                asked.append(path)
+                raise OSError("no body face")
             # All other paths (BytesIO from load_default) → real behavior
             return original_truetype(path, size, *args, **kwargs)
         monkeypatch.setattr(ImageFont, "truetype", selective_truetype)
@@ -585,10 +589,11 @@ class TestPaletteExportWorkerFontFallbacks:
         w = PaletteExportWorker(_palette_colors(), out, font_path=None)
         _, finished, _ = _collect_signals(w)
         w.run()
-        # arial fails → load_default succeeds → export completes
+        # the body face fails → load_default succeeds → export completes
+        assert asked, "the body face was never asked for: the fallback this tests was not reached"
         assert finished[0].success is True
 
-    def test_nonexistent_font_path_skips_to_arial(self, tmp_path, monkeypatch):
+    def test_nonexistent_font_path_skips_to_the_body_face(self, tmp_path, monkeypatch):
         # font_path is a string but the file doesn't exist → source's
         # `os.path.exists(...)` returns False, skipping the custom-font
         # branch. Track which paths are passed to truetype to verify.

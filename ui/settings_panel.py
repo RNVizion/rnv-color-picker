@@ -19,6 +19,7 @@ from datetime import datetime
 from utils.logger import Logger
 from utils.dialog_helper import DialogHelper
 from utils.cache import QColorCache, ColorCache, StylesheetCache
+from utils import brand_fonts
 from utils.settings_manager import get_settings_manager
 from utils.session_manager import get_session_manager, SessionManager
 from utils.error_handler import ErrorHandler
@@ -1036,14 +1037,14 @@ class SettingsPanel(QDialog):
         # Copy/Paste buttons for foreground
         fg_copy_btn = QPushButton("⧉")
         fg_copy_btn.setFixedSize(40, 32)
-        fg_copy_btn.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
+        fg_copy_btn.setFont(brand_fonts.font("body", 12, 600))
         fg_copy_btn.setToolTip("Copy foreground color (HEX)")
         fg_copy_btn.clicked.connect(self._copy_fg_color)
         fg_header.addWidget(fg_copy_btn)
         
         fg_paste_btn = QPushButton("⎘")
         fg_paste_btn.setFixedSize(40, 32)
-        fg_paste_btn.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
+        fg_paste_btn.setFont(brand_fonts.font("body", 12, 600))
         fg_paste_btn.setToolTip("Paste foreground color (HEX)")
         fg_paste_btn.clicked.connect(self._paste_fg_color)
         fg_header.addWidget(fg_paste_btn)
@@ -1095,14 +1096,14 @@ class SettingsPanel(QDialog):
         # Copy/Paste buttons for background
         bg_copy_btn = QPushButton("⧉")
         bg_copy_btn.setFixedSize(40, 32)
-        bg_copy_btn.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
+        bg_copy_btn.setFont(brand_fonts.font("body", 12, 600))
         bg_copy_btn.setToolTip("Copy background color (HEX)")
         bg_copy_btn.clicked.connect(self._copy_bg_color)
         bg_header.addWidget(bg_copy_btn)
         
         bg_paste_btn = QPushButton("⎘")
         bg_paste_btn.setFixedSize(40, 32)
-        bg_paste_btn.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
+        bg_paste_btn.setFont(brand_fonts.font("body", 12, 600))
         bg_paste_btn.setToolTip("Paste background color (HEX)")
         bg_paste_btn.clicked.connect(self._paste_bg_color)
         bg_header.addWidget(bg_paste_btn)
@@ -1227,14 +1228,14 @@ class SettingsPanel(QDialog):
         # Copy/Paste buttons for simulation color
         sim_copy_btn = QPushButton("⧉")
         sim_copy_btn.setFixedSize(40, 32)
-        sim_copy_btn.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
+        sim_copy_btn.setFont(brand_fonts.font("body", 12, 600))
         sim_copy_btn.setToolTip("Copy simulation color (HEX)")
         sim_copy_btn.clicked.connect(self._copy_sim_color)
         sim_color_layout.addWidget(sim_copy_btn)
         
         sim_paste_btn = QPushButton("⎘")
         sim_paste_btn.setFixedSize(40, 32)
-        sim_paste_btn.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
+        sim_paste_btn.setFont(brand_fonts.font("body", 12, 600))
         sim_paste_btn.setToolTip("Paste simulation color (HEX)")
         sim_paste_btn.clicked.connect(self._paste_sim_color)
         sim_color_layout.addWidget(sim_paste_btn)
@@ -1608,7 +1609,7 @@ class SettingsPanel(QDialog):
             color: {_t['text_primary']};
             padding: 4px 8px;
             border-radius: 3px;
-            font-family: 'Consolas', 'Courier New', monospace;
+            font-family: {brand_fonts.css('mono')};
             font-weight: bold;
         """
         self._style_for_mode(key_label, key_sheet)

@@ -20,6 +20,7 @@ from utils.logger import Logger
 from utils.error_handler import ErrorHandler, ErrorContext
 from utils.signal_manager import SignalConnectionManager
 from utils.cache import ColorCache
+from utils import brand_fonts
 
 logger = Logger("Workers")
 ERROR_HANDLER_AVAILABLE = True
@@ -455,9 +456,11 @@ class PaletteExportWorker(QThread):
                     pass
             
             if not font:
+                # The brand's body face (ruling 107 A), where it once was Arial.
                 try:
-                    font = ImageFont.truetype("arial.ttf", font_size)
-                    small_font = ImageFont.truetype("arial.ttf", max(10, font_size - 4))
+                    body = str(brand_fonts.file_for("body", 600))
+                    font = ImageFont.truetype(body, font_size)
+                    small_font = ImageFont.truetype(body, max(10, font_size - 4))
                 except Exception:
                     font = ImageFont.load_default()
                     small_font = font
