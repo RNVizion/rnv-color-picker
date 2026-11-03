@@ -61,7 +61,10 @@ def _make_parent_with_theme(theme_name: str = "dark"):
     attribute. Must be a QWidget because QDialog's __init__ requires it.
     Returns the widget — caller is responsible for keeping it alive (we
     attach it to the dialog as `_test_real_parent` in the calling tests
-    where the dialog is registered with qtbot)."""
+    where the dialog is registered with qtbot) and for registering it with
+    qtbot after the dialog, so Qt deletes it at the test's end rather than
+    Python's garbage collector in a later test
+    (tests/test_parents_are_released.py)."""
     from PyQt6.QtWidgets import QWidget
     parent = QWidget()
     parent.theme_manager = MagicMock()
@@ -150,6 +153,7 @@ class TestProgressDialogConstruction:
         dlg = ProgressDialog(is_dark=False, parent=parent)
         dlg._test_real_parent = parent  # keep alive
         qtbot.addWidget(dlg)
+        qtbot.addWidget(parent)  # after the child: Qt deletes the parent, and the child with it
         assert dlg._theme_name == "dark"
 
     def test_parent_with_image_theme_detected(self, qtbot):
@@ -157,6 +161,7 @@ class TestProgressDialogConstruction:
         dlg = ProgressDialog(parent=parent)
         dlg._test_real_parent = parent
         qtbot.addWidget(dlg)
+        qtbot.addWidget(parent)  # after the child: Qt deletes the parent, and the child with it
         assert dlg._theme_name == "image"
         # 'image' is dark-like for the legacy _is_dark flag
         assert dlg._is_dark is True
@@ -166,6 +171,7 @@ class TestProgressDialogConstruction:
         dlg = ProgressDialog(parent=parent)
         dlg._test_real_parent = parent
         qtbot.addWidget(dlg)
+        qtbot.addWidget(parent)  # after the child: Qt deletes the parent, and the child with it
         assert dlg._theme_name == "light"
         assert dlg._is_dark is False
 
@@ -192,6 +198,7 @@ class TestApplyTheme:
         dlg = ProgressDialog(parent=parent)
         dlg._test_real_parent = parent
         qtbot.addWidget(dlg)
+        qtbot.addWidget(parent)  # after the child: Qt deletes the parent, and the child with it
         assert dlg.styleSheet() == IMAGE_PROGRESS_STYLE
 
 
@@ -363,6 +370,7 @@ class TestLoadingDialog:
         dlg = LoadingDialog(total_colors=10, parent=parent)
         dlg._test_real_parent = parent
         qtbot.addWidget(dlg)
+        qtbot.addWidget(parent)  # after the child: Qt deletes the parent, and the child with it
         assert dlg._is_dark is True
 
     def test_construction_with_light_theme_parent(self, qtbot):
@@ -370,6 +378,7 @@ class TestLoadingDialog:
         dlg = LoadingDialog(total_colors=10, parent=parent)
         dlg._test_real_parent = parent
         qtbot.addWidget(dlg)
+        qtbot.addWidget(parent)  # after the child: Qt deletes the parent, and the child with it
         assert dlg._is_dark is False
 
     def test_update_progress_returns_true_when_not_cancelled(self, qtbot):
@@ -426,6 +435,7 @@ class TestQuickProgressDialog:
         dlg = QuickProgressDialog(parent=parent)
         dlg._test_real_parent = parent
         qtbot.addWidget(dlg)
+        qtbot.addWidget(parent)  # after the child: Qt deletes the parent, and the child with it
         assert dlg._is_dark is True
 
     def test_construction_with_light_theme_parent(self, qtbot):
@@ -433,6 +443,7 @@ class TestQuickProgressDialog:
         dlg = QuickProgressDialog(parent=parent)
         dlg._test_real_parent = parent
         qtbot.addWidget(dlg)
+        qtbot.addWidget(parent)  # after the child: Qt deletes the parent, and the child with it
         assert dlg._is_dark is False
 
     def test_complete_sets_progress_to_full(self, qtbot):

@@ -101,6 +101,7 @@ def panel(qtbot):
     # Keep a reference to real_parent on the panel so it doesn't get GC'd
     # while the panel still references it.
     p._test_real_parent = real_parent
+    qtbot.addWidget(real_parent)  # after the child: Qt deletes the parent, and the child with it
     return p
 
 
@@ -113,6 +114,7 @@ def panel_light(qtbot):
     p = SettingsPanel(parent=real_parent)
     qtbot.addWidget(p)
     p._test_real_parent = real_parent
+    qtbot.addWidget(real_parent)  # after the child: Qt deletes the parent, and the child with it
     return p
 
 
@@ -341,6 +343,7 @@ class TestSettingsPanelTheme:
         p = SettingsPanel(parent=bare_parent)
         qtbot.addWidget(p)
         p._test_real_parent = bare_parent  # keep ref alive
+        qtbot.addWidget(bare_parent)  # after the child: Qt deletes the parent, and the child with it
         # Should not crash, stylesheet still set
         assert p.styleSheet() != ""
 
@@ -2450,6 +2453,7 @@ class TestPanelFollowsASwitch:
         built = SettingsPanel(parent=real_parent)
         qtbot.addWidget(built)
         built._test_real_parent = real_parent
+        qtbot.addWidget(real_parent)  # after the child: Qt deletes the parent, and the child with it
         return built
 
     @classmethod

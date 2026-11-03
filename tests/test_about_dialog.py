@@ -4,9 +4,12 @@ Tests for ui/about_dialog.py — the About dialog (Ctrl+/).
 
 Phase 3c: target single QDialog with 4 tabs, theme-aware accent/dict
 accessors, and a module-level convenience function. Uses the same fixture
-pattern as Phase 3a/3b: real QWidget parent (NOT registered with qtbot) holds
-the mocked theme_manager and is stored on the panel as _test_real_parent so
-it survives the test's lifetime.
+pattern as Phase 3a/3b: a real QWidget parent holds the mocked theme_manager
+and is stored on the dialog as _test_real_parent so it survives the test's
+lifetime. Since 3 November 2026 the parent is registered with qtbot too,
+after the dialog, so Qt deletes it at the test's end. Left to Python's
+garbage collector, it was deleted whenever a collection ran, in a later
+test; on PyQt6 6.12 that crashed the suite (tests/test_parents_are_released.py).
 
 Coverage targets:
   - AboutDialog.__init__         (window setup, modal, fixed size)
@@ -89,6 +92,7 @@ def dialog(qtbot, monkeypatch):
     dlg = AboutDialog(parent=real_parent)
     dlg._test_real_parent = real_parent  # keep alive until dlg is gone
     qtbot.addWidget(dlg)
+    qtbot.addWidget(real_parent)  # after the child: Qt deletes the parent, and the child with it
     return dlg
 
 
@@ -192,6 +196,7 @@ class TestLogoFallbacks:
         dlg = AboutDialog(parent=real_parent)
         dlg._test_real_parent = real_parent
         qtbot.addWidget(dlg)
+        qtbot.addWidget(real_parent)  # after the child: Qt deletes the parent, and the child with it
         # The logo label should have a pixmap (not text)
         labels = dlg.header_widget.findChildren(QLabel)
         # Find labels with a non-null pixmap
@@ -230,6 +235,7 @@ class TestGetAccent:
         dlg = AboutDialog(parent=real_parent)
         dlg._test_real_parent = real_parent
         qtbot.addWidget(dlg)
+        qtbot.addWidget(real_parent)  # after the child: Qt deletes the parent, and the child with it
         assert dlg._get_accent_text() == colors.BRAND_DARK_GOLD_DEEP
 
     def test_image_theme_returns_brand_gold(self, qtbot, monkeypatch):
@@ -238,6 +244,7 @@ class TestGetAccent:
         dlg = AboutDialog(parent=real_parent)
         dlg._test_real_parent = real_parent
         qtbot.addWidget(dlg)
+        qtbot.addWidget(real_parent)  # after the child: Qt deletes the parent, and the child with it
         # 'image' theme is treated like 'dark' for accent purposes
         assert dlg._get_accent_text() == colors.BRAND_GOLD
 
@@ -263,6 +270,7 @@ class TestGetAccent:
         dlg = AboutDialog(parent=real_parent)
         dlg._test_real_parent = real_parent
         qtbot.addWidget(dlg)
+        qtbot.addWidget(real_parent)  # after the child: Qt deletes the parent, and the child with it
         assert dlg._get_accent_text() == colors.BRAND_GOLD
 
 
@@ -289,6 +297,7 @@ class TestGetTheme:
         dlg = AboutDialog(parent=real_parent)
         dlg._test_real_parent = real_parent
         qtbot.addWidget(dlg)
+        qtbot.addWidget(real_parent)  # after the child: Qt deletes the parent, and the child with it
         result = dlg._get_theme()
         assert result == colors.LIGHT_THEME_COLORS
 
@@ -308,6 +317,7 @@ class TestGetTheme:
         dlg = AboutDialog(parent=real_parent)
         dlg._test_real_parent = real_parent
         qtbot.addWidget(dlg)
+        qtbot.addWidget(real_parent)  # after the child: Qt deletes the parent, and the child with it
         result = dlg._get_theme()
         assert result == colors.DARK_THEME_COLORS
 
@@ -517,6 +527,7 @@ class TestAboutFollowsASwitch:
         dlg = AboutDialog(parent=parent)
         dlg._test_real_parent = parent
         qtbot.addWidget(dlg)
+        qtbot.addWidget(parent)  # after the child: Qt deletes the parent, and the child with it
         return dlg
 
     @classmethod
