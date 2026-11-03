@@ -347,14 +347,14 @@ there. Named by its byte, like every other ramp step."""
 # and #dddddd, each feeding one light list key that nothing read. They went
 # with the keys.
 
-GRAY_66: Final[str] = "#666666"  # app-owned
+GRAY_66: Final[str] = "#666666"  # brand: GRAY.gray-6
 """gray(6) on the ramp, #666666. Secondary and muted text on light."""
 
-GRAY_88: Final[str] = "#888888"  # app-owned
+GRAY_88: Final[str] = "#888888"  # brand: GRAY.gray-8
 """gray(8) on the ramp, #888888. Muted text on dark, a scrollbar handle
 hover on light."""
 
-GRAY_55: Final[str] = "#555555"  # app-owned
+GRAY_55: Final[str] = "#555555"  # brand: GRAY.gray-5
 """gray(5) on the ramp, #555555. Disabled text and a checkbox edge on dark."""
 
 # RNV-LIGHT-WIRING (2026-09-06): moved up from below the
@@ -369,8 +369,8 @@ GRAY_55: Final[str] = "#555555"  # app-owned
 # was ever used.
 #
 # GRAY_CC, light's border gray, was three digits too, and equally invisible.
-GRAY_44: Final[str] = "#444444"  # app-owned
-GRAY_CC: Final[str] = "#cccccc"  # app-owned
+GRAY_44: Final[str] = "#444444"  # brand: GRAY.gray-4
+GRAY_CC: Final[str] = "#cccccc"  # brand: GRAY.gray-12
 
 
 
@@ -471,9 +471,9 @@ APP_PROVENANCE: Final[dict[str, str]] = {
     "APP_SURFACE_LIGHT_3": "register",
     "APP_PRESSED_LIGHT": "register",
     "GRAY_E0": "app-ramp",
-    "GRAY_66": "app-ramp",
-    "GRAY_88": "app-ramp",
-    "GRAY_55": "app-ramp",
+    "GRAY_66": "register",
+    "GRAY_88": "register",
+    "GRAY_55": "register",
 }
 """Declarative, and read by tests/test_app_mirror.py. A classification that
 lives only in a test drifts from the thing it classifies."""

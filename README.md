@@ -6,12 +6,12 @@
   <img src="resources/screenshots/hero.png" alt="RNV Color Picker — main window in Image Mode" width="850">
 </p>
 
-![Python](https://img.shields.io/badge/python-3.13-blue?logo=python&logoColor=white)
-![PyQt6](https://img.shields.io/badge/PyQt-6-41CD52)
-![Version](https://img.shields.io/badge/version-3.0.3-orange)
-![License](https://img.shields.io/badge/license-MIT-yellow)
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgray)
-![Tests](https://img.shields.io/badge/tests-1900%2B%20passing-brightgreen)
+![Python](https://img.shields.io/badge/python-3.13-d2bc93?logo=python&logoColor=white&labelColor=25253a)
+![PyQt6](https://img.shields.io/badge/PyQt-6-d2bc93?labelColor=25253a)
+![Version](https://img.shields.io/badge/version-3.0.3-d2bc93?labelColor=25253a)
+![License](https://img.shields.io/badge/license-MIT-d2bc93?labelColor=25253a)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-d2bc93?labelColor=25253a)
+![Tests](https://img.shields.io/badge/tests-1900%2B%20passing-d2bc93?labelColor=25253a)
 
 [![Tests (Linux and Windows)](https://img.shields.io/github/actions/workflow/status/RNVizion/rnv-color-picker/tests.yml?branch=main&label=Tests%20%28Linux%20and%20Windows%29&logo=github)](https://github.com/RNVizion/rnv-color-picker/actions/workflows/tests.yml)
 

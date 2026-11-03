@@ -164,7 +164,7 @@ def test_the_wiring_map_is_not_empty():
 
 def test_the_new_constants_hold_the_registered_values():
     """The local half of the mirror. Runs everywhere, including where
-    engine.brand is not importable -- which is why it is not optional.
+    rnv_brand.brand is not importable -- which is why it is not optional.
 
     RNV-COLOR-SYNC, 2026-10-16: it held each value written out. It holds now
     that brand_map.json takes each from its APP key; the value is written from
@@ -178,7 +178,7 @@ def test_the_new_constants_hold_the_registered_values():
 def test_the_new_constants_match_rnv_brand():
     """The upstream half. Skips where rnv-brand is not importable."""
     brand = pytest.importorskip(
-        'engine.brand',
+        'rnv_brand.brand',
         reason='rnv-brand not importable here; the local pin is doing the work')
     drift = []
     for name, key in NEW.items():
@@ -233,7 +233,7 @@ def test_the_canvas_is_not_the_web_ground():
     not."""
     r, g, b = (int(colors.APP_CANVAS.lstrip('#')[i:i + 2], 16) for i in (0, 2, 4))
     assert r == g == b, f'APP_CANVAS {colors.APP_CANVAS} is not a pure gray'
-    brand = pytest.importorskip('engine.brand', reason='rnv-brand not importable')
+    brand = pytest.importorskip('rnv_brand.brand', reason='rnv-brand not importable')
     assert colors.APP_CANVAS.lower() != brand.WEB_BLACK.lower()
 
 
@@ -260,7 +260,7 @@ def test_every_overlay_is_its_base_at_the_declared_alpha():
 def test_every_overlay_base_is_still_a_register_value():
     """Guard the guard. If a base stopped being registered, these would be
     tracking something app-owned under a name that says otherwise."""
-    brand = pytest.importorskip('engine.brand', reason='rnv-brand not importable')
+    brand = pytest.importorskip('rnv_brand.brand', reason='rnv-brand not importable')
     for name, (base_name, key) in OVERLAYS.items():
         assert brand.APP[key].lower() == getattr(colors, base_name).lower(), (
             f'{name} claims to composite APP[{key!r}], which the register now '
@@ -346,7 +346,7 @@ def test_every_coincidence_still_coincides():
     """A named coincidence that no longer shares a value is a dead exemption,
     and a dead exemption is a license waiting for a defect: it would let a
     genuinely misclassified value hide behind it."""
-    brand = pytest.importorskip('engine.brand', reason='rnv-brand not importable')
+    brand = pytest.importorskip('rnv_brand.brand', reason='rnv-brand not importable')
     stale = []
     for name, (entry, _why) in COINCIDENT.items():
         mine = getattr(colors, name).lower()

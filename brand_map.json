@@ -37,26 +37,11 @@
       "app": "#e0e0e0",
       "why": "gray(14) on the ramp. Static light surfaces, a tab and a scrollbar track, that share pressed-light's hex without being a pressed state."
     },
-    "GRAY_66": {
-      "app": "#666666",
-      "why": "gray(6) on the register's ink grid, which the register states as a rule and does not name. Secondary and muted text on light."
-    },
-    "GRAY_88": {
-      "app": "#888888",
-      "why": "gray(8) on the register's ink grid, which the register states as a rule and does not name. Muted text on dark; a scrollbar handle's hover on light."
-    },
-    "GRAY_55": {
-      "app": "#555555",
-      "why": "gray(5) on the register's ink grid, which the register states as a rule and does not name. Disabled text and a checkbox edge on dark."
-    },
-    "GRAY_44": {
-      "app": "#444444",
-      "why": "gray(4) on the register's ink grid, which the register states as a rule and does not name. The swatch preview's outline."
-    },
-    "GRAY_CC": {
-      "app": "#cccccc",
-      "why": "gray(12) on the register's ink grid, which the register states as a rule and does not name. The light-mode border."
-    },
+    "GRAY_66": "GRAY.gray-6",
+    "GRAY_88": "GRAY.gray-8",
+    "GRAY_55": "GRAY.gray-5",
+    "GRAY_44": "GRAY.gray-4",
+    "GRAY_CC": "GRAY.gray-12",
     "IMAGE_CANVAS_LIGHT": {
       "app": "#e8e8e8",
       "why": "The image viewer's ground in light mode. It shares a hex with the register's gold text floor by coincidence, not by role."
